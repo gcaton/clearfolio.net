@@ -92,4 +92,41 @@ export class DashboardComponent {
       this.projection.set(null);
     }
   }
+
+  protected timeToGoal = computed(() => {
+    const p = this.projection();
+    if (!p?.projectedPeriod) return null;
+
+    const match = p.projectedPeriod.match(/^(CY|FY)(\d{4})(?:-(Q[1-4]))?$/);
+    if (!match) return null;
+
+    const convention = match[1];
+    const year = parseInt(match[2]);
+    const quarter = match[3] ? parseInt(match[3][1]) : 1;
+
+    // Convert to approximate month
+    let targetMonth: number;
+    if (convention === 'FY') {
+      // FY Q1=Jul, Q2=Oct, Q3=Jan+1, Q4=Apr+1
+      const baseYear = quarter <= 2 ? year - 1 : year;
+      const monthMap = [7, 10, 1, 4];
+      targetMonth = (baseYear * 12) + monthMap[quarter - 1];
+    } else {
+      const monthMap = [1, 4, 7, 10];
+      targetMonth = (year * 12) + monthMap[quarter - 1];
+    }
+
+    const now = new Date();
+    const currentMonth = (now.getFullYear() * 12) + (now.getMonth() + 1);
+    const diff = targetMonth - currentMonth;
+
+    if (diff <= 0) return null;
+
+    const years = Math.floor(diff / 12);
+    const months = diff % 12;
+
+    if (years === 0) return `${months} month${months !== 1 ? 's' : ''}`;
+    if (months === 0) return `${years} year${years !== 1 ? 's' : ''}`;
+    return `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''}`;
+  });
 }

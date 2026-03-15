@@ -51,6 +51,9 @@
         <span class="goal-projected">
           <i class="pi pi-calendar"></i>
           On track to reach goal by <strong>{{ p.projectedPeriod | periodLabel }}</strong>
+          @if (timeToGoal()) {
+            <span class="time-to-goal">({{ timeToGoal() }} to go)</span>
+          }
         </span>
       } @else if (p.slope > 0) {
         <span class="goal-projected">

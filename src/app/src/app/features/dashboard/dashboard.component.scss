@@ -113,6 +113,11 @@ app-currency {
   }
 
   i { font-size: 0.875rem; }
+
+  .time-to-goal {
+    color: var(--p-text-muted-color);
+    font-weight: 400;
+  }
 }
 
 .goal-confidence {
