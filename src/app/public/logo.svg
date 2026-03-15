@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Upward growth line forming an abstract leaf/chart shape -->
+  <defs>
+    <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <!-- Filled area under the growth curve - leaf/mountain shape -->
+  <path d="M64 448 C128 400, 192 380, 240 320 C280 272, 300 200, 340 160 C380 120, 420 96, 448 64 L448 448 Z" fill="url(#g)" opacity="0.15"/>
+  <!-- The growth line itself -->
+  <path d="M64 448 C128 400, 192 380, 240 320 C280 272, 300 200, 340 160 C380 120, 420 96, 448 64" stroke="url(#g)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Dot at the peak -->
+  <circle cx="448" cy="64" r="24" fill="#34d399"/>
+</svg>

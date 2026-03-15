@@ -17,7 +17,10 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
       <div class="nav-brand">
         <p-button icon="pi pi-bars" [text]="true" class="mobile-menu-btn"
           (onClick)="mobileMenuVisible.set(true)" />
-        <a routerLink="/dashboard" class="brand-link">clearfolio</a>
+        <a routerLink="/dashboard" class="brand-link">
+          <img src="logo.svg" alt="" class="brand-logo" />
+          clearfolio
+        </a>
       </div>
       <div class="nav-links desktop-only">
         <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
