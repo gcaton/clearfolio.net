@@ -41,6 +41,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: clearfolio-api
+          package-type: container
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: false
+
   build-app:
     runs-on: ubuntu-latest
     permissions:
@@ -73,3 +80,10 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: clearfolio-app
+          package-type: container
+          min-versions-to-keep: 5
+          delete-only-untagged-versions: false
