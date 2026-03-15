@@ -158,12 +158,13 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000005"), Name = "International shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 5, IsSystem = true },
             new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000006"), Name = "Bonds / fixed income", Category = "investable", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 6, IsSystem = true },
             new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000007"), Name = "Cryptocurrency", Category = "investable", Liquidity = "immediate", GrowthClass = "growth", SortOrder = 7, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000008"), Name = "Superannuation — Accumulation", Category = "retirement", Liquidity = "restricted", GrowthClass = "mixed", IsSuper = true, SortOrder = 8, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000009"), Name = "Superannuation — Pension phase", Category = "retirement", Liquidity = "long_term", GrowthClass = "mixed", IsSuper = true, SortOrder = 9, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000a"), Name = "Primary residence (PPOR)", Category = "property", Liquidity = "long_term", GrowthClass = "growth", IsCgtExempt = true, SortOrder = 10, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000b"), Name = "Investment property", Category = "property", Liquidity = "long_term", GrowthClass = "growth", SortOrder = 11, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000c"), Name = "Vehicle", Category = "other", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 12, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000d"), Name = "Other physical asset", Category = "other", Liquidity = "long_term", GrowthClass = "mixed", SortOrder = 13, IsSystem = true }
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000e"), Name = "Investment bond", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 8, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000008"), Name = "Superannuation — Accumulation", Category = "retirement", Liquidity = "restricted", GrowthClass = "mixed", IsSuper = true, SortOrder = 9, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000009"), Name = "Superannuation — Pension phase", Category = "retirement", Liquidity = "long_term", GrowthClass = "mixed", IsSuper = true, SortOrder = 10, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000a"), Name = "Primary residence (PPOR)", Category = "property", Liquidity = "long_term", GrowthClass = "growth", IsCgtExempt = true, SortOrder = 11, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000b"), Name = "Investment property", Category = "property", Liquidity = "long_term", GrowthClass = "growth", SortOrder = 12, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000c"), Name = "Vehicle", Category = "other", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 13, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000d"), Name = "Other physical asset", Category = "other", Liquidity = "long_term", GrowthClass = "mixed", SortOrder = 14, IsSystem = true }
         );
 
         modelBuilder.Entity<LiabilityType>().HasData(
