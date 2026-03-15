@@ -24,3 +24,10 @@ public record UpdateSnapshotRequest(
     double Value,
     string Currency,
     string? Notes);
+
+public record LatestSnapshotDto(
+    Guid EntityId,
+    string EntityType,
+    string Period,
+    double Value,
+    string Currency);

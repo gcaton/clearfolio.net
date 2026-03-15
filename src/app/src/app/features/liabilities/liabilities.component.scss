@@ -16,3 +16,17 @@
     color: var(--p-surface-700, #374151);
   }
 }
+
+.latest-value {
+  font-weight: 600;
+}
+
+.latest-period {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--p-surface-400);
+}
+
+.no-value {
+  color: var(--p-surface-300);
+}

@@ -14,6 +14,7 @@ public static class SnapshotsEndpoints
         app.MapPut("/api/snapshots/{id:guid}", UpdateSnapshot);
         app.MapDelete("/api/snapshots/{id:guid}", DeleteSnapshot);
         app.MapGet("/api/periods", GetPeriods);
+        app.MapGet("/api/snapshots/latest", GetLatestSnapshots);
         return app;
     }
 
@@ -139,6 +140,24 @@ public static class SnapshotsEndpoints
             .ToListAsync();
 
         return Results.Ok(periods);
+    }
+
+    private static async Task<IResult> GetLatestSnapshots(HttpContext context, ClearfolioDbContext db)
+    {
+        var member = GetMember(context);
+
+        var allSnapshots = await db.Snapshots
+            .AsNoTracking()
+            .Where(s => s.HouseholdId == member.HouseholdId)
+            .ToListAsync();
+
+        var latest = allSnapshots
+            .GroupBy(s => s.EntityId)
+            .Select(g => g.OrderByDescending(s => s.Period).First())
+            .Select(s => new LatestSnapshotDto(s.EntityId, s.EntityType, s.Period, s.Value, s.Currency))
+            .ToList();
+
+        return Results.Ok(latest);
     }
 
     private static SnapshotDto ToDto(Snapshot s) => new(

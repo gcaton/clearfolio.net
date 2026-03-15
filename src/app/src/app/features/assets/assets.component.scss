@@ -55,3 +55,17 @@
     background: var(--p-red-50, #fef2f2);
   }
 }
+
+.latest-value {
+  font-weight: 600;
+}
+
+.latest-period {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--p-surface-400);
+}
+
+.no-value {
+  color: var(--p-surface-300);
+}

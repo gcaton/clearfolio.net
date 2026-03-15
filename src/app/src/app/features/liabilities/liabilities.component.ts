@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TableModule } from 'primeng/table';
 import { Tag } from 'primeng/tag';
@@ -9,27 +9,39 @@ import { Select } from 'primeng/select';
 import { InputNumber } from 'primeng/inputnumber';
 import { Textarea } from 'primeng/textarea';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { Toast } from 'primeng/toast';
+import { Skeleton } from 'primeng/skeleton';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
-import { Liability, LiabilityType, Member, CreateLiabilityRequest } from '../../core/api/models';
+import { Liability, LiabilityType, Member, CreateLiabilityRequest, LatestSnapshot } from '../../core/api/models';
+import { EmptyStateComponent } from '../../shared/components/empty-state.component';
+import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
+import { Tooltip } from 'primeng/tooltip';
+import { DecimalPipe } from '@angular/common';
 
 @Component({
   selector: 'app-liabilities',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog],
-  providers: [ConfirmationService],
+  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip],
+  providers: [ConfirmationService, MessageService],
   templateUrl: './liabilities.component.html',
   styleUrl: './liabilities.component.scss',
 })
 export class LiabilitiesComponent implements OnInit {
   private api = inject(ApiService);
   private confirmService = inject(ConfirmationService);
+  private messageService = inject(MessageService);
 
   protected liabilities = signal<Liability[]>([]);
   protected liabilityTypes = signal<LiabilityType[]>([]);
   protected members = signal<Member[]>([]);
   protected dialogVisible = signal(false);
   protected editing = signal<Liability | null>(null);
+  protected loading = signal(true);
+  protected latestValues = signal<Map<string, LatestSnapshot>>(new Map());
+  protected recordingLiabilityId = signal<string | null>(null);
+  protected recordingLabel = signal('');
+  private recordDialog = viewChild<RecordValueDialogComponent>('recordDialog');
 
   protected form: CreateLiabilityRequest = this.emptyForm();
 
@@ -70,11 +82,13 @@ export class LiabilitiesComponent implements OnInit {
       this.api.updateLiability(current.id, this.form).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadLiabilities();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability updated' });
       });
     } else {
       this.api.createLiability(this.form).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadLiabilities();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability created' });
       });
     }
   }
@@ -85,13 +99,34 @@ export class LiabilitiesComponent implements OnInit {
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.api.deleteLiability(liability.id).subscribe(() => this.loadLiabilities());
+        this.api.deleteLiability(liability.id).subscribe(() => {
+          this.loadLiabilities();
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Liability removed' });
+        });
       },
     });
   }
 
-  private loadLiabilities() {
-    this.api.getLiabilities().subscribe((data) => this.liabilities.set(data));
+  getLatestValue(liabilityId: string): LatestSnapshot | undefined {
+    return this.latestValues().get(liabilityId);
+  }
+
+  openRecordValue(liability: Liability) {
+    this.recordingLiabilityId.set(liability.id);
+    this.recordingLabel.set(liability.label);
+    setTimeout(() => this.recordDialog()?.open());
+  }
+
+  loadLiabilities() {
+    this.loading.set(true);
+    this.api.getLiabilities().subscribe((data) => {
+      this.liabilities.set(data);
+      this.loading.set(false);
+    });
+    this.api.getLatestSnapshots().subscribe((snapshots) => {
+      const map = new Map(snapshots.filter(s => s.entityType === 'liability').map(s => [s.entityId, s]));
+      this.latestValues.set(map);
+    });
   }
 
   private emptyForm(): CreateLiabilityRequest {

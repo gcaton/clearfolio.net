@@ -1,3 +1,19 @@
+<div class="dashboard-header">
+  <h1>Dashboard</h1>
+  <app-period-selector (periodChange)="onPeriodChange($event)" />
+</div>
+
+@if (!summary()) {
+  <div class="stat-cards">
+    @for (i of [1,2,3,4]; track i) {
+      <div class="stat-card">
+        <p-skeleton width="5rem" height="0.875rem" />
+        <p-skeleton width="8rem" height="1.75rem" />
+      </div>
+    }
+  </div>
+}
+
 @if (summary(); as s) {
   <div class="stat-cards">
     <div class="stat-card">
@@ -11,11 +27,25 @@
     <div class="stat-card highlight">
       <span class="stat-label">Net Worth</span>
       <app-currency [value]="s.netWorth" [colorize]="true" />
+      <app-net-worth-change [change]="s.netWorthChange" [percent]="s.netWorthChangePercent" />
     </div>
     <div class="stat-card">
       <span class="stat-label">Period</span>
       <span class="stat-value period">{{ s.period | periodLabel }}</span>
     </div>
+  </div>
+}
+
+@if (netWorthProgress() !== null) {
+  <div class="goal-progress">
+    <div class="goal-header">
+      <span class="goal-label">Net Worth Goal</span>
+      <span class="goal-target">
+        {{ netWorthProgress() }}% of
+        <app-currency [value]="netWorthGoal()!" />
+      </span>
+    </div>
+    <p-progressbar [value]="netWorthProgress()!" [showValue]="false" />
   </div>
 }
 

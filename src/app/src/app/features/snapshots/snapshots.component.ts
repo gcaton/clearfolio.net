@@ -156,6 +156,46 @@ export class SnapshotsComponent implements OnInit {
     return this.targets().find((t) => t.id === entityId)?.label ?? entityId;
   }
 
+  exportCsv() {
+    const data = this.snapshots();
+    if (data.length === 0) return;
+
+    const headers = ['Entity', 'Type', 'Period', 'Value', 'Currency', 'Recorded By', 'Recorded At'];
+    const rows = data.map((s) => [
+      this.getTargetLabel(s.entityId),
+      s.entityType,
+      s.period,
+      s.value,
+      s.currency,
+      s.recordedByName,
+      s.recordedAt,
+    ]);
+
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `snapshots-${this.selectedPeriod()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  protected bulkDirty = computed(() => this.bulkGrid().some(c => c.value !== null && c.value > 0));
+
+  closeBulk() {
+    if (this.bulkDirty()) {
+      this.confirmService.confirm({
+        message: 'You have unsaved values. Discard changes?',
+        header: 'Unsaved Changes',
+        icon: 'pi pi-exclamation-triangle',
+        accept: () => this.bulkVisible.set(false),
+      });
+    } else {
+      this.bulkVisible.set(false);
+    }
+  }
+
   // Bulk entry
   openBulk() {
     this.bulkVisible.set(true);

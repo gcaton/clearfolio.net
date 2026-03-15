@@ -1,8 +1,17 @@
+<p-toast />
+
 <div class="page-header">
   <h1>Liabilities</h1>
   <p-button label="Add Liability" icon="pi pi-plus" (onClick)="openNew()" />
 </div>
 
+@if (loading()) {
+  <div class="skeleton-table">
+    @for (i of [1,2,3,4,5]; track i) {
+      <p-skeleton height="2.5rem" styleClass="mb-2" />
+    }
+  </div>
+} @else {
 <p-table [value]="liabilities()" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template #header>
     <tr>
@@ -11,7 +20,8 @@
       <th>Owner</th>
       <th>Ownership</th>
       <th>Currency</th>
-      <th style="width: 8rem"></th>
+      <th style="text-align: right">Latest Value</th>
+      <th style="width: 10rem"></th>
     </tr>
   </ng-template>
   <ng-template #body let-liability>
@@ -27,7 +37,17 @@
       </td>
       <td>{{ liability.ownershipType }}</td>
       <td>{{ liability.currency }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">
+        @if (getLatestValue(liability.id); as lv) {
+          <span class="latest-value">{{ lv.value | number: '1.0-0' }}</span>
+          <span class="latest-period">{{ lv.period }}</span>
+        } @else {
+          <span class="no-value">&mdash;</span>
+        }
+      </td>
       <td>
+        <p-button icon="pi pi-dollar" [rounded]="true" [text]="true" severity="success"
+          pTooltip="Record value" (onClick)="openRecordValue(liability)" />
         <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEdit(liability)" />
         <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(liability)" />
       </td>
@@ -35,10 +55,19 @@
   </ng-template>
   <ng-template #emptymessage>
     <tr>
-      <td colspan="6">No liabilities recorded yet. Click "Add Liability" to get started.</td>
+      <td colspan="7">
+        <app-empty-state
+          icon="pi-credit-card"
+          title="No liabilities yet"
+          message="Add your first liability to get a complete picture."
+        >
+          <p-button label="Add Liability" icon="pi pi-plus" (onClick)="openNew()" />
+        </app-empty-state>
+      </td>
     </tr>
   </ng-template>
 </p-table>
+}
 
 <p-dialog
   [header]="editing() ? 'Edit Liability' : 'New Liability'"
@@ -106,5 +135,13 @@
     <p-button label="Save" (onClick)="save()" [disabled]="!form.label || !form.liabilityTypeId" />
   </ng-template>
 </p-dialog>
+
+<app-record-value-dialog
+  #recordDialog
+  [entityId]="recordingLiabilityId() ?? ''"
+  entityType="liability"
+  [entityLabel]="recordingLabel()"
+  (saved)="loadLiabilities()"
+/>
 
 <p-confirmdialog />

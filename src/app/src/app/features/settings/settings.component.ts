@@ -2,6 +2,7 @@ import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@ang
 import { FormsModule } from '@angular/forms';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
+import { InputNumber } from 'primeng/inputnumber';
 import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
@@ -10,12 +11,13 @@ import { Toast } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
+import { GoalService } from '../../core/auth/goal.service';
 import { Household, Member } from '../../core/api/models';
 
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputText, Select, Button, DialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast],
+  imports: [FormsModule, InputText, InputNumber, Select, Button, DialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast],
   providers: [MessageService],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -23,6 +25,7 @@ import { Household, Member } from '../../core/api/models';
 export class SettingsComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
+  private goalService = inject(GoalService);
   private messageService = inject(MessageService);
 
   protected household = signal<Household | null>(null);
@@ -32,6 +35,8 @@ export class SettingsComponent implements OnInit {
   protected addMemberVisible = signal(false);
   protected newMemberEmail = '';
   protected newMemberName = '';
+  protected netWorthTarget: number | null = this.goalService.goal().netWorthTarget;
+  protected superTarget: number | null = this.goalService.goal().superTarget;
 
   protected periodOptions = [
     { label: 'Financial Year (FY)', value: 'FY' },
@@ -88,5 +93,13 @@ export class SettingsComponent implements OnInit {
       this.auth.loadMembers();
       this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Member added to household' });
     });
+  }
+
+  saveGoals() {
+    this.goalService.setGoal({
+      netWorthTarget: this.netWorthTarget,
+      superTarget: this.superTarget,
+    });
+    this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Goals updated' });
   }
 }

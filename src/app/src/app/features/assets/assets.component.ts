@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -10,21 +10,27 @@ import { Select } from 'primeng/select';
 import { InputNumber } from 'primeng/inputnumber';
 import { Textarea } from 'primeng/textarea';
 import { ConfirmDialog } from 'primeng/confirmdialog';
-import { ConfirmationService } from 'primeng/api';
+import { Toast } from 'primeng/toast';
+import { Skeleton } from 'primeng/skeleton';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
-import { Asset, AssetType, Member, CreateAssetRequest, Quote } from '../../core/api/models';
+import { Asset, AssetType, Member, CreateAssetRequest, Quote, LatestSnapshot } from '../../core/api/models';
+import { EmptyStateComponent } from '../../shared/components/empty-state.component';
+import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
+import { Tooltip } from 'primeng/tooltip';
 
 @Component({
   selector: 'app-assets',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog],
-  providers: [ConfirmationService],
+  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip],
+  providers: [ConfirmationService, MessageService],
   templateUrl: './assets.component.html',
   styleUrl: './assets.component.scss',
 })
 export class AssetsComponent implements OnInit {
   private api = inject(ApiService);
   private confirmService = inject(ConfirmationService);
+  private messageService = inject(MessageService);
 
   protected assets = signal<Asset[]>([]);
   protected assetTypes = signal<AssetType[]>([]);
@@ -32,6 +38,11 @@ export class AssetsComponent implements OnInit {
   protected dialogVisible = signal(false);
   protected editing = signal<Asset | null>(null);
   protected quotes = signal<Record<string, Quote>>({});
+  protected loading = signal(true);
+  protected latestValues = signal<Map<string, LatestSnapshot>>(new Map());
+  protected recordingAssetId = signal<string | null>(null);
+  protected recordingLabel = signal('');
+  private recordDialog = viewChild<RecordValueDialogComponent>('recordDialog');
 
   protected form: CreateAssetRequest = this.emptyForm();
 
@@ -73,11 +84,13 @@ export class AssetsComponent implements OnInit {
       this.api.updateAsset(current.id, this.form).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadAssets();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset updated' });
       });
     } else {
       this.api.createAsset(this.form).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadAssets();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset created' });
       });
     }
   }
@@ -88,7 +101,10 @@ export class AssetsComponent implements OnInit {
       header: 'Confirm',
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
-        this.api.deleteAsset(asset.id).subscribe(() => this.loadAssets());
+        this.api.deleteAsset(asset.id).subscribe(() => {
+          this.loadAssets();
+          this.messageService.add({ severity: 'success', summary: 'Deleted', detail: 'Asset removed' });
+        });
       },
     });
   }
@@ -104,15 +120,31 @@ export class AssetsComponent implements OnInit {
     return this.quotes()[symbol];
   }
 
-  private loadAssets() {
+  getLatestValue(assetId: string): LatestSnapshot | undefined {
+    return this.latestValues().get(assetId);
+  }
+
+  openRecordValue(asset: Asset) {
+    this.recordingAssetId.set(asset.id);
+    this.recordingLabel.set(asset.label);
+    setTimeout(() => this.recordDialog()?.open());
+  }
+
+  loadAssets() {
+    this.loading.set(true);
     this.api.getAssets().subscribe((data) => {
       this.assets.set(data);
+      this.loading.set(false);
       // Auto-fetch quotes for assets with symbols
       for (const asset of data) {
         if (asset.symbol) {
           this.refreshQuote(asset);
         }
       }
+    });
+    this.api.getLatestSnapshots().subscribe((snapshots) => {
+      const map = new Map(snapshots.filter(s => s.entityType === 'asset').map(s => [s.entityId, s]));
+      this.latestValues.set(map);
     });
   }
 

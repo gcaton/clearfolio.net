@@ -1,8 +1,17 @@
+<p-toast />
+
 <div class="page-header">
   <h1>Assets</h1>
   <p-button label="Add Asset" icon="pi pi-plus" (onClick)="openNew()" />
 </div>
 
+@if (loading()) {
+  <div class="skeleton-table">
+    @for (i of [1,2,3,4,5]; track i) {
+      <p-skeleton height="2.5rem" styleClass="mb-2" />
+    }
+  </div>
+} @else {
 <p-table [value]="assets()" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template #header>
     <tr>
@@ -12,7 +21,8 @@
       <th>Owner</th>
       <th>Ownership</th>
       <th>Currency</th>
-      <th style="width: 8rem"></th>
+      <th style="text-align: right">Latest Value</th>
+      <th style="width: 10rem"></th>
     </tr>
   </ng-template>
   <ng-template #body let-asset>
@@ -43,7 +53,17 @@
       </td>
       <td>{{ asset.ownershipType }}</td>
       <td>{{ asset.currency }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">
+        @if (getLatestValue(asset.id); as lv) {
+          <span class="latest-value">{{ lv.value | number: '1.0-0' }}</span>
+          <span class="latest-period">{{ lv.period }}</span>
+        } @else {
+          <span class="no-value">&mdash;</span>
+        }
+      </td>
       <td>
+        <p-button icon="pi pi-dollar" [rounded]="true" [text]="true" severity="success"
+          pTooltip="Record value" (onClick)="openRecordValue(asset)" />
         <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEdit(asset)" />
         <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(asset)" />
       </td>
@@ -51,10 +71,19 @@
   </ng-template>
   <ng-template #emptymessage>
     <tr>
-      <td colspan="7">No assets recorded yet. Click "Add Asset" to get started.</td>
+      <td colspan="8">
+        <app-empty-state
+          icon="pi-wallet"
+          title="No assets yet"
+          message="Add your first asset to start tracking your net worth."
+        >
+          <p-button label="Add Asset" icon="pi pi-plus" (onClick)="openNew()" />
+        </app-empty-state>
+      </td>
     </tr>
   </ng-template>
 </p-table>
+}
 
 <p-dialog
   [header]="editing() ? 'Edit Asset' : 'New Asset'"
@@ -125,5 +154,13 @@
     <p-button label="Save" (onClick)="save()" [disabled]="!form.label || !form.assetTypeId" />
   </ng-template>
 </p-dialog>
+
+<app-record-value-dialog
+  #recordDialog
+  [entityId]="recordingAssetId() ?? ''"
+  entityType="asset"
+  [entityLabel]="recordingLabel()"
+  (saved)="loadAssets()"
+/>
 
 <p-confirmdialog />

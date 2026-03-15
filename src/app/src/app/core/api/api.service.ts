@@ -13,6 +13,7 @@ import {
   Snapshot,
   CreateSnapshotRequest,
   Quote,
+  LatestSnapshot,
   DashboardSummary,
   TrendPoint,
   CompositionPoint,
@@ -112,6 +113,10 @@ export class ApiService {
 
   deleteSnapshot(id: string) {
     return this.http.delete(`/api/snapshots/${id}`);
+  }
+
+  getLatestSnapshots() {
+    return this.http.get<LatestSnapshot[]>('/api/snapshots/latest');
   }
 
   getPeriods() {

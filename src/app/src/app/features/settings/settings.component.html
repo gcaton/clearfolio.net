@@ -6,6 +6,7 @@
   <p-tablist>
     <p-tab value="0">Household</p-tab>
     <p-tab value="1">Members</p-tab>
+    <p-tab value="2">Goals</p-tab>
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="0">
@@ -56,6 +57,19 @@
             </div>
           </div>
         }
+      </div>
+    </p-tabpanel>
+    <p-tabpanel value="2">
+      <div class="settings-form">
+        <label for="nwTarget">Net Worth Target</label>
+        <p-inputnumber id="nwTarget" [(ngModel)]="netWorthTarget"
+          mode="currency" currency="AUD" locale="en-AU" />
+
+        <label for="superTarget">Super Target</label>
+        <p-inputnumber id="superTarget" [(ngModel)]="superTarget"
+          mode="currency" currency="AUD" locale="en-AU" />
+
+        <p-button label="Save Goals" icon="pi pi-check" (onClick)="saveGoals()" />
       </div>
     </p-tabpanel>
   </p-tabpanels>

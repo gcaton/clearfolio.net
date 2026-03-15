@@ -130,12 +130,23 @@ export interface CreateSnapshotRequest {
 }
 
 // Dashboard
+export interface LatestSnapshot {
+  entityId: string;
+  entityType: string;
+  period: string;
+  value: number;
+  currency: string;
+}
+
 export interface DashboardSummary {
   period: string;
   view: string;
   totalAssets: number;
   totalLiabilities: number;
   netWorth: number;
+  previousNetWorth: number | null;
+  netWorthChange: number | null;
+  netWorthChangePercent: number | null;
   assetsByCategory: CategoryBreakdown[];
   liabilitiesByCategory: CategoryBreakdown[];
   liquidityBreakdown: LiquidityBreakdown[];

@@ -35,8 +35,19 @@ public static class DashboardEndpoints
         var totalAssets = assetValues.Sum(v => v.Value);
         var totalLiabilities = liabilityValues.Sum(v => v.Value);
 
+        var previousPeriod = PeriodHelper.PreviousPeriod(period);
+        var prevSnapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, previousPeriod);
+        var prevAssetTotal = CalculateAssetValues(prevSnapshots, assets, members, view).Sum(v => v.Value);
+        var prevLiabilityTotal = CalculateLiabilityValues(prevSnapshots, liabilities, members, view).Sum(v => v.Value);
+        var prevNetWorth = prevAssetTotal - prevLiabilityTotal;
+
+        double? previousNetWorth = prevSnapshots.Count > 0 ? prevNetWorth : null;
+        double? netWorthChange = previousNetWorth.HasValue ? (totalAssets - totalLiabilities) - previousNetWorth.Value : null;
+        double? netWorthChangePercent = previousNetWorth is > 0 ? (netWorthChange!.Value / previousNetWorth.Value) * 100 : null;
+
         return Results.Ok(new DashboardSummaryDto(
             period, view, totalAssets, totalLiabilities, totalAssets - totalLiabilities,
+            previousNetWorth, netWorthChange, netWorthChangePercent,
             assetValues.GroupBy(v => v.Category).Select(g => new CategoryBreakdownDto(g.Key, g.Sum(x => x.Value))).ToList(),
             liabilityValues.GroupBy(v => v.Category).Select(g => new CategoryBreakdownDto(g.Key, g.Sum(x => x.Value))).ToList(),
             assetValues.GroupBy(v => v.Liquidity).Select(g => new LiquidityBreakdownDto(g.Key, g.Sum(x => x.Value))).ToList(),

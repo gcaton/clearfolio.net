@@ -9,6 +9,10 @@
 }
 
 .nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
   .brand-link {
     font-size: 1.25rem;
     font-weight: 700;
@@ -58,4 +62,39 @@
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
+}
+
+// Mobile nav
+.mobile-menu-btn {
+  display: none;
+}
+
+.mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  a {
+    padding: 0.75rem 1rem;
+    color: var(--p-surface-700);
+    text-decoration: none;
+    border-radius: var(--p-border-radius);
+    font-size: 1rem;
+
+    &:hover { background: var(--p-surface-100); }
+    &.active { color: var(--p-primary-600); background: var(--p-primary-50); font-weight: 600; }
+  }
+}
+
+.mobile-view-toggle {
+  padding: 1rem 0;
+  border-top: 1px solid var(--p-surface-200);
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .desktop-only { display: none !important; }
+  .mobile-menu-btn { display: inline-flex !important; }
+  .nav-right { gap: 0.5rem; }
+  .app-content { padding: 1rem; }
 }

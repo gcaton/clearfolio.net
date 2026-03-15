@@ -4,6 +4,8 @@
     <app-period-selector (periodChange)="onPeriodChange($event)" />
     <p-button label="Record Value" icon="pi pi-plus" (onClick)="openNew()" />
     <p-button label="Bulk Entry" icon="pi pi-table" severity="secondary" (onClick)="openBulk()" />
+    <p-button label="Export CSV" icon="pi pi-download" severity="secondary"
+      [disabled]="snapshots().length === 0" (onClick)="exportCsv()" />
   </div>
 </div>
 
@@ -189,7 +191,7 @@
   }
 
   <ng-template #footer>
-    <p-button label="Cancel" [text]="true" (onClick)="bulkVisible.set(false)" />
+    <p-button label="Cancel" [text]="true" (onClick)="closeBulk()" />
     <p-button
       label="Save All"
       icon="pi pi-check"
