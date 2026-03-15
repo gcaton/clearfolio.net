@@ -32,6 +32,7 @@ export class SettingsComponent implements OnInit {
   protected members = signal<Member[]>([]);
   protected editingMemberId = signal<string | null>(null);
   protected editingName = '';
+  protected editingEmail = '';
   protected addMemberVisible = signal(false);
   protected newMemberEmail = '';
   protected newMemberName = '';
@@ -66,10 +67,11 @@ export class SettingsComponent implements OnInit {
   startEditMember(member: Member) {
     this.editingMemberId.set(member.id);
     this.editingName = member.displayName;
+    this.editingEmail = member.email;
   }
 
   saveMember(member: Member) {
-    this.api.updateMember(member.id, this.editingName).subscribe(() => {
+    this.api.updateMember(member.id, this.editingName, this.editingEmail).subscribe(() => {
       this.editingMemberId.set(null);
       this.api.getMembers().subscribe((m) => this.members.set(m));
       this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Member updated' });

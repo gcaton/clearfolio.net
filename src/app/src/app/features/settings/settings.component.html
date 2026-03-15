@@ -40,7 +40,11 @@
           <div class="member-card">
             <div class="member-info">
               <p-tag [value]="member.memberTag" severity="info" />
-              <span class="member-email">{{ member.email }}</span>
+              @if (editingMemberId() === member.id) {
+                <input pInputText [(ngModel)]="editingEmail" class="email-input" />
+              } @else {
+                <span class="member-email">{{ member.email }}</span>
+              }
               @if (member.isPrimary) {
                 <p-tag value="Primary" severity="success" />
               }

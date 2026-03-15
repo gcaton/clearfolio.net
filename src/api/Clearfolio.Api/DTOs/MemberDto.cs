@@ -9,7 +9,8 @@ public record MemberDto(
     string CreatedAt);
 
 public record UpdateMemberRequest(
-    string DisplayName);
+    string DisplayName,
+    string? Email = null);
 
 public record CreateMemberRequest(
     string Email,

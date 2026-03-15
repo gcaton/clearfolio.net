@@ -70,6 +70,8 @@ public static class MembersEndpoints
         if (target is null) return Results.NotFound();
 
         target.DisplayName = request.DisplayName;
+        if (!string.IsNullOrWhiteSpace(request.Email))
+            target.Email = request.Email;
         await db.SaveChangesAsync();
 
         return Results.Ok(new MemberDto(target.Id, target.Email, target.DisplayName, target.MemberTag, target.IsPrimary, target.CreatedAt));

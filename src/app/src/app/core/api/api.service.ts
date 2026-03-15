@@ -57,8 +57,8 @@ export class ApiService {
     return this.http.post<Member>('/api/members', { email, displayName });
   }
 
-  updateMember(id: string, displayName: string) {
-    return this.http.put<Member>(`/api/members/${id}`, { displayName });
+  updateMember(id: string, displayName: string, email?: string) {
+    return this.http.put<Member>(`/api/members/${id}`, { displayName, email });
   }
 
   // Assets
