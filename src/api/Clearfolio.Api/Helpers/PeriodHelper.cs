@@ -92,6 +92,29 @@ public static partial class PeriodHelper
         };
     }
 
+    public static string NextPeriod(string period)
+    {
+        var match = PeriodPattern().Match(period);
+        if (!match.Success)
+            throw new ArgumentException($"Invalid period format: {period}");
+
+        var convention = match.Groups[1].Value;
+        var year = int.Parse(match.Groups[2].Value);
+        var quarter = match.Groups[3].Success ? match.Groups[3].Value : null;
+
+        if (quarter is null)
+            return $"{convention}{year + 1}";
+
+        return quarter switch
+        {
+            "Q1" => $"{convention}{year}-Q2",
+            "Q2" => $"{convention}{year}-Q3",
+            "Q3" => $"{convention}{year}-Q4",
+            "Q4" => $"{convention}{year + 1}-Q1",
+            _ => throw new ArgumentException($"Invalid quarter: {quarter}"),
+        };
+    }
+
     public static string SameQuarterPriorYear(string period)
     {
         var match = PeriodPattern().Match(period);

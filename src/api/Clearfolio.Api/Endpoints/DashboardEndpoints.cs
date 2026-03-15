@@ -12,6 +12,7 @@ public static class DashboardEndpoints
     {
         app.MapGet("/api/dashboard/summary", GetSummary);
         app.MapGet("/api/dashboard/trend", GetTrend);
+        app.MapGet("/api/dashboard/goal-projection", GetGoalProjection);
         app.MapGet("/api/dashboard/composition", GetComposition);
         app.MapGet("/api/dashboard/members", GetMembers);
         app.MapGet("/api/dashboard/super-gap", GetSuperGap);
@@ -81,6 +82,95 @@ public static class DashboardEndpoints
         }
 
         return Results.Ok(trend);
+    }
+
+    private static async Task<IResult> GetGoalProjection(HttpContext context, ClearfolioDbContext db, double target, string view = "household")
+    {
+        var member = GetMember(context);
+        var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
+
+        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
+        var liabilities = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
+
+        // Get all distinct periods that have snapshot data
+        var allPeriods = await db.Snapshots.AsNoTracking()
+            .Where(s => s.HouseholdId == member.HouseholdId)
+            .Select(s => s.Period)
+            .Distinct()
+            .ToListAsync();
+
+        if (allPeriods.Count < 2)
+            return Results.Ok(new GoalProjectionDto(target, 0, 0, null, 0, allPeriods.Count, 0));
+
+        // Calculate net worth for each period
+        var allSnapshots = await db.Snapshots.AsNoTracking()
+            .Where(s => s.HouseholdId == member.HouseholdId)
+            .ToListAsync();
+
+        var dataPoints = new List<(int Index, double NetWorth)>();
+        var sortedPeriods = allPeriods.OrderBy(p => p).ToList();
+
+        for (var i = 0; i < sortedPeriods.Count; i++)
+        {
+            var periodSnapshots = allSnapshots.Where(s => s.Period == sortedPeriods[i]).ToList();
+            var assetTotal = CalculateAssetValues(periodSnapshots, assets, members, view).Sum(v => v.Value);
+            var liabilityTotal = CalculateLiabilityValues(periodSnapshots, liabilities, members, view).Sum(v => v.Value);
+            var netWorth = assetTotal - liabilityTotal;
+            if (assetTotal > 0 || liabilityTotal > 0) // Skip empty periods
+                dataPoints.Add((i, netWorth));
+        }
+
+        if (dataPoints.Count < 2)
+            return Results.Ok(new GoalProjectionDto(target, 0, 0, null, 0, dataPoints.Count, 0));
+
+        var currentNetWorth = dataPoints[^1].NetWorth;
+        var progress = target > 0 ? Math.Min((currentNetWorth / target) * 100, 100) : 0;
+
+        // Linear regression: y = slope * x + intercept
+        var n = dataPoints.Count;
+        var sumX = dataPoints.Sum(d => (double)d.Index);
+        var sumY = dataPoints.Sum(d => d.NetWorth);
+        var sumXY = dataPoints.Sum(d => d.Index * d.NetWorth);
+        var sumX2 = dataPoints.Sum(d => (double)d.Index * d.Index);
+
+        var slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        var intercept = (sumY - slope * sumX) / n;
+
+        // R-squared
+        var meanY = sumY / n;
+        var ssRes = dataPoints.Sum(d => Math.Pow(d.NetWorth - (slope * d.Index + intercept), 2));
+        var ssTot = dataPoints.Sum(d => Math.Pow(d.NetWorth - meanY, 2));
+        var rSquared = ssTot > 0 ? 1 - (ssRes / ssTot) : 0;
+
+        // Project when target is reached
+        string? projectedPeriod = null;
+        if (slope > 0 && currentNetWorth < target)
+        {
+            var lastIndex = dataPoints[^1].Index;
+            var targetX = (target - intercept) / slope;
+            var periodsAhead = targetX - lastIndex;
+
+            if (periodsAhead is > 0 and < 200) // Cap at 50 years of quarters
+            {
+                // Determine period interval from data
+                var convention = household.PreferredPeriodType;
+                var currentPeriod = sortedPeriods[^1];
+
+                // Walk forward period by period
+                var projected = currentPeriod;
+                for (var i = 0; i < (int)Math.Ceiling(periodsAhead); i++)
+                {
+                    projected = PeriodHelper.NextPeriod(projected);
+                }
+                projectedPeriod = projected;
+            }
+        }
+
+        return Results.Ok(new GoalProjectionDto(
+            target, currentNetWorth, Math.Round(progress, 1),
+            projectedPeriod, Math.Round(slope, 2),
+            dataPoints.Count, Math.Round(rSquared, 3)));
     }
 
     private static async Task<IResult> GetComposition(HttpContext context, ClearfolioDbContext db, string? period = null)

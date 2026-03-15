@@ -15,6 +15,7 @@ import {
   Quote,
   LatestSnapshot,
   DashboardSummary,
+  GoalProjection,
   TrendPoint,
   CompositionPoint,
   MemberComparison,
@@ -138,6 +139,12 @@ export class ApiService {
 
   getDashboardMembers(params?: { period?: string }) {
     return this.http.get<MemberComparison[]>('/api/dashboard/members', { params: params as Record<string, string> });
+  }
+
+  getGoalProjection(target: number, view = 'household') {
+    return this.http.get<GoalProjection>('/api/dashboard/goal-projection', {
+      params: { target: target.toString(), view },
+    });
   }
 
   getSuperGap() {

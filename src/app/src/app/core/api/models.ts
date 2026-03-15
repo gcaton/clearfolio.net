@@ -200,3 +200,13 @@ export interface SuperGap {
   displayName: string;
   superBalance: number;
 }
+
+export interface GoalProjection {
+  target: number;
+  current: number;
+  progressPercent: number;
+  projectedPeriod: string | null;
+  slope: number;
+  dataPoints: number;
+  rSquared: number;
+}

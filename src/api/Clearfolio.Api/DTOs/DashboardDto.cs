@@ -27,3 +27,12 @@ public record CompositionPointDto(string Period, string Category, double Value);
 public record MemberComparisonDto(string MemberTag, string DisplayName, double Assets, double Liabilities, double NetWorth);
 
 public record SuperGapDto(string MemberTag, string DisplayName, double SuperBalance);
+
+public record GoalProjectionDto(
+    double Target,
+    double Current,
+    double ProgressPercent,
+    string? ProjectedPeriod,
+    double Slope,
+    int DataPoints,
+    double RSquared);

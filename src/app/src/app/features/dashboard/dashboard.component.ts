@@ -25,6 +25,7 @@ import {
   CompositionPoint,
   MemberComparison,
   SuperGap,
+  GoalProjection,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
 
@@ -59,12 +60,7 @@ export class DashboardComponent {
   protected superGapOptions = computed(() => buildSuperGapOptions(this.superGap()));
 
   protected netWorthGoal = computed(() => this.goalService.goal().netWorthTarget);
-  protected netWorthProgress = computed(() => {
-    const target = this.netWorthGoal();
-    const current = this.summary()?.netWorth ?? 0;
-    if (!target || target <= 0) return null;
-    return Math.min(Math.round((current / target) * 100), 100);
-  });
+  protected projection = signal<GoalProjection | null>(null);
 
   constructor() {
     effect(() => {
@@ -88,5 +84,12 @@ export class DashboardComponent {
     this.api.getDashboardComposition(period ? { period } : {}).subscribe((d) => this.composition.set(d));
     this.api.getDashboardMembers(period ? { period } : {}).subscribe((d) => this.members.set(d));
     this.api.getSuperGap().subscribe((d) => this.superGap.set(d));
+
+    const goal = this.goalService.goal().netWorthTarget;
+    if (goal && goal > 0) {
+      this.api.getGoalProjection(goal, view).subscribe((d) => this.projection.set(d));
+    } else {
+      this.projection.set(null);
+    }
   }
 }
