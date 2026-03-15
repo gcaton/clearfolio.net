@@ -8,7 +8,7 @@
   label {
     font-weight: 600;
     font-size: 0.875rem;
-    color: var(--p-surface-700, #374151);
+    color: var(--p-text-color);
   }
 }
 
@@ -25,7 +25,7 @@
   label {
     font-weight: 600;
     font-size: 0.875rem;
-    color: var(--p-surface-700, #374151);
+    color: var(--p-text-color);
   }
 }
 
@@ -37,8 +37,8 @@
 }
 
 .member-card {
-  background: var(--p-surface-0, #fff);
-  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 0.5rem;
   padding: 1rem;
   display: flex;
@@ -54,7 +54,7 @@
 
 .member-email {
   font-size: 0.875rem;
-  color: var(--p-surface-500, #6b7280);
+  color: var(--p-text-muted-color);
 }
 
 .member-name-row {

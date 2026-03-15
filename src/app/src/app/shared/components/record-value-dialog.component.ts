@@ -44,7 +44,7 @@ import { ApiService } from '../../core/api/api.service';
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      label { font-weight: 600; font-size: 0.875rem; color: var(--p-surface-700); }
+      label { font-weight: 600; font-size: 0.875rem; color: var(--p-text-color); }
     }
   `,
 })

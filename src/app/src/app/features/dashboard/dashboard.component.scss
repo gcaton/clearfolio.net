@@ -13,8 +13,8 @@
 }
 
 .stat-card {
-  background: var(--p-surface-0, #fff);
-  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 0.5rem;
   padding: 1.25rem;
   display: flex;
@@ -22,14 +22,13 @@
   gap: 0.25rem;
 
   &.highlight {
-    border-color: var(--p-primary-400, #34d399);
-    background: var(--p-primary-50, #ecfdf5);
+    border-color: var(--p-primary-color);
   }
 }
 
 .stat-label {
   font-size: 0.8125rem;
-  color: var(--p-surface-500, #6b7280);
+  color: var(--p-text-muted-color);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -38,7 +37,7 @@
   font-size: 1.5rem;
   font-weight: 700;
 
-  &.period { color: var(--p-surface-700, #374151); font-size: 1.25rem; }
+  &.period { color: var(--p-text-color); font-size: 1.25rem; }
 }
 
 app-currency {
@@ -53,8 +52,8 @@ app-currency {
 }
 
 .chart-panel {
-  background: var(--p-surface-0, #fff);
-  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 0.5rem;
   padding: 1rem;
 
@@ -66,14 +65,14 @@ app-currency {
     margin: 0 0 0.5rem;
     font-size: 0.9375rem;
     font-weight: 600;
-    color: var(--p-surface-700, #374151);
+    color: var(--p-text-color);
   }
 }
 
 .goal-progress {
   margin-bottom: 1.5rem;
-  background: var(--p-surface-0, #fff);
-  border: 1px solid var(--p-surface-200, #e5e7eb);
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
   border-radius: 0.5rem;
   padding: 1rem;
 }
@@ -92,7 +91,7 @@ app-currency {
 
 .goal-target {
   font-size: 0.8125rem;
-  color: var(--p-surface-500);
+  color: var(--p-text-muted-color);
 }
 
 .chart {
@@ -104,6 +103,6 @@ app-currency {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--p-surface-400, #9ca3af);
+  color: var(--p-text-muted-color);
   font-size: 0.875rem;
 }

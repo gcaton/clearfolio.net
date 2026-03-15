@@ -76,19 +76,19 @@
 
   a {
     padding: 0.75rem 1rem;
-    color: var(--p-surface-700);
+    color: var(--p-text-color);
     text-decoration: none;
     border-radius: var(--p-border-radius);
     font-size: 1rem;
 
-    &:hover { background: var(--p-surface-100); }
+    &:hover { background: var(--p-content-hover-background); }
     &.active { color: var(--p-primary-600); background: var(--p-primary-50); font-weight: 600; }
   }
 }
 
 .mobile-view-toggle {
   padding: 1rem 0;
-  border-top: 1px solid var(--p-surface-200);
+  border-top: 1px solid var(--p-content-border-color);
   margin-top: 1rem;
 }
 

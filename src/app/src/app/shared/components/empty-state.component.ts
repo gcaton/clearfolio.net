@@ -26,21 +26,21 @@ import { Component, ChangeDetectionStrategy, input } from '@angular/core';
       width: 5rem;
       height: 5rem;
       border-radius: 50%;
-      background: var(--p-surface-100, #f3f4f6);
+      background: var(--p-content-border-color);
       display: flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 1rem;
-      color: var(--p-surface-400, #9ca3af);
+      color: var(--p-text-muted-color);
     }
     h3 {
       margin: 0 0 0.5rem;
       font-size: 1.125rem;
-      color: var(--p-surface-700, #374151);
+      color: var(--p-text-color);
     }
     p {
       margin: 0;
-      color: var(--p-surface-500, #6b7280);
+      color: var(--p-text-muted-color);
       font-size: 0.875rem;
       max-width: 300px;
     }
