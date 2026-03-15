@@ -1,31 +1,33 @@
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
-import { ToggleButton } from 'primeng/togglebutton';
-import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
 
 @Component({
   selector: 'app-dark-mode-toggle',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ToggleButton, FormsModule],
+  imports: [Button],
   template: `
-    <p-togglebutton
-      [(ngModel)]="dark"
-      onIcon="pi pi-moon"
-      offIcon="pi pi-sun"
-      (ngModelChange)="toggle($event)"
-      [style]="{ width: '2.5rem', height: '2.5rem' }"
+    <p-button
+      [icon]="dark() ? 'pi pi-sun' : 'pi pi-moon'"
+      [rounded]="true"
+      [text]="true"
+      size="small"
+      (onClick)="toggle()"
+      [style]="{ color: 'var(--p-surface-300)' }"
     />
   `,
 })
 export class DarkModeToggleComponent {
-  dark = this.loadPreference();
+  dark = signal(this.loadPreference());
 
   constructor() {
-    this.applyTheme(this.dark);
+    this.applyTheme(this.dark());
   }
 
-  toggle(dark: boolean) {
-    this.applyTheme(dark);
-    localStorage.setItem('clearfolio_dark', String(dark));
+  toggle() {
+    const next = !this.dark();
+    this.dark.set(next);
+    this.applyTheme(next);
+    localStorage.setItem('clearfolio_dark', String(next));
   }
 
   private applyTheme(dark: boolean) {
