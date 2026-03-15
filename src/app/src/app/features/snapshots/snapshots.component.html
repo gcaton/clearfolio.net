@@ -88,7 +88,12 @@
       />
 
       <label for="period">Period</label>
-      <input pInputText id="period" [(ngModel)]="form.period" placeholder="e.g. FY2026-Q3" />
+      <p-select
+        id="period"
+        [(ngModel)]="form.period"
+        [options]="periodOptions"
+        placeholder="Select period"
+      />
     }
 
     <label for="value">Value</label>

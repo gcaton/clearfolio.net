@@ -73,6 +73,7 @@ export class SnapshotsComponent implements OnInit {
   protected startYearOptions: { label: string; value: number }[] = [];
 
   protected form: CreateSnapshotRequest = this.emptyForm();
+  protected periodOptions: string[] = [];
 
   protected entityTypeOptions = [
     { label: 'Asset', value: 'asset' },
@@ -94,6 +95,10 @@ export class SnapshotsComponent implements OnInit {
   ngOnInit() {
     this.api.getPeriods().subscribe((p) => this.periods.set(p));
     this.loadTargets();
+    this.api.getHousehold().subscribe((h) => {
+      const convention = h.preferredPeriodType || 'FY';
+      this.periodOptions = this.buildPeriodRange(convention, new Date().getFullYear() - 4).reverse();
+    });
   }
 
   onPeriodChange(period: string) {
