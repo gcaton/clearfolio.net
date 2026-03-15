@@ -1,0 +1,27 @@
+## .NET
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+
+## Node
+node_modules/
+dist/
+.angular/
+
+## Environment
+.env
+*.env
+
+## Claude Code
+.claude/
+
+## IDE
+.vs/
+.vscode/
+*.user
+
+## OS
+.DS_Store
+Thumbs.db

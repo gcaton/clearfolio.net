@@ -1,0 +1,129 @@
+<div class="page-header">
+  <h1>Assets</h1>
+  <p-button label="Add Asset" icon="pi pi-plus" (onClick)="openNew()" />
+</div>
+
+<p-table [value]="assets()" [tableStyle]="{ 'min-width': '50rem' }">
+  <ng-template #header>
+    <tr>
+      <th>Label</th>
+      <th>Symbol</th>
+      <th>Type</th>
+      <th>Owner</th>
+      <th>Ownership</th>
+      <th>Currency</th>
+      <th style="width: 8rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-asset>
+    <tr>
+      <td>{{ asset.label }}</td>
+      <td>
+        @if (asset.symbol) {
+          <span class="symbol-cell">
+            <span class="symbol-code">{{ asset.symbol }}</span>
+            @if (getQuote(asset.symbol); as q) {
+              @if (q.price !== null) {
+                <span class="quote-price">\${{ q.price | number: '1.2-2' }}</span>
+                <span class="quote-change" [class.up]="(q.change ?? 0) >= 0" [class.down]="(q.change ?? 0) < 0">
+                  {{ (q.change ?? 0) >= 0 ? '+' : '' }}{{ q.changePercent | number: '1.2-2' }}%
+                </span>
+              }
+            }
+          </span>
+        }
+      </td>
+      <td>{{ asset.assetTypeName }}</td>
+      <td>
+        @if (asset.ownerDisplayName) {
+          <p-tag [value]="asset.ownerDisplayName" />
+        } @else {
+          <p-tag value="Joint" severity="info" />
+        }
+      </td>
+      <td>{{ asset.ownershipType }}</td>
+      <td>{{ asset.currency }}</td>
+      <td>
+        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEdit(asset)" />
+        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(asset)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="7">No assets recorded yet. Click "Add Asset" to get started.</td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<p-dialog
+  [header]="editing() ? 'Edit Asset' : 'New Asset'"
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="form-grid">
+    <label for="label">Label</label>
+    <input pInputText id="label" [(ngModel)]="form.label" placeholder="e.g. Joint savings account" />
+
+    <label for="assetType">Asset Type</label>
+    <p-select
+      id="assetType"
+      [(ngModel)]="form.assetTypeId"
+      [options]="assetTypes()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Select type"
+    />
+
+    <label for="symbol">ASX Symbol <span class="optional">(optional)</span></label>
+    <input pInputText id="symbol" [(ngModel)]="form.symbol" placeholder="e.g. VAS, CBA, NDQ" />
+
+    <label for="ownership">Ownership</label>
+    <p-select
+      id="ownership"
+      [(ngModel)]="form.ownershipType"
+      [options]="ownershipOptions"
+      optionLabel="label"
+      optionValue="value"
+    />
+
+    @if (form.ownershipType === 'sole') {
+      <label for="owner">Owner</label>
+      <p-select
+        id="owner"
+        [(ngModel)]="form.ownerMemberId"
+        [options]="members()"
+        optionLabel="displayName"
+        optionValue="id"
+        placeholder="Select owner"
+      />
+    }
+
+    @if (form.ownershipType === 'joint') {
+      <label for="split">P1 Split</label>
+      <p-inputnumber
+        id="split"
+        [(ngModel)]="form.jointSplit"
+        mode="decimal"
+        [min]="0"
+        [max]="1"
+        [step]="0.05"
+        [minFractionDigits]="2"
+      />
+    }
+
+    <label for="currency">Currency</label>
+    <input pInputText id="currency" [(ngModel)]="form.currency" />
+
+    <label for="notes">Notes</label>
+    <textarea pTextarea id="notes" [(ngModel)]="form.notes" [rows]="3"></textarea>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button label="Save" (onClick)="save()" [disabled]="!form.label || !form.assetTypeId" />
+  </ng-template>
+</p-dialog>
+
+<p-confirmdialog />

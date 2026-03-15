@@ -1,0 +1,85 @@
+@if (summary(); as s) {
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-label">Total Assets</span>
+      <app-currency [value]="s.totalAssets" [colorize]="true" />
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Liabilities</span>
+      <app-currency [value]="s.totalLiabilities" />
+    </div>
+    <div class="stat-card highlight">
+      <span class="stat-label">Net Worth</span>
+      <app-currency [value]="s.netWorth" [colorize]="true" />
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Period</span>
+      <span class="stat-value period">{{ s.period | periodLabel }}</span>
+    </div>
+  </div>
+}
+
+<div class="chart-grid">
+  <div class="chart-panel wide">
+    <h3>Net Worth Trend</h3>
+    @if (trend().length > 0) {
+      <div echarts [options]="trendOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No trend data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Asset Composition</h3>
+    @if (summary()?.assetsByCategory?.length) {
+      <div echarts [options]="compositionOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No asset data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Liquidity Breakdown</h3>
+    @if (summary()?.liquidityBreakdown?.length) {
+      <div echarts [options]="liquidityOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No asset data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Growth vs Defensive</h3>
+    @if (summary()?.growthBreakdown?.length) {
+      <div echarts [options]="growthOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No asset data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Debt Quality</h3>
+    @if (summary()?.debtQualityBreakdown?.length) {
+      <div echarts [options]="debtQualityOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No liability data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Member Comparison</h3>
+    @if (members().length > 0) {
+      <div echarts [options]="memberOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No member data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Super Gap</h3>
+    @if (superGap().length > 0) {
+      <div echarts [options]="superGapOptions()" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No super data yet</div>
+    }
+  </div>
+</div>

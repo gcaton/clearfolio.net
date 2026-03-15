@@ -1,0 +1,181 @@
+using Microsoft.EntityFrameworkCore;
+using Clearfolio.Api.Models;
+
+namespace Clearfolio.Api.Data;
+
+public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) : DbContext(options)
+{
+    public DbSet<Household> Households => Set<Household>();
+    public DbSet<HouseholdMember> HouseholdMembers => Set<HouseholdMember>();
+    public DbSet<AssetType> AssetTypes => Set<AssetType>();
+    public DbSet<LiabilityType> LiabilityTypes => Set<LiabilityType>();
+    public DbSet<Asset> Assets => Set<Asset>();
+    public DbSet<Liability> Liabilities => Set<Liability>();
+    public DbSet<Snapshot> Snapshots => Set<Snapshot>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Household
+        modelBuilder.Entity<Household>(e =>
+        {
+            e.ToTable("households");
+            e.HasKey(h => h.Id);
+            e.Property(h => h.Id).HasColumnName("id");
+            e.Property(h => h.Name).HasColumnName("name").IsRequired();
+            e.Property(h => h.BaseCurrency).HasColumnName("base_currency").HasDefaultValue("AUD");
+            e.Property(h => h.PreferredPeriodType).HasColumnName("preferred_period_type").HasDefaultValue("FY");
+            e.Property(h => h.CreatedAt).HasColumnName("created_at").IsRequired();
+        });
+
+        // HouseholdMember
+        modelBuilder.Entity<HouseholdMember>(e =>
+        {
+            e.ToTable("household_members");
+            e.HasKey(m => m.Id);
+            e.Property(m => m.Id).HasColumnName("id");
+            e.Property(m => m.HouseholdId).HasColumnName("household_id");
+            e.Property(m => m.Email).HasColumnName("email").IsRequired();
+            e.Property(m => m.DisplayName).HasColumnName("display_name").IsRequired();
+            e.Property(m => m.MemberTag).HasColumnName("member_tag").IsRequired();
+            e.Property(m => m.IsPrimary).HasColumnName("is_primary");
+            e.Property(m => m.CreatedAt).HasColumnName("created_at").IsRequired();
+
+            e.HasIndex(m => m.Email).IsUnique();
+            e.HasOne(m => m.Household).WithMany(h => h.Members).HasForeignKey(m => m.HouseholdId);
+        });
+
+        // AssetType
+        modelBuilder.Entity<AssetType>(e =>
+        {
+            e.ToTable("asset_types");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.Name).HasColumnName("name").IsRequired();
+            e.Property(a => a.Category).HasColumnName("category").IsRequired();
+            e.Property(a => a.Liquidity).HasColumnName("liquidity").IsRequired();
+            e.Property(a => a.GrowthClass).HasColumnName("growth_class").IsRequired();
+            e.Property(a => a.IsSuper).HasColumnName("is_super");
+            e.Property(a => a.IsCgtExempt).HasColumnName("is_cgt_exempt");
+            e.Property(a => a.SortOrder).HasColumnName("sort_order");
+            e.Property(a => a.IsSystem).HasColumnName("is_system");
+        });
+
+        // LiabilityType
+        modelBuilder.Entity<LiabilityType>(e =>
+        {
+            e.ToTable("liability_types");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).HasColumnName("id");
+            e.Property(l => l.Name).HasColumnName("name").IsRequired();
+            e.Property(l => l.Category).HasColumnName("category").IsRequired();
+            e.Property(l => l.DebtQuality).HasColumnName("debt_quality").IsRequired();
+            e.Property(l => l.IsHecs).HasColumnName("is_hecs");
+            e.Property(l => l.SortOrder).HasColumnName("sort_order");
+            e.Property(l => l.IsSystem).HasColumnName("is_system");
+        });
+
+        // Asset
+        modelBuilder.Entity<Asset>(e =>
+        {
+            e.ToTable("assets");
+            e.HasKey(a => a.Id);
+            e.Property(a => a.Id).HasColumnName("id");
+            e.Property(a => a.HouseholdId).HasColumnName("household_id");
+            e.Property(a => a.AssetTypeId).HasColumnName("asset_type_id");
+            e.Property(a => a.OwnerMemberId).HasColumnName("owner_member_id");
+            e.Property(a => a.OwnershipType).HasColumnName("ownership_type").HasDefaultValue("sole");
+            e.Property(a => a.JointSplit).HasColumnName("joint_split").HasDefaultValue(0.5);
+            e.Property(a => a.Label).HasColumnName("label").IsRequired();
+            e.Property(a => a.Symbol).HasColumnName("symbol");
+            e.Property(a => a.Currency).HasColumnName("currency").HasDefaultValue("AUD");
+            e.Property(a => a.Notes).HasColumnName("notes");
+            e.Property(a => a.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(a => a.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.Property(a => a.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            e.HasIndex(a => new { a.HouseholdId, a.IsActive });
+            e.HasOne(a => a.Household).WithMany(h => h.Assets).HasForeignKey(a => a.HouseholdId);
+            e.HasOne(a => a.AssetType).WithMany(at => at.Assets).HasForeignKey(a => a.AssetTypeId);
+            e.HasOne(a => a.OwnerMember).WithMany().HasForeignKey(a => a.OwnerMemberId);
+        });
+
+        // Liability
+        modelBuilder.Entity<Liability>(e =>
+        {
+            e.ToTable("liabilities");
+            e.HasKey(l => l.Id);
+            e.Property(l => l.Id).HasColumnName("id");
+            e.Property(l => l.HouseholdId).HasColumnName("household_id");
+            e.Property(l => l.LiabilityTypeId).HasColumnName("liability_type_id");
+            e.Property(l => l.OwnerMemberId).HasColumnName("owner_member_id");
+            e.Property(l => l.OwnershipType).HasColumnName("ownership_type").HasDefaultValue("sole");
+            e.Property(l => l.JointSplit).HasColumnName("joint_split").HasDefaultValue(0.5);
+            e.Property(l => l.Label).HasColumnName("label").IsRequired();
+            e.Property(l => l.Currency).HasColumnName("currency").HasDefaultValue("AUD");
+            e.Property(l => l.Notes).HasColumnName("notes");
+            e.Property(l => l.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(l => l.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.Property(l => l.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            e.HasIndex(l => new { l.HouseholdId, l.IsActive });
+            e.HasOne(l => l.Household).WithMany(h => h.Liabilities).HasForeignKey(l => l.HouseholdId);
+            e.HasOne(l => l.LiabilityType).WithMany(lt => lt.Liabilities).HasForeignKey(l => l.LiabilityTypeId);
+            e.HasOne(l => l.OwnerMember).WithMany().HasForeignKey(l => l.OwnerMemberId);
+        });
+
+        // Snapshot
+        modelBuilder.Entity<Snapshot>(e =>
+        {
+            e.ToTable("snapshots");
+            e.HasKey(s => s.Id);
+            e.Property(s => s.Id).HasColumnName("id");
+            e.Property(s => s.HouseholdId).HasColumnName("household_id");
+            e.Property(s => s.EntityId).HasColumnName("entity_id");
+            e.Property(s => s.EntityType).HasColumnName("entity_type").IsRequired();
+            e.Property(s => s.Period).HasColumnName("period").IsRequired();
+            e.Property(s => s.Value).HasColumnName("value");
+            e.Property(s => s.Currency).HasColumnName("currency").HasDefaultValue("AUD");
+            e.Property(s => s.Notes).HasColumnName("notes");
+            e.Property(s => s.RecordedBy).HasColumnName("recorded_by");
+            e.Property(s => s.RecordedAt).HasColumnName("recorded_at").IsRequired();
+
+            e.HasIndex(s => new { s.HouseholdId, s.Period });
+            e.HasIndex(s => new { s.EntityId, s.Period });
+            e.HasOne(s => s.Household).WithMany(h => h.Snapshots).HasForeignKey(s => s.HouseholdId);
+            e.HasOne(s => s.RecordedByMember).WithMany().HasForeignKey(s => s.RecordedBy);
+        });
+
+        SeedData(modelBuilder);
+    }
+
+    private static void SeedData(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<AssetType>().HasData(
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000001"), Name = "Cash — savings / transaction", Category = "cash", Liquidity = "immediate", GrowthClass = "defensive", SortOrder = 1, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000002"), Name = "Cash — term deposit (≤90 days)", Category = "cash", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 2, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"), Name = "Term deposit (>90 days)", Category = "cash", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 3, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000004"), Name = "Australian shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 4, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000005"), Name = "International shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 5, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000006"), Name = "Bonds / fixed income", Category = "investable", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 6, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000007"), Name = "Cryptocurrency", Category = "investable", Liquidity = "immediate", GrowthClass = "growth", SortOrder = 7, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000008"), Name = "Superannuation — Accumulation", Category = "retirement", Liquidity = "restricted", GrowthClass = "mixed", IsSuper = true, SortOrder = 8, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000009"), Name = "Superannuation — Pension phase", Category = "retirement", Liquidity = "long_term", GrowthClass = "mixed", IsSuper = true, SortOrder = 9, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000a"), Name = "Primary residence (PPOR)", Category = "property", Liquidity = "long_term", GrowthClass = "growth", IsCgtExempt = true, SortOrder = 10, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000b"), Name = "Investment property", Category = "property", Liquidity = "long_term", GrowthClass = "growth", SortOrder = 11, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000c"), Name = "Vehicle", Category = "other", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 12, IsSystem = true },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000d"), Name = "Other physical asset", Category = "other", Liquidity = "long_term", GrowthClass = "mixed", SortOrder = 13, IsSystem = true }
+        );
+
+        modelBuilder.Entity<LiabilityType>().HasData(
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000001"), Name = "Home loan — PPOR", Category = "mortgage", DebtQuality = "neutral", SortOrder = 1, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000002"), Name = "Home loan — Investment property", Category = "mortgage", DebtQuality = "productive", SortOrder = 2, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000003"), Name = "Personal loan", Category = "personal", DebtQuality = "bad", SortOrder = 3, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000004"), Name = "Car loan", Category = "personal", DebtQuality = "bad", SortOrder = 4, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000005"), Name = "Credit card", Category = "credit", DebtQuality = "bad", SortOrder = 5, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000006"), Name = "HECS / HELP debt", Category = "student", DebtQuality = "neutral", IsHecs = true, SortOrder = 6, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000007"), Name = "Margin loan", Category = "personal", DebtQuality = "productive", SortOrder = 7, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000008"), Name = "Tax liability", Category = "tax", DebtQuality = "neutral", SortOrder = 8, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000009"), Name = "Other liability", Category = "other", DebtQuality = "neutral", SortOrder = 9, IsSystem = true }
+        );
+    }
+}

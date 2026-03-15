@@ -1,0 +1,202 @@
+<div class="page-header">
+  <h1>Snapshots</h1>
+  <div class="header-actions">
+    <app-period-selector (periodChange)="onPeriodChange($event)" />
+    <p-button label="Record Value" icon="pi pi-plus" (onClick)="openNew()" />
+    <p-button label="Bulk Entry" icon="pi pi-table" severity="secondary" (onClick)="openBulk()" />
+  </div>
+</div>
+
+<p-toast />
+
+<p-table [value]="snapshots()" [tableStyle]="{ 'min-width': '50rem' }">
+  <ng-template #header>
+    <tr>
+      <th>Entity</th>
+      <th>Type</th>
+      <th>Period</th>
+      <th style="text-align: right">Value</th>
+      <th>Currency</th>
+      <th>Recorded By</th>
+      <th>Recorded At</th>
+      <th style="width: 8rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-snapshot>
+    <tr>
+      <td>{{ getTargetLabel(snapshot.entityId) }}</td>
+      <td>
+        <p-tag
+          [value]="snapshot.entityType"
+          [severity]="snapshot.entityType === 'asset' ? 'success' : 'danger'"
+        />
+      </td>
+      <td>{{ snapshot.period | periodLabel }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">
+        {{ snapshot.value | number: '1.0-0' }}
+      </td>
+      <td>{{ snapshot.currency }}</td>
+      <td>{{ snapshot.recordedByName }}</td>
+      <td>{{ snapshot.recordedAt | date: 'short' }}</td>
+      <td>
+        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEdit(snapshot)" />
+        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(snapshot)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="8">
+        @if (selectedPeriod()) {
+          No snapshots for {{ selectedPeriod() | periodLabel }}. Click "Record Value" to add one.
+        } @else {
+          Select a period to view snapshots, or record a new value.
+        }
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+
+<!-- Single snapshot dialog -->
+<p-dialog
+  [header]="editing() ? 'Edit Snapshot' : 'Record Value'"
+  [(visible)]="dialogVisible"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="form-grid">
+    @if (!editing()) {
+      <label for="entityType">Type</label>
+      <p-select
+        id="entityType"
+        [(ngModel)]="form.entityType"
+        [options]="entityTypeOptions"
+        optionLabel="label"
+        optionValue="value"
+      />
+
+      <label for="entity">Entity</label>
+      <p-select
+        id="entity"
+        [(ngModel)]="form.entityId"
+        [options]="filteredTargets()"
+        optionLabel="label"
+        optionValue="id"
+        placeholder="Select asset or liability"
+      />
+
+      <label for="period">Period</label>
+      <input pInputText id="period" [(ngModel)]="form.period" placeholder="e.g. FY2026-Q3" />
+    }
+
+    <label for="value">Value</label>
+    <p-inputnumber
+      id="value"
+      [(ngModel)]="form.value"
+      mode="currency"
+      currency="AUD"
+      locale="en-AU"
+    />
+
+    <label for="currency">Currency</label>
+    <input pInputText id="currency" [(ngModel)]="form.currency" />
+
+    <label for="notes">Notes</label>
+    <textarea pTextarea id="notes" [(ngModel)]="form.notes" [rows]="3"></textarea>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="dialogVisible.set(false)" />
+    <p-button
+      label="Save"
+      (onClick)="save()"
+      [disabled]="!editing() && (!form.entityId || !form.period)"
+    />
+  </ng-template>
+</p-dialog>
+
+<!-- Bulk entry dialog -->
+<p-dialog
+  header="Bulk Entry"
+  [(visible)]="bulkVisible"
+  [modal]="true"
+  [style]="{ width: '90vw', maxWidth: '1200px' }"
+  [maximizable]="true"
+>
+  <div class="bulk-controls">
+    <div class="bulk-field">
+      <label>Convention</label>
+      <p-select
+        [(ngModel)]="bulkConvention"
+        [options]="conventionOptions"
+        optionLabel="label"
+        optionValue="value"
+        (ngModelChange)="generateBulkGrid()"
+      />
+    </div>
+    <div class="bulk-field">
+      <label>Start Year</label>
+      <p-select
+        [(ngModel)]="bulkStartYear"
+        [options]="startYearOptions"
+        optionLabel="label"
+        optionValue="value"
+        (ngModelChange)="generateBulkGrid()"
+      />
+    </div>
+  </div>
+
+  @if (bulkPeriods().length > 0) {
+    <div class="bulk-table-wrap">
+      <table class="bulk-table">
+        <thead>
+          <tr>
+            <th class="entity-col">Entity</th>
+            <th class="type-col">Type</th>
+            @for (period of bulkPeriods(); track period) {
+              <th class="value-col">{{ period }}</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (target of targets(); track target.id) {
+            <tr>
+              <td class="entity-col">{{ target.label }}</td>
+              <td class="type-col">
+                <p-tag
+                  [value]="target.entityType"
+                  [severity]="target.entityType === 'asset' ? 'success' : 'danger'"
+                />
+              </td>
+              @for (period of bulkPeriods(); track period) {
+                <td class="value-col">
+                  @if (getBulkCell(target.id, period); as cell) {
+                    <p-inputnumber
+                      [(ngModel)]="cell.value"
+                      [min]="0"
+                      mode="decimal"
+                      [maxFractionDigits]="0"
+                      [inputStyle]="{ width: '100px', textAlign: 'right' }"
+                    />
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="bulkVisible.set(false)" />
+    <p-button
+      label="Save All"
+      icon="pi pi-check"
+      (onClick)="saveBulk()"
+      [loading]="bulkSaving()"
+    />
+  </ng-template>
+</p-dialog>
+
+<p-confirmdialog />

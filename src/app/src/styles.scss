@@ -1,0 +1,14 @@
+@use 'primeicons/primeicons.css';
+
+body {
+  margin: 0;
+  font-family: var(--p-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  background: var(--p-surface-50, #fafafa);
+  color: var(--p-surface-900, #212121);
+}
+
+h1 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+}

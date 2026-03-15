@@ -1,0 +1,21 @@
+services:
+  api:
+    image: ghcr.io/${GITHUB_OWNER}/clearfolio-api:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DB_PATH=/data/clearfolio.db
+      - CF_TEAM_NAME=${CF_TEAM_NAME}
+      - CF_ACCESS_AUD=${CF_ACCESS_AUD}
+    volumes:
+      - /var/data/clearfolio:/data
+
+  app:
+    image: ghcr.io/${GITHUB_OWNER}/clearfolio-app:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4200:80"
+    depends_on:
+      - api
