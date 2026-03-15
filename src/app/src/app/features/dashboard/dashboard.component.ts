@@ -79,11 +79,14 @@ export class DashboardComponent {
   }
 
   private loadData(view: string) {
-    const period = this.selectedPeriod() ?? undefined;
-    this.api.getDashboardSummary({ view, period }).subscribe((d) => this.summary.set(d));
+    const period = this.selectedPeriod() || undefined;
+    const summaryParams: Record<string, string> = { view };
+    if (period) summaryParams['period'] = period;
+
+    this.api.getDashboardSummary(summaryParams).subscribe((d) => this.summary.set(d));
     this.api.getDashboardTrend({ periods: 8, view }).subscribe((d) => this.trend.set(d));
-    this.api.getDashboardComposition({ period }).subscribe((d) => this.composition.set(d));
-    this.api.getDashboardMembers({ period }).subscribe((d) => this.members.set(d));
+    this.api.getDashboardComposition(period ? { period } : {}).subscribe((d) => this.composition.set(d));
+    this.api.getDashboardMembers(period ? { period } : {}).subscribe((d) => this.members.set(d));
     this.api.getSuperGap().subscribe((d) => this.superGap.set(d));
   }
 }

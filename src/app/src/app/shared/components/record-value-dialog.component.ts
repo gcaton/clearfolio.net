@@ -13,19 +13,19 @@ import { ApiService } from '../../core/api/api.service';
   template: `
     <p-dialog
       header="Record Value"
-      [(visible)]="visible"
+      [(visible)]="dialogVisible"
       [modal]="true"
       [style]="{ width: '350px' }"
     >
       <div class="form-grid">
         <label>{{ entityLabel() }}</label>
 
-        <label for="period">Period</label>
-        <input pInputText id="period" [(ngModel)]="period" placeholder="e.g. FY2026-Q3" />
+        <label for="rvPeriod">Period</label>
+        <input pInputText id="rvPeriod" [(ngModel)]="period" placeholder="e.g. FY2026-Q3" />
 
-        <label for="value">Value</label>
+        <label for="rvValue">Value</label>
         <p-inputnumber
-          id="value"
+          id="rvValue"
           [(ngModel)]="value"
           mode="currency"
           currency="AUD"
@@ -34,7 +34,7 @@ import { ApiService } from '../../core/api/api.service';
       </div>
 
       <ng-template #footer>
-        <p-button label="Cancel" [text]="true" (onClick)="visible = false" />
+        <p-button label="Cancel" [text]="true" (onClick)="dialogVisible.set(false)" />
         <p-button label="Save" (onClick)="save()" [disabled]="!period || !value" />
       </ng-template>
     </p-dialog>
@@ -58,14 +58,14 @@ export class RecordValueDialogComponent {
 
   saved = output<void>();
 
-  visible = false;
+  dialogVisible = signal(false);
   period = '';
   value: number | null = null;
 
   open(currentPeriod?: string) {
     this.period = currentPeriod ?? '';
     this.value = null;
-    this.visible = true;
+    this.dialogVisible.set(true);
   }
 
   save() {
@@ -78,7 +78,7 @@ export class RecordValueDialogComponent {
       currency: this.currency(),
       notes: null,
     }).subscribe(() => {
-      this.visible = false;
+      this.dialogVisible.set(false);
       this.saved.emit();
     });
   }
