@@ -71,3 +71,38 @@
 .name-input {
   flex: 1;
 }
+
+.danger-zone {
+  margin-top: 3rem;
+  padding: 1.5rem;
+  border: 1px solid var(--p-red-300);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--p-red-50) 50%, transparent);
+
+  :root.app-dark & {
+    background: color-mix(in srgb, var(--p-red-950) 30%, transparent);
+    border-color: var(--p-red-800);
+  }
+
+  h3 {
+    margin: 0 0 0.5rem;
+    color: var(--p-red-500);
+  }
+
+  p {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
+  }
+}
+
+.confirm-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--p-text-color);
+}
+
+.confirm-input {
+  width: 100%;
+  margin-top: 0.5rem;
+}

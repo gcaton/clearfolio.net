@@ -1,6 +1,7 @@
 <h1>Settings</h1>
 
 <p-toast />
+<p-confirmdialog />
 
 <p-tabs value="0">
   <p-tablist>
@@ -57,6 +58,9 @@
               } @else {
                 <span class="display-name">{{ member.displayName }}</span>
                 <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="startEditMember(member)" />
+                @if (currentMember()?.isPrimary && !member.isPrimary) {
+                  <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDeleteMember(member)" />
+                }
               }
             </div>
           </div>
@@ -78,6 +82,25 @@
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
+
+@if (currentMember()?.isPrimary) {
+  <div class="danger-zone">
+    <h3>Danger Zone</h3>
+    <p>Permanently delete all household data including all members, assets, liabilities, and snapshots.</p>
+    <p-button label="Delete All Data" icon="pi pi-trash" severity="danger" (onClick)="openDeleteAllDialog()" />
+  </div>
+}
+
+<p-dialog header="Delete All Data" [(visible)]="deleteAllDialogVisible" [modal]="true" [style]="{ width: '450px' }">
+  <p>This will <strong>permanently delete all data</strong> and cannot be undone. Type the household name to confirm:</p>
+  <p class="confirm-name">{{ household()?.name }}</p>
+  <input pInputText [(ngModel)]="deleteAllConfirmName" placeholder="Type household name" class="confirm-input" />
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="deleteAllDialogVisible.set(false)" />
+    <p-button label="Delete Everything" icon="pi pi-trash" severity="danger" (onClick)="confirmDeleteAll()"
+      [disabled]="deleteAllConfirmName !== household()?.name" />
+  </ng-template>
+</p-dialog>
 
 <p-dialog header="Add Member" [(visible)]="addMemberVisible" [modal]="true" [style]="{ width: '400px' }">
   <div class="form-grid">
