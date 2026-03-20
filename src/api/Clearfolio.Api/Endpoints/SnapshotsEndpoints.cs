@@ -20,7 +20,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> GetSnapshots(HttpContext context, ClearfolioDbContext db, string? period = null, Guid? entityId = null)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var query = db.Snapshots
             .AsNoTracking()
@@ -44,7 +45,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> UpsertSnapshot(CreateSnapshotRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         if (request.EntityType is not ("asset" or "liability"))
             return Results.BadRequest("entityType must be 'asset' or 'liability'");
@@ -93,7 +95,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> UpdateSnapshot(Guid id, UpdateSnapshotRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var snapshot = await db.Snapshots
             .Include(s => s.RecordedByMember)
@@ -114,7 +117,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> DeleteSnapshot(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var snapshot = await db.Snapshots
             .FirstOrDefaultAsync(s => s.Id == id && s.HouseholdId == member.HouseholdId);
@@ -129,7 +133,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> GetPeriods(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var periods = await db.Snapshots
             .AsNoTracking()
@@ -144,7 +149,8 @@ public static class SnapshotsEndpoints
 
     private static async Task<IResult> GetLatestSnapshots(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var allSnapshots = await db.Snapshots
             .AsNoTracking()
@@ -165,6 +171,6 @@ public static class SnapshotsEndpoints
         s.Period, s.Value, s.Currency, s.Notes,
         s.RecordedBy, s.RecordedByMember.DisplayName, s.RecordedAt);
 
-    private static HouseholdMember GetMember(HttpContext context) =>
-        (HouseholdMember)context.Items["HouseholdMember"]!;
+    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
+        context.Items["HouseholdMember"] as HouseholdMember;
 }

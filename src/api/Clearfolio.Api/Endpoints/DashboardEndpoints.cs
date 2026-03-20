@@ -21,7 +21,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetSummary(HttpContext context, ClearfolioDbContext db, string? period = null, string view = "household")
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
@@ -59,7 +60,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetTrend(HttpContext context, ClearfolioDbContext db, int periods = 8, string view = "household")
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var currentPeriod = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
         var periodList = PeriodHelper.PreviousPeriods(currentPeriod, periods);
@@ -86,7 +88,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetGoalProjection(HttpContext context, ClearfolioDbContext db, double target, string view = "household")
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
 
         var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
@@ -175,7 +178,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetComposition(HttpContext context, ClearfolioDbContext db, string? period = null)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
@@ -200,7 +204,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetMembers(HttpContext context, ClearfolioDbContext db, string? period = null)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
@@ -222,7 +227,8 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetSuperGap(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var period = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
@@ -299,6 +305,6 @@ public static class DashboardEndpoints
         return targetMember.Id == p1?.Id ? value * jointSplit : value * (1 - jointSplit);
     }
 
-    private static HouseholdMember GetMember(HttpContext context) =>
-        (HouseholdMember)context.Items["HouseholdMember"]!;
+    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
+        context.Items["HouseholdMember"] as HouseholdMember;
 }

@@ -18,7 +18,8 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> GetAssets(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var assets = await db.Assets
             .AsNoTracking()
@@ -35,7 +36,8 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> CreateAsset(CreateAssetRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
         var now = DateTime.UtcNow.ToString("o");
 
         var asset = new Asset
@@ -66,7 +68,8 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> UpdateAsset(Guid id, UpdateAssetRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var asset = await db.Assets
             .Include(a => a.AssetType)
@@ -96,7 +99,8 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> DeleteAsset(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMember(context);
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
 
         var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id && a.HouseholdId == member.HouseholdId);
         if (asset is null) return Results.NotFound();
@@ -115,6 +119,6 @@ public static class AssetsEndpoints
         a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive,
         a.CreatedAt, a.UpdatedAt);
 
-    private static HouseholdMember GetMember(HttpContext context) =>
-        (HouseholdMember)context.Items["HouseholdMember"]!;
+    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
+        context.Items["HouseholdMember"] as HouseholdMember;
 }
