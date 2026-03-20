@@ -1,0 +1,18 @@
+<div class="setup-page">
+  <div class="setup-card">
+    <img src="logo.svg" alt="" class="setup-logo" />
+    <h1>Welcome to clearfolio</h1>
+    <p class="setup-subtitle">Let's get you set up.</p>
+
+    <div class="setup-form">
+      <label for="email">Email</label>
+      <input pInputText id="email" [value]="email()" readonly class="email-readonly" />
+
+      <label for="displayName">Display Name</label>
+      <input pInputText id="displayName" [(ngModel)]="displayName" placeholder="e.g. Sarah" (keydown.enter)="submit()" />
+
+      <p-button label="Get Started" icon="pi pi-arrow-right" (onClick)="submit()"
+        [disabled]="!displayName().trim() || saving()" [loading]="saving()" />
+    </div>
+  </div>
+</div>
