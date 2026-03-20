@@ -8,6 +8,7 @@
     <p-tab value="0">Household</p-tab>
     <p-tab value="1">Members</p-tab>
     <p-tab value="2">Goals</p-tab>
+    <p-tab value="3">Data</p-tab>
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="0">
@@ -78,6 +79,19 @@
           mode="currency" currency="AUD" locale="en-AU" />
 
         <p-button label="Save Goals" icon="pi pi-check" (onClick)="saveGoals()" />
+      </div>
+    </p-tabpanel>
+    <p-tabpanel value="3">
+      <div class="data-section">
+        <h3>Export</h3>
+        <p>Download all household data as a JSON file.</p>
+        <p-button label="Export Data" icon="pi pi-download" (onClick)="exportData()" />
+      </div>
+      <div class="data-section">
+        <h3>Import</h3>
+        <p>Replace all current data with a previously exported JSON file. This cannot be undone.</p>
+        <input type="file" accept=".json" #fileInput (change)="onImportFile($event)" hidden />
+        <p-button label="Import Data" icon="pi pi-upload" severity="warn" (onClick)="fileInput.click()" />
       </div>
     </p-tabpanel>
   </p-tabpanels>

@@ -72,6 +72,21 @@
   flex: 1;
 }
 
+.data-section {
+  padding-top: 1rem;
+  margin-bottom: 1.5rem;
+
+  h3 {
+    margin: 0 0 0.25rem;
+  }
+
+  p {
+    font-size: 0.875rem;
+    color: var(--p-text-muted-color);
+    margin: 0 0 0.75rem;
+  }
+}
+
 .danger-zone {
   margin-top: 3rem;
   padding: 1.5rem;

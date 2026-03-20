@@ -12,6 +12,8 @@ public static class HouseholdEndpoints
         app.MapGet("/api/household", GetHousehold);
         app.MapPut("/api/household", UpdateHousehold);
         app.MapDelete("/api/household", DeleteHousehold);
+        app.MapGet("/api/export", ExportData);
+        app.MapPost("/api/import", ImportData);
         return app;
     }
 
@@ -58,6 +60,202 @@ public static class HouseholdEndpoints
         await transaction.CommitAsync();
 
         return Results.NoContent();
+    }
+
+    private static async Task<IResult> ExportData(HttpContext context, ClearfolioDbContext db)
+    {
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
+
+        var householdId = member.HouseholdId;
+        var household = member.Household;
+
+        var members = await db.HouseholdMembers
+            .Where(m => m.HouseholdId == householdId)
+            .OrderBy(m => m.MemberTag)
+            .ToListAsync();
+
+        var memberLookup = members.ToDictionary(m => m.Id, m => m.MemberTag);
+
+        var assets = await db.Assets
+            .Where(a => a.HouseholdId == householdId)
+            .OrderBy(a => a.Label)
+            .ToListAsync();
+
+        var liabilities = await db.Liabilities
+            .Where(l => l.HouseholdId == householdId)
+            .OrderBy(l => l.Label)
+            .ToListAsync();
+
+        // Build entity label lookup for snapshots
+        var entityLabelLookup = new Dictionary<Guid, (string Label, string Type)>();
+        foreach (var a in assets)
+            entityLabelLookup[a.Id] = (a.Label, "asset");
+        foreach (var l in liabilities)
+            entityLabelLookup[l.Id] = (l.Label, "liability");
+
+        var snapshots = await db.Snapshots
+            .Where(s => s.HouseholdId == householdId)
+            .OrderBy(s => s.Period)
+            .ThenBy(s => s.EntityId)
+            .ToListAsync();
+
+        var export = new ExportDto(
+            Version: "1",
+            ExportedAt: DateTime.UtcNow.ToString("o"),
+            Household: new ExportHouseholdDto(household.Name, household.BaseCurrency, household.PreferredPeriodType),
+            Members: members.Select(m => new ExportMemberDto(m.Email, m.DisplayName, m.MemberTag, m.IsPrimary)).ToList(),
+            Assets: assets.Select(a => new ExportAssetDto(
+                a.AssetTypeId,
+                a.OwnerMemberId.HasValue && memberLookup.TryGetValue(a.OwnerMemberId.Value, out var atag) ? atag : null,
+                a.OwnershipType, a.JointSplit, a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive
+            )).ToList(),
+            Liabilities: liabilities.Select(l => new ExportLiabilityDto(
+                l.LiabilityTypeId,
+                l.OwnerMemberId.HasValue && memberLookup.TryGetValue(l.OwnerMemberId.Value, out var ltag) ? ltag : null,
+                l.OwnershipType, l.JointSplit, l.Label, l.Currency, l.Notes, l.IsActive
+            )).ToList(),
+            Snapshots: snapshots
+                .Where(s => entityLabelLookup.ContainsKey(s.EntityId))
+                .Select(s => new ExportSnapshotDto(
+                    entityLabelLookup[s.EntityId].Label,
+                    entityLabelLookup[s.EntityId].Type,
+                    s.Period, s.Value, s.Currency, s.Notes,
+                    memberLookup.TryGetValue(s.RecordedBy, out var stag) ? stag : "unknown",
+                    s.RecordedAt
+                )).ToList()
+        );
+
+        return Results.Ok(export);
+    }
+
+    private static async Task<IResult> ImportData(ExportDto data, HttpContext context, ClearfolioDbContext db)
+    {
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
+        if (!member.IsPrimary) return Results.Forbid();
+
+        if (data.Version != "1") return Results.BadRequest("Unsupported export version.");
+
+        var householdId = member.HouseholdId;
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+
+        // Delete all existing data
+        await db.Snapshots.Where(s => s.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.Assets.Where(a => a.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.Liabilities.Where(l => l.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.HouseholdMembers.Where(m => m.HouseholdId == householdId).ExecuteDeleteAsync();
+
+        // Update household settings
+        var household = await db.Households.FindAsync(householdId);
+        if (household is null) return Results.NotFound();
+        household.Name = data.Household.Name;
+        household.BaseCurrency = data.Household.BaseCurrency;
+        household.PreferredPeriodType = data.Household.PreferredPeriodType;
+
+        // Import members — map tag to new ID
+        var memberTagToId = new Dictionary<string, Guid>();
+        foreach (var m in data.Members)
+        {
+            var id = Guid.NewGuid();
+            memberTagToId[m.MemberTag] = id;
+            db.HouseholdMembers.Add(new HouseholdMember
+            {
+                Id = id,
+                HouseholdId = householdId,
+                Email = m.Email,
+                DisplayName = m.DisplayName,
+                MemberTag = m.MemberTag,
+                IsPrimary = m.IsPrimary,
+                CreatedAt = DateTime.UtcNow.ToString("o")
+            });
+        }
+
+        // Import assets — map label to new ID
+        var assetLabelToId = new Dictionary<string, Guid>();
+        var now = DateTime.UtcNow.ToString("o");
+        foreach (var a in data.Assets)
+        {
+            var id = Guid.NewGuid();
+            assetLabelToId[a.Label] = id;
+            db.Assets.Add(new Asset
+            {
+                Id = id,
+                HouseholdId = householdId,
+                AssetTypeId = a.AssetTypeId,
+                OwnerMemberId = a.OwnerMemberTag != null && memberTagToId.TryGetValue(a.OwnerMemberTag, out var oid) ? oid : null,
+                OwnershipType = a.OwnershipType,
+                JointSplit = a.JointSplit,
+                Label = a.Label,
+                Symbol = a.Symbol,
+                Currency = a.Currency,
+                Notes = a.Notes,
+                IsActive = a.IsActive,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+
+        // Import liabilities — map label to new ID
+        var liabilityLabelToId = new Dictionary<string, Guid>();
+        foreach (var l in data.Liabilities)
+        {
+            var id = Guid.NewGuid();
+            liabilityLabelToId[l.Label] = id;
+            db.Liabilities.Add(new Liability
+            {
+                Id = id,
+                HouseholdId = householdId,
+                LiabilityTypeId = l.LiabilityTypeId,
+                OwnerMemberId = l.OwnerMemberTag != null && memberTagToId.TryGetValue(l.OwnerMemberTag, out var oid) ? oid : null,
+                OwnershipType = l.OwnershipType,
+                JointSplit = l.JointSplit,
+                Label = l.Label,
+                Currency = l.Currency,
+                Notes = l.Notes,
+                IsActive = l.IsActive,
+                CreatedAt = now,
+                UpdatedAt = now
+            });
+        }
+
+        // Import snapshots
+        foreach (var s in data.Snapshots)
+        {
+            Guid entityId;
+            if (s.EntityType == "asset" && assetLabelToId.TryGetValue(s.EntityLabel, out var aid))
+                entityId = aid;
+            else if (s.EntityType == "liability" && liabilityLabelToId.TryGetValue(s.EntityLabel, out var lid))
+                entityId = lid;
+            else
+                continue; // skip orphaned snapshots
+
+            var recordedBy = s.RecordedByMemberTag != null && memberTagToId.TryGetValue(s.RecordedByMemberTag, out var rid)
+                ? rid
+                : memberTagToId.Values.FirstOrDefault();
+
+            if (recordedBy == Guid.Empty) continue;
+
+            db.Snapshots.Add(new Snapshot
+            {
+                Id = Guid.NewGuid(),
+                HouseholdId = householdId,
+                EntityId = entityId,
+                EntityType = s.EntityType,
+                Period = s.Period,
+                Value = s.Value,
+                Currency = s.Currency,
+                Notes = s.Notes,
+                RecordedBy = recordedBy,
+                RecordedAt = s.RecordedAt
+            });
+        }
+
+        await db.SaveChangesAsync();
+        await transaction.CommitAsync();
+
+        return Results.Ok(new { imported = true });
     }
 
     private static HouseholdMember? GetMemberOrNull(HttpContext context) =>

@@ -49,6 +49,15 @@ export class ApiService {
     return this.http.delete('/api/household');
   }
 
+  // Export / Import
+  exportData() {
+    return this.http.get('/api/export');
+  }
+
+  importData(data: unknown) {
+    return this.http.post('/api/import', data);
+  }
+
   // Members
   getMembers() {
     return this.http.get<Member[]>('/api/members');

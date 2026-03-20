@@ -134,6 +134,52 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  exportData() {
+    this.api.exportData().subscribe((data) => {
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clearfolio-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  onImportFile(event: Event) {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.confirmationService.confirm({
+      message: 'This will replace all current data with the imported file. This cannot be undone.',
+      header: 'Import Data?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-warning',
+      accept: () => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result as string);
+            this.api.importData(data).subscribe({
+              next: () => {
+                this.messageService.add({ severity: 'success', summary: 'Imported', detail: 'Data imported successfully' });
+                this.ngOnInit();
+                this.auth.loadMembers();
+              },
+              error: () => {
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Import failed' });
+              },
+            });
+          } catch {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Invalid JSON file' });
+          }
+        };
+        reader.readAsText(file);
+      },
+    });
+    (event.target as HTMLInputElement).value = '';
+  }
+
   saveGoals() {
     this.goalService.setGoal({
       netWorthTarget: this.netWorthTarget,
