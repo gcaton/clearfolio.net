@@ -13,6 +13,7 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, SelectButton, Drawer, Button, FormsModule, DarkModeToggleComponent],
   template: `
+    @if (!auth.needsSetup()) {
     <nav class="app-nav">
       <div class="nav-brand">
         <p-button icon="pi pi-bars" [text]="true" class="mobile-menu-btn"
@@ -68,6 +69,7 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
         </div>
       }
     </p-drawer>
+    }
 
     <main class="app-content">
       <router-outlet />
