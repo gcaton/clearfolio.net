@@ -37,13 +37,8 @@ public class CloudflareJwtMiddleware
             .Include(m => m.Household)
             .FirstOrDefaultAsync(m => m.Email == email);
 
-        if (member is null)
-        {
-            member = await AutoProvision(db, email);
-        }
-
         context.Items["UserEmail"] = email;
-        context.Items["HouseholdMember"] = member;
+        context.Items["HouseholdMember"] = member; // may be null
 
         await _next(context);
     }
@@ -135,41 +130,5 @@ public class CloudflareJwtMiddleware
             _logger.LogError(ex, "Unexpected error during JWT validation");
             return null;
         }
-    }
-
-    private static async Task<HouseholdMember> AutoProvision(ClearfolioDbContext db, string email)
-    {
-        var existingHousehold = await db.Households.FirstOrDefaultAsync();
-
-        var household = existingHousehold ?? new Household
-        {
-            Id = Guid.NewGuid(),
-            Name = "My Household",
-            CreatedAt = DateTime.UtcNow.ToString("o")
-        };
-
-        if (existingHousehold is null)
-        {
-            db.Households.Add(household);
-        }
-
-        var memberCount = await db.HouseholdMembers.CountAsync(m => m.HouseholdId == household.Id);
-
-        var member = new HouseholdMember
-        {
-            Id = Guid.NewGuid(),
-            HouseholdId = household.Id,
-            Email = email,
-            DisplayName = email.Split('@')[0],
-            MemberTag = $"p{memberCount + 1}",
-            IsPrimary = memberCount == 0,
-            CreatedAt = DateTime.UtcNow.ToString("o"),
-            Household = household
-        };
-
-        db.HouseholdMembers.Add(member);
-        await db.SaveChangesAsync();
-
-        return member;
     }
 }
