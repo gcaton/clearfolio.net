@@ -14,6 +14,7 @@ public static class MembersEndpoints
         app.MapPost("/api/members/setup", SetupMember);
         app.MapPost("/api/members", CreateMember);
         app.MapPut("/api/members/{id:guid}", UpdateMember);
+        app.MapDelete("/api/members/{id:guid}", DeleteMember);
         return app;
     }
 
@@ -140,6 +141,43 @@ public static class MembersEndpoints
         await db.SaveChangesAsync();
 
         return Results.Ok(new MemberDto(target.Id, target.Email, target.DisplayName, target.MemberTag, target.IsPrimary, target.CreatedAt));
+    }
+
+    private static async Task<IResult> DeleteMember(Guid id, HttpContext context, ClearfolioDbContext db)
+    {
+        var caller = GetMemberOrNull(context);
+        if (caller is null) return Results.Unauthorized();
+        if (!caller.IsPrimary) return Results.Forbid();
+
+        var target = await db.HouseholdMembers.FirstOrDefaultAsync(m => m.Id == id && m.HouseholdId == caller.HouseholdId);
+        if (target is null) return Results.NotFound();
+        if (target.IsPrimary) return Results.BadRequest("Cannot delete the primary member. Use DELETE /api/household to reset all data.");
+
+        await using var transaction = await db.Database.BeginTransactionAsync();
+
+        var assetIds = await db.Assets
+            .Where(a => a.OwnerMemberId == id)
+            .Select(a => a.Id)
+            .ToListAsync();
+
+        var liabilityIds = await db.Liabilities
+            .Where(l => l.OwnerMemberId == id)
+            .Select(l => l.Id)
+            .ToListAsync();
+
+        var entityIds = assetIds.Concat(liabilityIds).ToList();
+
+        if (entityIds.Count > 0)
+            await db.Snapshots.Where(s => entityIds.Contains(s.EntityId)).ExecuteDeleteAsync();
+
+        await db.Assets.Where(a => a.OwnerMemberId == id).ExecuteDeleteAsync();
+        await db.Liabilities.Where(l => l.OwnerMemberId == id).ExecuteDeleteAsync();
+        await db.Snapshots.Where(s => s.RecordedBy == id).ExecuteDeleteAsync();
+        await db.HouseholdMembers.Where(m => m.Id == id).ExecuteDeleteAsync();
+
+        await transaction.CommitAsync();
+
+        return Results.NoContent();
     }
 
     private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
