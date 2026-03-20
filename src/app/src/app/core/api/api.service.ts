@@ -44,6 +44,11 @@ export class ApiService {
     return this.http.put<Household>('/api/household', request);
   }
 
+  // Household - destructive
+  deleteAllData() {
+    return this.http.delete('/api/household');
+  }
+
   // Members
   getMembers() {
     return this.http.get<Member[]>('/api/members');
@@ -59,6 +64,14 @@ export class ApiService {
 
   updateMember(id: string, displayName: string, email?: string) {
     return this.http.put<Member>(`/api/members/${id}`, { displayName, email });
+  }
+
+  setup(displayName: string) {
+    return this.http.post<Member>('/api/members/setup', { displayName });
+  }
+
+  deleteMember(id: string) {
+    return this.http.delete(`/api/members/${id}`);
   }
 
   // Assets
