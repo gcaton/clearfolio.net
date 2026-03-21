@@ -34,6 +34,13 @@
   gap: 0.375rem;
 }
 
+.controls-right {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-end;
+  margin-left: auto;
+}
+
 .control-label {
   font-size: 0.75rem;
   font-weight: 600;
@@ -70,9 +77,12 @@
   }
 }
 
-.horizon-input,
-.sim-input {
+.horizon-input {
   width: 7rem;
+}
+
+.sim-input {
+  width: 6rem;
 }
 
 .inflation-controls {

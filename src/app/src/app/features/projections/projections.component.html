@@ -64,43 +64,44 @@
       </div>
     </div>
 
-    <!-- Simulations (Monte Carlo only) -->
-    @if (selectedMode() === 'monte-carlo') {
-      <div class="control-group">
-        <label class="control-label">Simulations</label>
-        <p-inputnumber
-          [ngModel]="simulations()"
-          (ngModelChange)="onSimulationsChange($event)"
-          [min]="100"
-          [max]="10000"
-          [step]="100"
-          styleClass="sim-input"
-        />
-      </div>
-    }
-
-    <!-- Inflation Adjustment -->
-    <div class="control-group">
-      <label class="control-label">Inflation</label>
-      <div class="inflation-controls">
-        <button
-          type="button"
-          class="inflation-toggle"
-          [class.active]="inflationAdjusted()"
-          (click)="toggleInflation()"
-        >{{ inflationAdjusted() ? "Today's $" : 'Nominal' }}</button>
-        @if (inflationAdjusted()) {
+    <!-- Simulations + Inflation (right-aligned group) -->
+    <div class="controls-right">
+      @if (selectedMode() === 'monte-carlo') {
+        <div class="control-group">
+          <label class="control-label">Simulations</label>
           <p-inputnumber
-            [ngModel]="inflationRate()"
-            (ngModelChange)="onInflationRateChange($event)"
-            [min]="0"
-            [max]="20"
-            [minFractionDigits]="1"
-            [maxFractionDigits]="1"
-            suffix="%"
-            styleClass="inflation-input"
+            [ngModel]="simulations()"
+            (ngModelChange)="onSimulationsChange($event)"
+            [min]="100"
+            [max]="10000"
+            [step]="100"
+            styleClass="sim-input"
           />
-        }
+        </div>
+      }
+
+      <div class="control-group">
+        <label class="control-label">Inflation</label>
+        <div class="inflation-controls">
+          <button
+            type="button"
+            class="inflation-toggle"
+            [class.active]="inflationAdjusted()"
+            (click)="toggleInflation()"
+          >{{ inflationAdjusted() ? "Today's $" : 'Nominal' }}</button>
+          @if (inflationAdjusted()) {
+            <p-inputnumber
+              [ngModel]="inflationRate()"
+              (ngModelChange)="onInflationRateChange($event)"
+              [min]="0"
+              [max]="20"
+              [minFractionDigits]="1"
+              [maxFractionDigits]="1"
+              suffix="%"
+              styleClass="inflation-input"
+            />
+          }
+        </div>
       </div>
     </div>
   </div>
