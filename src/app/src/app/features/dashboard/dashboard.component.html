@@ -110,7 +110,7 @@
     </div>
     <div class="stat-cards">
       <div class="stat-card">
-        <span class="stat-label">Savings Rate</span>
+        <span class="stat-label">Contribution Rate</span>
         <span class="stat-value" [class]="savingsRateClass()">{{ (cf.savingsRate * 100) | number:'1.1-1' }}%</span>
       </div>
       <div class="stat-card">
@@ -208,7 +208,7 @@
         </div>
 
         <div class="chart-panel">
-          <h3>Super Gap</h3>
+          <h3>Super Balance Comparison</h3>
           @if (superGap().length > 0) {
             <div echarts [options]="superGapOptions()" class="chart"></div>
           } @else {

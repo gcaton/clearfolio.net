@@ -1,63 +1,91 @@
-compose := ".docker/docker-compose.yml"
-compose_prod := ".docker/docker-compose.prod.yml"
+container := "clearfolio"
+image := "clearfolio-dev"
 
 # Show available commands
 [private]
 default:
     @just --list --unsorted --list-heading $'\n  \033[1;36mclearfolio.net\033[0m\n\n'
 
-# Tear down all containers, volumes, and rebuild from scratch
+# Tear down existing container, rebuild image, and start fresh
 [group('dev')]
 init:
-    docker compose -f {{compose}} down -v
-    docker compose -f {{compose}} up -d --build
+    -docker stop {{container}}
+    -docker rm {{container}}
+    docker build -t {{image}} .
+    docker run -d \
+      --name {{container}} \
+      -p 4200:80 \
+      -e ASPNETCORE_ENVIRONMENT=Development \
+      -e DB_PATH=/data/clearfolio.db \
+      -v clearfolio-data:/data \
+      {{image}}
     @echo "Waiting for services to start..."
     @sleep 5
-    docker compose -f {{compose}} logs --tail 5
+    docker logs --tail 10 {{container}}
 
-# Start all local services
+# Start the container
 [group('dev')]
 up:
-    docker compose -f {{compose}} up -d
+    docker start {{container}}
 
-# Stop all local services
+# Stop the container
 [group('dev')]
 down:
-    docker compose -f {{compose}} down
+    docker stop {{container}}
 
-# Show service logs (follow)
+# Show container logs (follow)
 [group('dev')]
 logs *args='':
-    docker compose -f {{compose}} logs -f {{args}}
+    docker logs -f {{args}} {{container}}
 
-# Rebuild and restart a single service
+# Rebuild image and restart container
 [group('dev')]
-rebuild service:
-    docker compose -f {{compose}} up -d --build {{service}}
+rebuild:
+    -docker stop {{container}}
+    -docker rm {{container}}
+    docker build -t {{image}} .
+    docker run -d \
+      --name {{container}} \
+      -p 4200:80 \
+      -e ASPNETCORE_ENVIRONMENT=Development \
+      -e DB_PATH=/data/clearfolio.db \
+      -v clearfolio-data:/data \
+      {{image}}
 
 # Run Angular dev server locally (with API proxy)
 [group('dev')]
 dev:
     cd src/app && npx ng serve
 
-# Pull latest images and restart (run on Pi)
-[group('prod')]
-deploy:
-    docker compose -f {{compose_prod}} pull
-    docker compose -f {{compose_prod}} up -d
-    @echo "Deployed. Waiting for services..."
-    @sleep 3
-    docker compose -f {{compose_prod}} logs --tail 5
-
-# Stop production services (run on Pi)
-[group('prod')]
-prod-down:
-    docker compose -f {{compose_prod}} down
-
-# Show production logs (run on Pi)
-[group('prod')]
-prod-logs *args='':
-    docker compose -f {{compose_prod}} logs -f {{args}}
+# Generate changelog.json from conventional commits (feats and fixes)
+[group('dev')]
+changelog:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    out="src/app/public/changelog.json"
+    feats=$(git log --pretty=format:'{"hash":"%h","date":"%cs","message":"%s"}' --grep="^feat[:(]" --no-merges)
+    fixes=$(git log --pretty=format:'{"hash":"%h","date":"%cs","message":"%s"}' --grep="^fix[:(]" --no-merges)
+    echo "{" > "$out"
+    echo '  "features": [' >> "$out"
+    first=true
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        $first && first=false || echo "," >> "$out"
+        printf "    %s" "$line" >> "$out"
+    done <<< "$feats"
+    echo "" >> "$out"
+    echo '  ],' >> "$out"
+    echo '  "fixes": [' >> "$out"
+    first=true
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        $first && first=false || echo "," >> "$out"
+        printf "    %s" "$line" >> "$out"
+    done <<< "$fixes"
+    echo "" >> "$out"
+    echo '  ]' >> "$out"
+    echo "}" >> "$out"
+    echo "Generated $out"
 
 # Login to GHCR (run once on Pi)
 [group('prod')]

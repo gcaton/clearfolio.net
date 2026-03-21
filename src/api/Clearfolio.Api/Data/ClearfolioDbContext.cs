@@ -260,7 +260,7 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000003"), Name = "Personal loan", Category = "personal", DebtQuality = "bad", SortOrder = 3, IsSystem = true },
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000004"), Name = "Car loan", Category = "personal", DebtQuality = "bad", SortOrder = 4, IsSystem = true },
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000005"), Name = "Credit card", Category = "credit", DebtQuality = "bad", SortOrder = 5, IsSystem = true },
-            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000006"), Name = "HECS / HELP debt", Category = "student", DebtQuality = "neutral", IsHecs = true, SortOrder = 6, IsSystem = true },
+            new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000006"), Name = "Student loan (HECS-HELP)", Category = "student", DebtQuality = "neutral", IsHecs = true, SortOrder = 6, IsSystem = true },
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000007"), Name = "Margin loan", Category = "personal", DebtQuality = "productive", SortOrder = 7, IsSystem = true },
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000008"), Name = "Tax liability", Category = "tax", DebtQuality = "neutral", SortOrder = 8, IsSystem = true },
             new LiabilityType { Id = Guid.Parse("b0000000-0000-0000-0000-000000000009"), Name = "Other liability", Category = "other", DebtQuality = "neutral", SortOrder = 9, IsSystem = true }

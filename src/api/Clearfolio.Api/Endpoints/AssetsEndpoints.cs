@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -10,8 +11,8 @@ public static class AssetsEndpoints
     public static WebApplication MapAssetsEndpoints(this WebApplication app)
     {
         app.MapGet("/api/assets", GetAssets);
-        app.MapPost("/api/assets", CreateAsset);
-        app.MapPut("/api/assets/{id:guid}", UpdateAsset);
+        app.MapPost("/api/assets", CreateAsset).AddEndpointFilter<ValidationFilter<CreateAssetRequest>>();
+        app.MapPut("/api/assets/{id:guid}", UpdateAsset).AddEndpointFilter<ValidationFilter<UpdateAssetRequest>>();
         app.MapDelete("/api/assets/{id:guid}", DeleteAsset);
         return app;
     }

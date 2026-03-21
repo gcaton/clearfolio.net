@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -11,9 +13,9 @@ public static class MembersEndpoints
     {
         app.MapGet("/api/members", GetMembers);
         app.MapGet("/api/members/me", GetCurrentMember);
-        app.MapPost("/api/members/setup", SetupMember);
-        app.MapPost("/api/members", CreateMember);
-        app.MapPut("/api/members/{id:guid}", UpdateMember);
+        app.MapPost("/api/members/setup", SetupMember).AddEndpointFilter<ValidationFilter<SetupRequest>>();
+        app.MapPost("/api/members", CreateMember).AddEndpointFilter<ValidationFilter<CreateMemberRequest>>();
+        app.MapPut("/api/members/{id:guid}", UpdateMember).AddEndpointFilter<ValidationFilter<UpdateMemberRequest>>();
         app.MapDelete("/api/members/{id:guid}", DeleteMember);
         return app;
     }
@@ -52,10 +54,10 @@ public static class MembersEndpoints
     private static async Task<IResult> SetupMember(SetupRequest request, HttpContext context, ClearfolioDbContext db)
     {
         if (string.IsNullOrWhiteSpace(request.DisplayName))
-            return Results.BadRequest("Display name is required.");
+            return ApiErrors.BadRequest("Display name is required.");
 
         if (await db.Households.AnyAsync())
-            return Results.BadRequest("Setup has already been completed.");
+            return ApiErrors.BadRequest("Setup has already been completed.");
 
         var household = new Household
         {
@@ -136,7 +138,7 @@ public static class MembersEndpoints
 
         var target = await db.HouseholdMembers.FirstOrDefaultAsync(m => m.Id == id && m.HouseholdId == caller.HouseholdId);
         if (target is null) return Results.NotFound();
-        if (target.IsPrimary) return Results.BadRequest("Cannot delete the primary member. Use DELETE /api/household to reset all data.");
+        if (target.IsPrimary) return ApiErrors.BadRequest("Cannot delete the primary member. Use DELETE /api/household to reset all data.");
 
         await using var transaction = await db.Database.BeginTransactionAsync();
 

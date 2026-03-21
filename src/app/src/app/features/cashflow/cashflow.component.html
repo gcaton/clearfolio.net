@@ -35,7 +35,7 @@
       <span class="stat-value">{{ s.netCashflow | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
     </div>
     <div class="stat-card">
-      <span class="stat-label">Savings Rate</span>
+      <span class="stat-label">Contribution Rate</span>
       <span class="stat-value">
         <span class="rate-badge" [class]="savingsRateClass()">{{ s.savingsRate | percent: '1.1-1' }}</span>
       </span>
@@ -60,9 +60,30 @@
   }
 }
 
+<!-- Charts Section -->
+<div class="chart-grid" appFadeIn>
+  <div class="chart-panel">
+    <h3>Income vs Expenses</h3>
+    @if (incomeVsExpenseOptions(); as opts) {
+      <div echarts [options]="opts" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No income data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Expenses by Category</h3>
+    @if (expensesByCategoryOptions(); as opts) {
+      <div echarts [options]="opts" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No expense data yet</div>
+    }
+  </div>
+</div>
+
 <!-- Income Section -->
 <div class="section-header" appFadeIn>
-  <h2>Income</h2>
+  <h2>Income <span class="section-hint">(take-home pay after tax and salary sacrifice)</span></h2>
   <p-button label="Add Income" icon="pi pi-plus" (onClick)="openNewIncome()" />
 </div>
 
@@ -214,9 +235,9 @@
 </p-table>
 }
 
-<!-- Savings Section (read-only contributions from assets) -->
+<!-- Contributions Section (read-only contributions from assets) -->
 <div class="section-header" appFadeIn>
-  <h2>Savings</h2>
+  <h2>Contributions</h2>
 </div>
 
 @if (savingsAssets().length > 0) {
@@ -265,27 +286,6 @@
   <p class="empty-hint">No asset contributions configured. Add contributions on the <a routerLink="/assets">Assets</a> page.</p>
 }
 
-<!-- Charts Section -->
-<div class="chart-grid" appFadeIn>
-  <div class="chart-panel">
-    <h3>Income vs Expenses</h3>
-    @if (incomeVsExpenseOptions(); as opts) {
-      <div echarts [options]="opts" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No income data yet</div>
-    }
-  </div>
-
-  <div class="chart-panel">
-    <h3>Expenses by Category</h3>
-    @if (expensesByCategoryOptions(); as opts) {
-      <div echarts [options]="opts" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No expense data yet</div>
-    }
-  </div>
-</div>
-
 <!-- Income Dialog -->
 <p-dialog
   [header]="editingIncome() ? 'Edit Income Stream' : 'New Income Stream'"
@@ -318,7 +318,7 @@
       appendTo="body"
     />
 
-    <label for="incomeAmount">Amount</label>
+    <label for="incomeAmount">Amount <span class="field-hint">(take-home, after tax &amp; salary sacrifice)</span></label>
     <p-inputNumber
       id="incomeAmount"
       [(ngModel)]="incomeForm.amount"

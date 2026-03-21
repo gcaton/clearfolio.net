@@ -31,6 +31,29 @@
   }
 }
 
+.disclaimer-box {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: color-mix(in srgb, var(--p-primary-color) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--p-primary-color) 15%, transparent);
+  border-radius: 0.5rem;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.9375rem;
+  }
+
+  p {
+    font-size: 0.8125rem;
+    margin: 0 0 0.5rem;
+    color: var(--p-text-muted-color);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
 .concept, .faq, .feature-block {
   padding: 1rem 0;
   border-bottom: 1px solid var(--p-content-border-color);

@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Clearfolio.Api.DTOs;
 
 // ExpenseCategory
@@ -8,9 +10,12 @@ public record ExpenseCategoryDto(
     bool IsDefault,
     string CreatedAt);
 
-public record CreateExpenseCategoryRequest(string Name);
+public record CreateExpenseCategoryRequest(
+    [Required, StringLength(100)] string Name);
 
-public record UpdateExpenseCategoryRequest(string Name, int SortOrder);
+public record UpdateExpenseCategoryRequest(
+    [Required, StringLength(100)] string Name,
+    [Range(0, 1000)] int SortOrder);
 
 // IncomeStream
 public record IncomeStreamDto(
@@ -27,22 +32,22 @@ public record IncomeStreamDto(
     string UpdatedAt);
 
 public record CreateIncomeStreamRequest(
-    Guid OwnerMemberId,
-    string Label,
-    string IncomeType,
-    double Amount,
-    string Frequency,
+    [Required] Guid OwnerMemberId,
+    [Required, StringLength(200)] string Label,
+    [Required, StringLength(20)] string IncomeType,
+    [Range(0, 1_000_000_000)] double Amount,
+    [Required, StringLength(20)] string Frequency,
     bool IsActive,
-    string? Notes);
+    [StringLength(500)] string? Notes);
 
 public record UpdateIncomeStreamRequest(
-    Guid OwnerMemberId,
-    string Label,
-    string IncomeType,
-    double Amount,
-    string Frequency,
+    [Required] Guid OwnerMemberId,
+    [Required, StringLength(200)] string Label,
+    [Required, StringLength(20)] string IncomeType,
+    [Range(0, 1_000_000_000)] double Amount,
+    [Required, StringLength(20)] string Frequency,
     bool IsActive,
-    string? Notes);
+    [StringLength(500)] string? Notes);
 
 // Expense
 public record ExpenseDto(
@@ -61,21 +66,21 @@ public record ExpenseDto(
 
 public record CreateExpenseRequest(
     Guid? OwnerMemberId,
-    Guid ExpenseCategoryId,
-    string Label,
-    double Amount,
-    string Frequency,
+    [Required] Guid ExpenseCategoryId,
+    [Required, StringLength(200)] string Label,
+    [Range(0, 1_000_000_000)] double Amount,
+    [Required, StringLength(20)] string Frequency,
     bool IsActive,
-    string? Notes);
+    [StringLength(500)] string? Notes);
 
 public record UpdateExpenseRequest(
     Guid? OwnerMemberId,
-    Guid ExpenseCategoryId,
-    string Label,
-    double Amount,
-    string Frequency,
+    [Required] Guid ExpenseCategoryId,
+    [Required, StringLength(200)] string Label,
+    [Range(0, 1_000_000_000)] double Amount,
+    [Required, StringLength(20)] string Frequency,
     bool IsActive,
-    string? Notes);
+    [StringLength(500)] string? Notes);
 
 // Cashflow Summary
 public record CashflowSummaryDto(

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -10,8 +11,8 @@ public static class LiabilitiesEndpoints
     public static WebApplication MapLiabilitiesEndpoints(this WebApplication app)
     {
         app.MapGet("/api/liabilities", GetLiabilities);
-        app.MapPost("/api/liabilities", CreateLiability);
-        app.MapPut("/api/liabilities/{id:guid}", UpdateLiability);
+        app.MapPost("/api/liabilities", CreateLiability).AddEndpointFilter<ValidationFilter<CreateLiabilityRequest>>();
+        app.MapPut("/api/liabilities/{id:guid}", UpdateLiability).AddEndpointFilter<ValidationFilter<UpdateLiabilityRequest>>();
         app.MapDelete("/api/liabilities/{id:guid}", DeleteLiability);
         return app;
     }

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -13,8 +15,8 @@ public static class IncomeStreamsEndpoints
     public static WebApplication MapIncomeStreamsEndpoints(this WebApplication app)
     {
         app.MapGet("/api/income-streams", GetIncomeStreams);
-        app.MapPost("/api/income-streams", CreateIncomeStream);
-        app.MapPut("/api/income-streams/{id:guid}", UpdateIncomeStream);
+        app.MapPost("/api/income-streams", CreateIncomeStream).AddEndpointFilter<ValidationFilter<CreateIncomeStreamRequest>>();
+        app.MapPut("/api/income-streams/{id:guid}", UpdateIncomeStream).AddEndpointFilter<ValidationFilter<UpdateIncomeStreamRequest>>();
         app.MapDelete("/api/income-streams/{id:guid}", DeleteIncomeStream);
         return app;
     }
@@ -43,15 +45,15 @@ public static class IncomeStreamsEndpoints
 
         var label = request.Label?.Trim();
         if (string.IsNullOrEmpty(label) || label.Length > 200)
-            return Results.BadRequest("Label is required and must be 200 characters or fewer.");
+            return ApiErrors.BadRequest("Label is required and must be 200 characters or fewer.");
         if (request.Amount <= 0)
-            return Results.BadRequest("Amount must be greater than 0.");
+            return ApiErrors.BadRequest("Amount must be greater than 0.");
         if (!ValidFrequencies.Contains(request.Frequency))
-            return Results.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
+            return ApiErrors.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
         if (request.IncomeType is not ("Primary" or "Additional"))
-            return Results.BadRequest("IncomeType must be 'Primary' or 'Additional'.");
+            return ApiErrors.BadRequest("IncomeType must be 'Primary' or 'Additional'.");
         if (request.Notes?.Length > 1000)
-            return Results.BadRequest("Notes must be 1000 characters or fewer.");
+            return ApiErrors.BadRequest("Notes must be 1000 characters or fewer.");
 
         // Enforce one primary per member
         if (request.IncomeType == "Primary")
@@ -100,15 +102,15 @@ public static class IncomeStreamsEndpoints
 
         var label = request.Label?.Trim();
         if (string.IsNullOrEmpty(label) || label.Length > 200)
-            return Results.BadRequest("Label is required and must be 200 characters or fewer.");
+            return ApiErrors.BadRequest("Label is required and must be 200 characters or fewer.");
         if (request.Amount <= 0)
-            return Results.BadRequest("Amount must be greater than 0.");
+            return ApiErrors.BadRequest("Amount must be greater than 0.");
         if (!ValidFrequencies.Contains(request.Frequency))
-            return Results.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
+            return ApiErrors.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
         if (request.IncomeType is not ("Primary" or "Additional"))
-            return Results.BadRequest("IncomeType must be 'Primary' or 'Additional'.");
+            return ApiErrors.BadRequest("IncomeType must be 'Primary' or 'Additional'.");
         if (request.Notes?.Length > 1000)
-            return Results.BadRequest("Notes must be 1000 characters or fewer.");
+            return ApiErrors.BadRequest("Notes must be 1000 characters or fewer.");
 
         // Enforce one primary per member (exclude self)
         if (request.IncomeType == "Primary")

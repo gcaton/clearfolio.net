@@ -27,9 +27,9 @@ const LABEL_MAP: Record<string, string> = {
   growth: 'Growth',
   defensive: 'Defensive',
   mixed: 'Mixed',
-  productive: 'Productive',
-  neutral: 'Neutral',
-  bad: 'Bad',
+  productive: 'Income-producing',
+  neutral: 'Non-deductible',
+  bad: 'Consumption',
   mortgage: 'Mortgage',
   personal: 'Personal',
   credit: 'Credit',
@@ -85,18 +85,82 @@ const itemTooltipStyle = {
 
 export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
   return {
-    tooltip: tooltipStyle,
-    legend: { data: ['Assets', 'Financial Assets', 'Liabilities', 'Net Worth'], bottom: 0 },
-    grid: { left: 60, right: 20, top: 20, bottom: 60 },
-    xAxis: { type: 'category', data: data.map((d) => d.period) },
-    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
+    tooltip: {
+      ...tooltipStyle,
+      formatter: (params: any) => {
+        if (!Array.isArray(params)) return '';
+        const period = params[0]?.axisValue ?? '';
+        let html = `<div style="font-weight:600;margin-bottom:4px">${period}</div>`;
+        for (const p of params) {
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value)}</span></div>`;
+        }
+        return html;
+      },
+    },
+    legend: {
+      data: ['Net Worth', 'Financial Assets', 'Liabilities'],
+      bottom: 0,
+      selected: { 'Net Worth': true, 'Financial Assets': true, 'Liabilities': true },
+      textStyle: { fontSize: 12 },
+    },
+    grid: { left: 60, right: 20, top: 10, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      data: data.map((d) => d.period),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { fontSize: 11, color: '#94a3b8' },
+    },
+    yAxis: {
+      type: 'value',
+      axisLabel: { formatter: (v: number) => currencyAbbr(v), fontSize: 11, color: '#94a3b8' },
+      splitLine: { lineStyle: { color: 'rgba(148,163,184,0.15)' } },
+    },
     series: [
-      { name: 'Assets', type: 'line', data: data.map((d) => d.assets), smooth: true, itemStyle: { color: '#34d399' } },
-      { name: 'Financial Assets', type: 'line', data: data.map((d) => d.financialAssets), smooth: true, itemStyle: { color: '#a78bfa' }, lineStyle: { type: 'dashed' } },
-      { name: 'Liabilities', type: 'line', data: data.map((d) => d.liabilities), smooth: true, itemStyle: { color: '#f87171' } },
-      { name: 'Net Worth', type: 'line', data: data.map((d) => d.netWorth), smooth: true, lineStyle: { type: 'dashed' }, itemStyle: { color: '#60a5fa' } },
+      {
+        name: 'Net Worth',
+        type: 'line',
+        data: data.map((d) => d.netWorth),
+        smooth: 0.3,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 3, color: '#60a5fa' },
+        itemStyle: { color: '#60a5fa', borderWidth: 2, borderColor: '#fff' },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(96,165,250,0.25)' },
+              { offset: 1, color: 'rgba(96,165,250,0.02)' },
+            ],
+          },
+        },
+        z: 3,
+      },
+      {
+        name: 'Financial Assets',
+        type: 'line',
+        data: data.map((d) => d.financialAssets),
+        smooth: 0.3,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color: '#a78bfa', type: 'dashed', opacity: 0.7 },
+        itemStyle: { color: '#a78bfa' },
+        z: 1,
+      },
+      {
+        name: 'Liabilities',
+        type: 'line',
+        data: data.map((d) => d.liabilities),
+        smooth: 0.3,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color: '#f87171', type: 'dashed', opacity: 0.7 },
+        itemStyle: { color: '#f87171' },
+        z: 1,
+      },
     ],
-    animationDuration: 600,
+    animationDuration: 800,
     animationEasing: 'cubicOut',
   };
 }
@@ -170,7 +234,7 @@ export function buildDebtQualityOptions(summary: DashboardSummary | null): EChar
   const items = summary.debtQualityBreakdown;
   return {
     tooltip: { ...tooltipStyle, trigger: 'axis' },
-    grid: { left: 100, right: 20, top: 10, bottom: 30 },
+    grid: { left: 130, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v) } },
     yAxis: { type: 'category', data: items.map((i) => label(i.debtQuality)) },
     series: [

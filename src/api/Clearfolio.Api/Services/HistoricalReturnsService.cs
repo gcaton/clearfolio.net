@@ -5,7 +5,7 @@ namespace Clearfolio.Api.Services;
 
 public class HistoricalReturnsService(IHttpClientFactory httpClientFactory, IMemoryCache cache)
 {
-    public record HistoricalReturn(double AnnualisedReturn, double Volatility, int DataPoints, double PeriodYears);
+    public record HistoricalReturn(double AnnualisedReturn, double ArithmeticReturn, double Volatility, int DataPoints, double PeriodYears);
 
     public async Task<HistoricalReturn?> GetHistoricalReturn(string symbol)
     {
@@ -47,12 +47,16 @@ public class HistoricalReturnsService(IHttpClientFactory httpClientFactory, IMem
             var variance = weeklyReturns.Sum(r => (r - meanWeekly) * (r - meanWeekly)) / (weeklyReturns.Count - 1);
             var stdDevWeekly = Math.Sqrt(variance);
 
-            var annualisedReturn = Math.Pow(1 + meanWeekly, 52) - 1;
+            var arithmeticReturn = Math.Pow(1 + meanWeekly, 52) - 1;
             var annualisedVolatility = stdDevWeekly * Math.Sqrt(52);
+
+            // Geometric return (CAGR) — actual compound growth rate
+            var cagr = Math.Pow(values[^1] / values[0], 1.0 / (values.Count / 52.0)) - 1;
 
             var periodYears = values.Count / 52.0;
             var result = new HistoricalReturn(
-                Math.Round(annualisedReturn, 4),
+                Math.Round(cagr, 4),
+                Math.Round(arithmeticReturn, 4),
                 Math.Round(annualisedVolatility, 4),
                 values.Count,
                 Math.Round(periodYears, 1));

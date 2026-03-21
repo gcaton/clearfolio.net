@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 using Clearfolio.Api.Services;
 using static Clearfolio.Api.Services.ProjectionEngine;
@@ -11,9 +13,9 @@ public static class ProjectionEndpoints
 {
     public static void MapProjectionEndpoints(this WebApplication app)
     {
-        app.MapPost("/api/projections/compound", RunCompoundProjection);
-        app.MapPost("/api/projections/scenario", RunScenarioProjection);
-        app.MapPost("/api/projections/monte-carlo", RunMonteCarloProjection);
+        app.MapPost("/api/projections/compound", RunCompoundProjection).AddEndpointFilter<ValidationFilter<ProjectionRequest>>();
+        app.MapPost("/api/projections/scenario", RunScenarioProjection).AddEndpointFilter<ValidationFilter<ProjectionRequest>>();
+        app.MapPost("/api/projections/monte-carlo", RunMonteCarloProjection).AddEndpointFilter<ValidationFilter<ProjectionRequest>>();
         app.MapGet("/api/projections/defaults", GetDefaults);
         app.MapGet("/api/historical-returns/{symbol}", GetHistoricalReturns);
     }
@@ -25,7 +27,7 @@ public static class ProjectionEndpoints
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
-        if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
+        if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
         var inputs = await BuildEntityInputs(db, member, request);
         var inflation = request.InflationRate ?? 0;
@@ -38,7 +40,7 @@ public static class ProjectionEndpoints
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
-        if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
+        if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
         var inputs = await BuildEntityInputs(db, member, request);
         var inflation = request.InflationRate ?? 0;
@@ -51,7 +53,7 @@ public static class ProjectionEndpoints
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
-        if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
+        if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
         var sims = Math.Clamp(request.Simulations ?? 1000, 100, 10000);
         var inflation = request.InflationRate ?? 0;
@@ -228,6 +230,7 @@ public static class ProjectionEndpoints
         return Results.Ok(new HistoricalReturnDto(
             symbol,
             result.AnnualisedReturn,
+            result.ArithmeticReturn,
             result.Volatility,
             result.DataPoints,
             result.PeriodYears));

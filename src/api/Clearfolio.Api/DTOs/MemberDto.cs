@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Clearfolio.Api.DTOs;
 
 public record MemberDto(
@@ -9,9 +11,9 @@ public record MemberDto(
     string CreatedAt);
 
 public record UpdateMemberRequest(
-    string DisplayName,
-    string? Email = null);
+    [Required, StringLength(100)] string DisplayName,
+    [StringLength(200), EmailAddress] string? Email = null);
 
 public record CreateMemberRequest(
-    string? Email,
-    string DisplayName);
+    [StringLength(200), EmailAddress] string? Email,
+    [Required, StringLength(100)] string DisplayName);

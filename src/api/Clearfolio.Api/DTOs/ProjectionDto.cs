@@ -1,12 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Clearfolio.Api.DTOs;
 
 public record ProjectionRequest(
-    int Horizon,
-    string View,
-    string Scope,
+    [Range(1, 50)] int Horizon,
+    [Required, StringLength(20)] string View,
+    [Required, StringLength(20)] string Scope,
     List<Guid>? EntityIds,
-    int? Simulations,
-    double? InflationRate);
+    [Range(100, 10000)] int? Simulations,
+    [Range(0, 0.5)] double? InflationRate);
 
 public record ProjectionDefaultDto(
     Guid EntityId,
@@ -28,6 +30,7 @@ public record ProjectionDefaultDto(
 public record HistoricalReturnDto(
     string Symbol,
     double AnnualisedReturn,
+    double ArithmeticReturn,
     double Volatility,
     int DataPoints,
     double PeriodYears);

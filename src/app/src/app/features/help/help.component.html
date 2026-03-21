@@ -19,14 +19,21 @@
         <h3>First-time setup</h3>
         <ol>
           <li><strong>Add your assets</strong> — bank accounts, investments, superannuation, property, and anything else of value. Go to <strong>Assets</strong> and click <em>Add Asset</em>.</li>
-          <li><strong>Add your liabilities</strong> — mortgages, loans, credit cards, HECS. Go to <strong>Liabilities</strong> and click <em>Add Liability</em>.</li>
+          <li><strong>Add your liabilities</strong> — mortgages, loans, credit cards, student loans. Go to <strong>Liabilities</strong> and click <em>Add Liability</em>.</li>
           <li><strong>Record your first snapshot</strong> — go to <strong>Snapshots</strong> and record current values for each asset and liability. You can also use <em>Bulk Entry</em> to backfill historical data.</li>
           <li><strong>Set a goal</strong> — go to <strong>Settings → Goals</strong> and set a net worth target to track progress against.</li>
-          <li><strong>Set up cashflow</strong> — go to <strong>Cashflow</strong> and add your income streams and expenses to track your savings rate.</li>
+          <li><strong>Set up cashflow</strong> — go to <strong>Cashflow</strong> and add your income streams and expenses to track your contribution rate.</li>
         </ol>
 
         <h3>Ongoing use</h3>
         <p>Come back each quarter (or however often you like) and record new snapshot values. Your dashboard will automatically update with trends, breakdowns, and goal progress.</p>
+
+        <div class="disclaimer-box">
+          <h3>Important information</h3>
+          <p>Clearfolio is a personal tracking tool designed to help you monitor your household finances. It does not provide personal or general financial advice.</p>
+          <p>Projections and calculations are illustrative only and based on assumptions that may not reflect actual outcomes. Past performance is not a reliable indicator of future performance.</p>
+          <p>You should seek independent advice from a licensed financial adviser before making financial decisions.</p>
+        </div>
       </div>
     </p-tabpanel>
 
@@ -37,7 +44,7 @@
 
         <div class="concept">
           <h3>Assets &amp; Liabilities</h3>
-          <p><strong>Assets</strong> are things you own that have value — bank accounts, shares, super, property. <strong>Liabilities</strong> are debts you owe — mortgages, personal loans, credit cards, HECS. Your <strong>net worth</strong> is assets minus liabilities.</p>
+          <p><strong>Assets</strong> are things you own that have value — bank accounts, shares, super, property. <strong>Liabilities</strong> are debts you owe — mortgages, personal loans, credit cards, student loans. Your <strong>net worth</strong> is assets minus liabilities.</p>
         </div>
 
         <div class="concept">
@@ -47,7 +54,7 @@
             <li><span class="dot" style="background: #60a5fa"></span> <strong>Cash</strong> — savings accounts, offset accounts, term deposits</li>
             <li><span class="dot" style="background: #34d399"></span> <strong>Investable</strong> — shares, ETFs, managed funds</li>
             <li><span class="dot" style="background: #a78bfa"></span> <strong>Retirement</strong> — superannuation</li>
-            <li><span class="dot" style="background: #fbbf24"></span> <strong>Property</strong> — real estate</li>
+            <li><span class="dot" style="background: #fbbf24"></span> <strong>Property</strong> — real estate. Your primary residence (PPOR) may qualify for the main residence CGT exemption, though this can be partial if the property was income-producing or has land exceeding 2 hectares</li>
             <li><span class="dot" style="background: #94a3b8"></span> <strong>Other</strong> — vehicles, collectibles, etc.</li>
           </ul>
         </div>
@@ -88,6 +95,21 @@
             <li><strong>Liquid</strong> — only immediately accessible assets</li>
           </ul>
         </div>
+
+        <div class="concept">
+          <h3>Debt Classification</h3>
+          <p>Liabilities are classified by their tax treatment to help you understand your debt profile:</p>
+          <ul>
+            <li><span class="dot" style="background: #34d399"></span> <strong>Income-producing</strong> — debt tied to income-producing assets where interest may be tax-deductible (e.g. investment property loan, margin loan)</li>
+            <li><span class="dot" style="background: #94a3b8"></span> <strong>Non-deductible</strong> — debt where interest is generally not tax-deductible (e.g. home loan on your primary residence, HECS-HELP, tax liability)</li>
+            <li><span class="dot" style="background: #ef4444"></span> <strong>Consumption</strong> — debt used to fund spending rather than asset acquisition (e.g. personal loan, car loan, credit card)</li>
+          </ul>
+        </div>
+
+        <div class="concept">
+          <h3>ASX Price Data</h3>
+          <p>Assets with an ASX symbol display live price quotes sourced from Yahoo Finance. Price data may be delayed and is not suitable for trading decisions. When you add a symbol, Clearfolio also calculates a historical annualised return (compound annual growth rate) and volatility from up to 5 years of weekly price data to pre-fill your projection settings.</p>
+        </div>
       </div>
     </p-tabpanel>
 
@@ -98,7 +120,7 @@
 
         <div class="feature-block">
           <h3><i class="pi pi-chart-line"></i> Dashboard</h3>
-          <p>Your financial overview. Shows net worth stat cards, goal progress, cashflow summary, and charts organised into tabs — Trends (net worth over time), Composition (asset/liability breakdowns), and Comparison (member and super gap analysis).</p>
+          <p>Your financial overview. Shows net worth stat cards, goal progress, cashflow summary, and charts organised into tabs — Trends (net worth over time), Composition (asset/liability breakdowns), and Comparison (member and super balance comparison).</p>
         </div>
 
         <div class="feature-block">
@@ -113,7 +135,7 @@
 
         <div class="feature-block">
           <h3><i class="pi pi-dollar"></i> Cashflow</h3>
-          <p>Track income streams and expenses. Shows annualised totals, savings rate, debt-to-income ratio, and category breakdowns. Savings (asset contributions) are pulled automatically from your asset configuration.</p>
+          <p>Track income streams and expenses. Shows annualised totals, contribution rate, debt-to-income ratio, and category breakdowns. Contributions are pulled automatically from your asset configuration.</p>
         </div>
 
         <div class="feature-block">
@@ -184,7 +206,7 @@
 
         <div class="faq">
           <h3>How do ASX symbols work?</h3>
-          <p>When you add an ASX symbol to an asset, Clearfolio fetches live price quotes and can auto-populate expected return rates and volatility from historical data. This data feeds into projections.</p>
+          <p>When you add an ASX symbol to an asset, Clearfolio fetches price quotes from Yahoo Finance (data may be delayed) and calculates a compound annual growth rate (CAGR) and volatility from up to 5 years of historical weekly prices. These values pre-fill your expected return rate and volatility for projections. Price data is not suitable for trading decisions.</p>
         </div>
 
         <div class="faq">
@@ -193,8 +215,8 @@
         </div>
 
         <div class="faq">
-          <h3>What does the savings rate measure?</h3>
-          <p>Savings rate = (Income − Expenses − Contributions − Repayments) ÷ Income. It shows what percentage of your income goes toward building wealth. A rate above 20% is generally considered healthy.</p>
+          <h3>What does the contribution rate measure?</h3>
+          <p>Contribution rate = Total Annual Contributions ÷ Total Annual Income. It shows what percentage of your take-home pay you are actively directing into assets (e.g. super, ETFs, savings accounts). Income should be entered as take-home pay — after tax and salary sacrifice. Many financial commentators suggest a rate above 20% as a benchmark, though the right level depends on your circumstances.</p>
         </div>
 
         <div class="faq">

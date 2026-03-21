@@ -37,24 +37,24 @@ Then open http://localhost:8080 and complete the first-run setup wizard (househo
 git clone https://github.com/<you>/clearfolio.net.git
 cd clearfolio.net
 
-# Start API + app containers (builds from source)
+# Build image and start container
 just init
 
-# Or run Angular dev server with hot reload (proxies /api to Docker API)
+# Or run Angular dev server with hot reload (proxies /api to Docker container)
 just dev
 ```
 
-The API runs on `localhost:5000`, the app on `localhost:4200`.
+The app runs on `localhost:4200`.
 
 ### Available Commands
 
 ```
 just              # Show all commands
-just init         # Tear down containers, rebuild from scratch
-just up           # Start local services
-just down         # Stop local services
-just logs         # Follow service logs
-just rebuild api  # Rebuild a single service
+just init         # Tear down container, rebuild image from scratch
+just up           # Start the container
+just down         # Stop the container
+just logs         # Follow container logs
+just rebuild      # Rebuild image and restart container
 just dev          # Angular dev server with API proxy
 ```
 
@@ -62,8 +62,6 @@ just dev          # Angular dev server with API proxy
 
 ```
 clearfolio.net/
-├── .docker/
-│   └── docker-compose.yml          # Local dev
 ├── .github/workflows/
 │   └── build.yml                   # CI: build multi-arch images → GHCR
 ├── src/
@@ -130,9 +128,32 @@ docker run -d \
 
 Navigate to http://localhost:8080 (or your server's IP/hostname on port 8080) and complete the first-run setup wizard.
 
+### Optional: HTTPS with a reverse proxy
+
+Clearfolio serves HTTP internally. For HTTPS, place a reverse proxy in front — this is the standard approach for self-hosted apps.
+
+**Caddy** (automatic Let's Encrypt):
+
+```Caddyfile
+clearfolio.example.com {
+    reverse_proxy localhost:8080
+}
+```
+
+**Traefik** (Docker labels):
+
+```yaml
+labels:
+  - "traefik.http.routers.clearfolio.rule=Host(`clearfolio.example.com`)"
+  - "traefik.http.routers.clearfolio.tls.certresolver=letsencrypt"
+  - "traefik.http.services.clearfolio.loadbalancer.server.port=80"
+```
+
 ### Optional: passphrase protection
 
 Add a passphrase from **Settings → Security**. Once set, all sessions will require it to log in.
+
+There is no email or account recovery — if you forget your passphrase, see [Forgot your passphrase?](#forgot-your-passphrase) below.
 
 ### Environment variables
 
@@ -141,20 +162,63 @@ Add a passphrase from **Settings → Security**. Once set, all sessions will req
 | `CLEARFOLIO_RESET_PASSPHRASE` | Set to `true` to clear the passphrase on next startup |
 | `CLEARFOLIO_SESSION_DAYS` | Session lifetime in days (default: 30) |
 
-To reset a forgotten passphrase:
+### Forgot your passphrase?
+
+Since Clearfolio is self-hosted with no email or external auth, the only recovery method is to reset the passphrase using a one-time environment variable. This clears the passphrase and all sessions — your data is not affected.
 
 ```bash
+# 1. Stop the running container
+docker stop clearfolio
+
+# 2. Run a temporary container that resets the passphrase
 docker run --rm \
   -v clearfolio-data:/data \
   -e CLEARFOLIO_RESET_PASSPHRASE=true \
   ghcr.io/gcaton/clearfolio
+
+# 3. Start the original container (passphrase is now cleared)
+docker start clearfolio
 ```
+
+You can then set a new passphrase from **Settings → Security**.
+
+### Backups
+
+All data lives in a single SQLite file inside the Docker volume. Back it up by copying it out:
+
+```bash
+# One-off backup
+docker cp clearfolio:/data/clearfolio.db ./clearfolio-backup-$(date +%F).db
+```
+
+To automate daily backups with cron:
+
+```bash
+# Add to crontab -e
+0 3 * * * docker cp clearfolio:/data/clearfolio.db /path/to/backups/clearfolio-$(date +\%F).db
+```
+
+To restore from a backup:
+
+```bash
+docker stop clearfolio
+docker cp ./clearfolio-backup-2026-03-21.db clearfolio:/data/clearfolio.db
+docker start clearfolio
+```
+
+Clearfolio also has built-in JSON export/import via **Settings → Data**. The JSON export is portable and human-readable — useful for migrating between installations or inspecting your data outside the app.
 
 ### Updating
 
-Pull the latest image and recreate the container:
+Database migrations run automatically on startup — your schema is always brought up to date when a new version starts. Your existing data is preserved.
+
+**Before updating**, back up your database (see above). If anything goes wrong, you can restore the backup and revert to the previous image.
 
 ```bash
+# 1. Back up
+docker cp clearfolio:/data/clearfolio.db ./clearfolio-backup-$(date +%F).db
+
+# 2. Pull and recreate
 docker pull ghcr.io/gcaton/clearfolio
 docker stop clearfolio && docker rm clearfolio
 docker run -d \
@@ -163,6 +227,22 @@ docker run -d \
   -p 8080:80 \
   -v clearfolio-data:/data \
   ghcr.io/gcaton/clearfolio
+
+# 3. Verify
+docker logs clearfolio
 ```
 
-The database is stored in the `clearfolio-data` volume and persists across updates.
+The database is stored in the `clearfolio-data` volume and persists across updates. If a migration fails, the container will fail to start — check `docker logs clearfolio` for details, restore your backup, and report the issue.
+
+To roll back to a previous version:
+
+```bash
+docker stop clearfolio && docker rm clearfolio
+docker cp ./clearfolio-backup-2026-03-21.db clearfolio:/data/clearfolio.db
+docker run -d \
+  --name clearfolio \
+  --restart unless-stopped \
+  -p 8080:80 \
+  -v clearfolio-data:/data \
+  ghcr.io/gcaton/clearfolio:<previous-version>
+```

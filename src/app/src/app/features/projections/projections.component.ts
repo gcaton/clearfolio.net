@@ -13,6 +13,7 @@ import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Select } from 'primeng/select';
 import { InputNumber } from 'primeng/inputnumber';
 import { Skeleton } from 'primeng/skeleton';
+import { Message } from 'primeng/message';
 import * as echarts from 'echarts/core';
 import { LineChart } from 'echarts/charts';
 import {
@@ -53,7 +54,7 @@ interface EntityCard {
 @Component({
   selector: 'app-projections',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, DecimalPipe, Select, InputNumber, Skeleton],
+  imports: [NgxEchartsDirective, FormsModule, DecimalPipe, Select, InputNumber, Skeleton, Message],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './projections.component.html',
   styleUrl: './projections.component.scss',

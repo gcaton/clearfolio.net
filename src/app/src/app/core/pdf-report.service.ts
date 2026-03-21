@@ -460,10 +460,10 @@ export class PdfReportService {
       data.summary.debtQualityBreakdown?.length > 0 ? { title: 'Debt Quality', options: buildDebtQualityOptions(data.summary) } : null,
     );
 
-    // --- Row 4: Member Comparison + Super Gap ---
+    // --- Row 4: Member Comparison + Super Balance Comparison ---
     this.addChartRow(doc, y, margin, colWidth, halfChartH, gap, pxPerMm, colors,
       data.members.length > 1 ? { title: 'Member Comparison', options: buildMemberOptions(data.members) } : null,
-      data.superGap.length > 0 ? { title: 'Super Gap', options: buildSuperGapOptions(data.superGap) } : null,
+      data.superGap.length > 0 ? { title: 'Super Balance Comparison', options: buildSuperGapOptions(data.superGap) } : null,
     );
   }
 
@@ -634,7 +634,7 @@ function drawFooter(doc: jsPDF, margin: number, pageWidth: number, pageHeight: n
   doc.line(margin, footerY - 3, pageWidth - margin, footerY - 3);
   doc.setFontSize(6.5);
   doc.setTextColor(...mutedColor);
-  doc.text('Clearfolio — For discussion purposes only. Not financial advice.', margin, footerY);
+  doc.text('Clearfolio is a personal tracking tool. It does not provide financial advice. Past performance is not a reliable indicator of future performance.', margin, footerY, { maxWidth: pageWidth - margin * 2 - 40 });
   doc.text(`Page ${page} of ${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
 }
 

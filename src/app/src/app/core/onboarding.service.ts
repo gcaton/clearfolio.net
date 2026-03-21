@@ -62,7 +62,7 @@ export class OnboardingService {
         {
           id: 'liabilities',
           label: 'Add your first liability',
-          description: 'Track mortgages, loans, credit cards, and HECS',
+          description: 'Track mortgages, loans, credit cards, and student loans',
           icon: 'pi-credit-card',
           route: '/liabilities',
           complete: hasLiabilities,
