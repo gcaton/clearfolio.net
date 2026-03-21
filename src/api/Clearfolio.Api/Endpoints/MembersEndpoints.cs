@@ -175,6 +175,8 @@ public static class MembersEndpoints
 
         await db.Assets.Where(a => a.OwnerMemberId == id).ExecuteDeleteAsync();
         await db.Liabilities.Where(l => l.OwnerMemberId == id).ExecuteDeleteAsync();
+        await db.IncomeStreams.Where(i => i.OwnerMemberId == id).ExecuteDeleteAsync();
+        await db.Expenses.Where(e => e.OwnerMemberId == id).ExecuteDeleteAsync();
         await db.Snapshots.Where(s => s.RecordedBy == id).ExecuteDeleteAsync();
         await db.HouseholdMembers.Where(m => m.Id == id).ExecuteDeleteAsync();
 

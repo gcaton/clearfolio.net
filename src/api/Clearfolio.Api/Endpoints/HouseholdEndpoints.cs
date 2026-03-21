@@ -54,6 +54,9 @@ public static class HouseholdEndpoints
         await db.Snapshots.Where(s => s.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.Assets.Where(a => a.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.Liabilities.Where(l => l.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.Expenses.Where(e => e.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.IncomeStreams.Where(i => i.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.ExpenseCategories.Where(c => c.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.HouseholdMembers.Where(m => m.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.Households.Where(h => h.Id == householdId).ExecuteDeleteAsync();
 
@@ -100,6 +103,22 @@ public static class HouseholdEndpoints
             .ThenBy(s => s.EntityId)
             .ToListAsync();
 
+        var expenseCategories = await db.ExpenseCategories
+            .Where(c => c.HouseholdId == householdId)
+            .OrderBy(c => c.SortOrder)
+            .ToListAsync();
+
+        var incomeStreams = await db.IncomeStreams
+            .Where(i => i.HouseholdId == householdId)
+            .OrderBy(i => i.Label)
+            .ToListAsync();
+
+        var expenseItems = await db.Expenses
+            .Include(e => e.ExpenseCategory)
+            .Where(e => e.HouseholdId == householdId)
+            .OrderBy(e => e.Label)
+            .ToListAsync();
+
         var export = new ExportDto(
             Version: "1",
             ExportedAt: DateTime.UtcNow.ToString("o"),
@@ -125,7 +144,16 @@ public static class HouseholdEndpoints
                     s.Period, s.Value, s.Currency, s.Notes,
                     memberLookup.TryGetValue(s.RecordedBy, out var stag) ? stag : "unknown",
                     s.RecordedAt
-                )).ToList()
+                )).ToList(),
+            ExpenseCategories: expenseCategories.Select(c => new ExportExpenseCategoryDto(c.Name, c.SortOrder, c.IsDefault)).ToList(),
+            IncomeStreams: incomeStreams.Select(i => new ExportIncomeStreamDto(
+                i.OwnerMemberId != Guid.Empty && memberLookup.TryGetValue(i.OwnerMemberId, out var itag) ? itag : null,
+                i.Label, i.IncomeType, i.Amount, i.Frequency, i.IsActive, i.Notes
+            )).ToList(),
+            Expenses: expenseItems.Select(e => new ExportExpenseDto(
+                e.OwnerMemberId.HasValue && memberLookup.TryGetValue(e.OwnerMemberId.Value, out var etag) ? etag : null,
+                e.ExpenseCategory.Name, e.Label, e.Amount, e.Frequency, e.IsActive, e.Notes
+            )).ToList()
         );
 
         return Results.Ok(export);
@@ -147,6 +175,9 @@ public static class HouseholdEndpoints
         await db.Snapshots.Where(s => s.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.Assets.Where(a => a.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.Liabilities.Where(l => l.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.Expenses.Where(e => e.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.IncomeStreams.Where(i => i.HouseholdId == householdId).ExecuteDeleteAsync();
+        await db.ExpenseCategories.Where(c => c.HouseholdId == householdId).ExecuteDeleteAsync();
         await db.HouseholdMembers.Where(m => m.HouseholdId == householdId).ExecuteDeleteAsync();
 
         // Update household settings
@@ -261,6 +292,81 @@ public static class HouseholdEndpoints
                 RecordedBy = recordedBy,
                 RecordedAt = s.RecordedAt
             });
+        }
+
+        // Import expense categories (or seed defaults)
+        var categoryNameToId = new Dictionary<string, Guid>();
+        if (data.ExpenseCategories is { Count: > 0 })
+        {
+            foreach (var c in data.ExpenseCategories)
+            {
+                var id = Guid.NewGuid();
+                categoryNameToId[c.Name] = id;
+                db.ExpenseCategories.Add(new ExpenseCategory
+                {
+                    Id = id,
+                    HouseholdId = householdId,
+                    Name = c.Name,
+                    SortOrder = c.SortOrder,
+                    IsDefault = c.IsDefault,
+                    CreatedAt = now
+                });
+            }
+        }
+        else
+        {
+            ExpenseCategoriesEndpoints.SeedDefaultCategories(db, householdId);
+            foreach (var entry in db.ChangeTracker.Entries<ExpenseCategory>()
+                .Where(e => e.State == EntityState.Added && e.Entity.HouseholdId == householdId))
+            {
+                categoryNameToId[entry.Entity.Name] = entry.Entity.Id;
+            }
+        }
+
+        // Import income streams
+        if (data.IncomeStreams is { Count: > 0 })
+        {
+            foreach (var i in data.IncomeStreams)
+            {
+                db.IncomeStreams.Add(new IncomeStream
+                {
+                    Id = Guid.NewGuid(),
+                    HouseholdId = householdId,
+                    OwnerMemberId = i.OwnerMemberTag != null && memberTagToId.TryGetValue(i.OwnerMemberTag, out var oid) ? oid : memberTagToId.Values.First(),
+                    Label = i.Label,
+                    IncomeType = i.IncomeType,
+                    Amount = i.Amount,
+                    Frequency = i.Frequency,
+                    IsActive = i.IsActive,
+                    Notes = i.Notes,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
+        }
+
+        // Import expenses
+        if (data.Expenses is { Count: > 0 })
+        {
+            foreach (var e in data.Expenses)
+            {
+                if (!categoryNameToId.TryGetValue(e.ExpenseCategoryName, out var catId)) continue;
+
+                db.Expenses.Add(new Expense
+                {
+                    Id = Guid.NewGuid(),
+                    HouseholdId = householdId,
+                    OwnerMemberId = e.OwnerMemberTag != null && memberTagToId.TryGetValue(e.OwnerMemberTag, out var oid) ? oid : null,
+                    ExpenseCategoryId = catId,
+                    Label = e.Label,
+                    Amount = e.Amount,
+                    Frequency = e.Frequency,
+                    IsActive = e.IsActive,
+                    Notes = e.Notes,
+                    CreatedAt = now,
+                    UpdatedAt = now
+                });
+            }
         }
 
         await db.SaveChangesAsync();

@@ -7,7 +7,10 @@ public record ExportDto(
     List<ExportMemberDto> Members,
     List<ExportAssetDto> Assets,
     List<ExportLiabilityDto> Liabilities,
-    List<ExportSnapshotDto> Snapshots);
+    List<ExportSnapshotDto> Snapshots,
+    List<ExportExpenseCategoryDto>? ExpenseCategories,
+    List<ExportIncomeStreamDto>? IncomeStreams,
+    List<ExportExpenseDto>? Expenses);
 
 public record ExportHouseholdDto(
     string Name,
