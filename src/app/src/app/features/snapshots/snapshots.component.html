@@ -75,6 +75,7 @@
         [options]="entityTypeOptions"
         optionLabel="label"
         optionValue="value"
+        (ngModelChange)="onEntityTypeChange($event)"
       />
 
       <label for="entity">Entity</label>

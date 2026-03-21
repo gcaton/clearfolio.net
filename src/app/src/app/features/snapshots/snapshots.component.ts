@@ -82,8 +82,10 @@ export class SnapshotsComponent implements OnInit {
     { label: 'Liability', value: 'liability' },
   ];
 
+  protected selectedEntityType = signal<'asset' | 'liability'>('asset');
+
   protected filteredTargets = computed(() => {
-    const type = this.form.entityType;
+    const type = this.selectedEntityType();
     return this.targets().filter((t) => t.entityType === type);
   });
 
@@ -109,9 +111,15 @@ export class SnapshotsComponent implements OnInit {
     this.loadSnapshots();
   }
 
+  onEntityTypeChange(type: 'asset' | 'liability') {
+    this.selectedEntityType.set(type);
+    this.form.entityId = '';
+  }
+
   openNew() {
     this.form = this.emptyForm();
     this.form.period = this.selectedPeriod() || '';
+    this.selectedEntityType.set('asset');
     this.editing.set(null);
     this.dialogVisible.set(true);
   }
