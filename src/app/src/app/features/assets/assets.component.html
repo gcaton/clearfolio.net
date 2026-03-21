@@ -21,6 +21,7 @@
       <th>Owner</th>
       <th>Ownership</th>
       <th>Currency</th>
+      <th>Contribution</th>
       <th style="text-align: right">Latest Value</th>
       <th style="width: 10rem"></th>
     </tr>
@@ -53,6 +54,11 @@
       </td>
       <td>{{ asset.ownershipType }}</td>
       <td>{{ asset.currency }}</td>
+      <td>
+        @if (asset.contributionAmount) {
+          <span class="contribution-badge">\${{ asset.contributionAmount | number: '1.0-0' }}/{{ asset.contributionFrequency ?? 'mo' }}</span>
+        }
+      </td>
       <td style="text-align: right; font-variant-numeric: tabular-nums;">
         @if (getLatestValue(asset.id); as lv) {
           <span class="latest-value">{{ lv.value | number: '1.0-0' }}</span>
@@ -71,7 +77,7 @@
   </ng-template>
   <ng-template #emptymessage>
     <tr>
-      <td colspan="8">
+      <td colspan="9">
         <app-empty-state
           icon="pi-wallet"
           title="No assets yet"
