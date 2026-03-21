@@ -154,32 +154,21 @@
   </div>
 
   <p-divider />
-  <h4 class="section-label">Projections</h4>
-
-  <div class="form-row">
-    <div class="form-field">
-      <label>Contribution Amount</label>
+  <div class="form-grid">
+    <label>Contribution</label>
+    <div class="inline-group">
       <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" [currency]="form.currency || 'AUD'" [minFractionDigits]="0" placeholder="0" />
+      <p-select [(ngModel)]="form.contributionFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Frequency" [showClear]="true" />
     </div>
-    <div class="form-field">
-      <label>Frequency</label>
-      <p-select [(ngModel)]="form.contributionFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Select..." [showClear]="true" />
-    </div>
-    <div class="form-field">
-      <label>End Date</label>
-      <input type="date" [(ngModel)]="form.contributionEndDate" class="p-inputtext" />
-    </div>
-  </div>
 
-  <div class="form-row">
-    <div class="form-field">
-      <label>Expected Return (%)</label>
-      <p-inputNumber [(ngModel)]="form.expectedReturnRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
-    </div>
-    <div class="form-field">
-      <label>Volatility (%)</label>
-      <p-inputNumber [(ngModel)]="form.expectedVolatility" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
-    </div>
+    <label>Contribution End Date <span class="optional">(optional)</span></label>
+    <input type="date" [(ngModel)]="form.contributionEndDate" pInputText />
+
+    <label>Expected Return <span class="optional">(%)</span></label>
+    <p-inputNumber [(ngModel)]="form.expectedReturnRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
+
+    <label>Volatility <span class="optional">(%)</span></label>
+    <p-inputNumber [(ngModel)]="form.expectedVolatility" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
   </div>
 
   <ng-template #footer>

@@ -20,6 +20,15 @@
     font-weight: 400;
     color: var(--p-text-muted-color);
   }
+
+  .inline-group {
+    display: flex;
+    gap: 0.5rem;
+
+    > * {
+      flex: 1;
+    }
+  }
 }
 
 .symbol-cell {
