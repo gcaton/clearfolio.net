@@ -10,6 +10,7 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
+import { Password } from 'primeng/password';
 import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
@@ -19,7 +20,7 @@ import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, Updat
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast],
+  imports: [FormsModule, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast, Password],
   providers: [MessageService, ConfirmationService],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -51,6 +52,12 @@ export class SettingsComponent implements OnInit {
   protected categoryDialogVisible = signal(false);
   protected categoryName = '';
 
+  protected passphraseEnabled = signal(false);
+  protected passphraseDialogVisible = signal(false);
+  protected currentPassphrase = '';
+  protected newPassphrase = '';
+  protected confirmPassphrase = '';
+
   protected periodOptions = [
     { label: 'Financial Year (FY)', value: 'FY' },
     { label: 'Calendar Year (CY)', value: 'CY' },
@@ -60,6 +67,7 @@ export class SettingsComponent implements OnInit {
     this.api.getHousehold().subscribe((h) => this.household.set(h));
     this.api.getMembers().subscribe((m) => this.members.set(m));
     this.loadCategories();
+    this.api.getAuthStatus().subscribe(s => this.passphraseEnabled.set(s.passphraseEnabled));
   }
 
   loadCategories() {
@@ -169,7 +177,7 @@ export class SettingsComponent implements OnInit {
   startEditMember(member: Member) {
     this.editingMemberId.set(member.id);
     this.editingName = member.displayName;
-    this.editingEmail = member.email;
+    this.editingEmail = member.email ?? '';
   }
 
   saveMember(member: Member) {
@@ -191,7 +199,7 @@ export class SettingsComponent implements OnInit {
   }
 
   addMember() {
-    this.api.createMember(this.newMemberEmail, this.newMemberName).subscribe(() => {
+    this.api.createMember(this.newMemberName, this.newMemberEmail || undefined).subscribe(() => {
       this.addMemberVisible.set(false);
       this.api.getMembers().subscribe((m) => this.members.set(m));
       this.auth.loadMembers();
@@ -273,6 +281,53 @@ export class SettingsComponent implements OnInit {
       },
     });
     (event.target as HTMLInputElement).value = '';
+  }
+
+  openSetPassphrase() {
+    this.currentPassphrase = '';
+    this.newPassphrase = '';
+    this.confirmPassphrase = '';
+    this.passphraseDialogVisible.set(true);
+  }
+
+  savePassphrase() {
+    if (this.newPassphrase !== this.confirmPassphrase) {
+      this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Passphrases do not match' });
+      return;
+    }
+    this.api.setPassphrase(
+      this.passphraseEnabled() ? this.currentPassphrase : null,
+      this.newPassphrase
+    ).subscribe({
+      next: () => {
+        this.passphraseEnabled.set(true);
+        this.passphraseDialogVisible.set(false);
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Passphrase set' });
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to set passphrase. Check your current passphrase.' });
+      },
+    });
+  }
+
+  removePassphrase() {
+    this.confirmationService.confirm({
+      message: 'Remove the passphrase? Anyone on your network will be able to access Clearfolio.',
+      header: 'Remove Passphrase?',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.api.removePassphrase(this.currentPassphrase).subscribe({
+          next: () => {
+            this.passphraseEnabled.set(false);
+            this.passphraseDialogVisible.set(false);
+            this.messageService.add({ severity: 'success', summary: 'Removed', detail: 'Passphrase removed' });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Incorrect passphrase' });
+          },
+        });
+      },
+    });
   }
 
   saveGoals() {
