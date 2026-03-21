@@ -56,7 +56,7 @@
       <td>{{ asset.currency }}</td>
       <td>
         @if (asset.contributionAmount) {
-          <span class="contribution-badge">\${{ asset.contributionAmount | number: '1.0-0' }}/{{ asset.contributionFrequency ?? 'mo' }}</span>
+          <span class="contribution-badge">{{ asset.contributionAmount | currency: asset.currency : 'symbol' : '1.0-0' }}/{{ asset.contributionFrequency ?? 'mo' }}</span>
         }
       </td>
       <td style="text-align: right; font-variant-numeric: tabular-nums;">
