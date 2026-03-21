@@ -197,8 +197,7 @@ Only rendered if passphrase is enabled and session is not active:
 ### HouseholdMember Entity
 
 - `Email` becomes **optional/nullable** — no longer used for auth, purely informational
-- Requires an EF migration to: remove `.IsRequired()` on Email, drop the unique index on Email
-- `ClearfolioDbContext.cs` must update the `HouseholdMember` configuration accordingly
+- `ClearfolioDbContext.cs` must update the `HouseholdMember` configuration: remove `.IsRequired()` on Email, drop `.HasIndex().IsUnique()` on Email
 
 ### Endpoint Changes
 
@@ -292,7 +291,7 @@ Commands stay the same. `just dev` still works for Angular hot-reload — `proxy
 - `src/api/Clearfolio.Api/Endpoints/AuthEndpoints.cs`
 - `src/api/Clearfolio.Api/Models/AppSetting.cs`
 - `src/app/src/app/features/login/login.component.ts` (+ template, styles)
-- EF migration for: `AppSettings` table, `HouseholdMember.Email` nullable + drop unique index
+- New EF migration folder (delete all existing migrations, generate fresh `InitialCreate` from updated models)
 
 ### Modified
 
@@ -306,6 +305,7 @@ Commands stay the same. `just dev` still works for Angular hot-reload — `proxy
 - `src/api/Clearfolio.Api/DTOs/ExportDto.cs` — ExportMemberDto Email nullable
 - `src/api/Clearfolio.Api/Endpoints/HouseholdEndpoints.cs` — import handler null-coalesce Email
 - `src/api/Clearfolio.Api/Data/ClearfolioDbContext.cs` — add AppSettings DbSet, update HouseholdMember Email config
+- `src/api/Clearfolio.Api/Data/Migrations/*` — delete all, regenerate fresh `InitialCreate` from updated models
 - `src/api/Clearfolio.Api/appsettings.Development.json` — remove `DevAuth:MockUserEmail` section
 - `src/app/src/app/core/auth/auth.service.ts` — rewrite signals, use `/api/auth/status`
 - `src/app/src/app/core/auth/setup.guard.ts` — add `requireAuthenticated` guard
