@@ -1,6 +1,25 @@
 <div class="dashboard-header">
   <h1>Dashboard</h1>
-  <app-period-selector (periodChange)="onPeriodChange($event)" />
+  <div class="header-controls">
+    <p-selectbutton
+      [options]="scopeOptions"
+      [ngModel]="selectedScope()"
+      (ngModelChange)="onScopeChange($event)"
+      optionLabel="label"
+      optionValue="value"
+      [allowEmpty]="false"
+      size="small"
+    />
+    <p-button
+      icon="pi pi-file-pdf"
+      label="Export PDF"
+      severity="secondary"
+      [outlined]="true"
+      size="small"
+      [disabled]="!summary()"
+      (onClick)="exportReport()"
+    />
+  </div>
 </div>
 
 @if (!summary()) {

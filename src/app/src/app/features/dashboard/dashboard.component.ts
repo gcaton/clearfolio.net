@@ -3,10 +3,11 @@ import { FormsModule } from '@angular/forms';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Skeleton } from 'primeng/skeleton';
 import { ProgressBar } from 'primeng/progressbar';
+import { SelectButton } from 'primeng/selectbutton';
+import { Button } from 'primeng/button';
 import { GoalService } from '../../core/auth/goal.service';
 import { CurrencyDisplayComponent } from '../../shared/components/currency-display.component';
 import { NetWorthChangeComponent } from '../../shared/components/net-worth-change.component';
-import { PeriodSelectorComponent } from '../../shared/components/period-selector.component';
 import { PeriodLabelPipe } from '../../shared/pipes/period-label.pipe';
 import * as echarts from 'echarts/core';
 import { LineChart, BarChart, PieChart } from 'echarts/charts';
@@ -18,6 +19,7 @@ import {
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
+import { PdfReportService } from '../../core/pdf-report.service';
 import { ViewStateService } from '../../core/auth/view-state.service';
 import {
   DashboardSummary,
@@ -26,6 +28,7 @@ import {
   MemberComparison,
   SuperGap,
   GoalProjection,
+  AssetPerformance,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
 
@@ -34,7 +37,7 @@ echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, Leg
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodSelectorComponent, PeriodLabelPipe, Skeleton, ProgressBar],
+  imports: [NgxEchartsDirective, FormsModule, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -43,13 +46,20 @@ export class DashboardComponent {
   private api = inject(ApiService);
   private viewState = inject(ViewStateService);
   private goalService = inject(GoalService);
+  private pdfReport = inject(PdfReportService);
 
-  protected selectedPeriod = signal<string | null>(null);
+  protected selectedScope = signal('all');
+  protected scopeOptions = [
+    { label: 'Total Net Worth', value: 'all' },
+    { label: 'Financial Net Worth', value: 'financial' },
+    { label: 'Liquid Net Worth', value: 'liquid' },
+  ];
   protected summary = signal<DashboardSummary | null>(null);
   protected trend = signal<TrendPoint[]>([]);
   protected composition = signal<CompositionPoint[]>([]);
   protected members = signal<MemberComparison[]>([]);
   protected superGap = signal<SuperGap[]>([]);
+  protected assetPerformance = signal<AssetPerformance[]>([]);
 
   protected trendOptions = computed(() => buildTrendOptions(this.trend()));
   protected compositionOptions = computed(() => buildCompositionOptions(this.summary()));
@@ -69,28 +79,42 @@ export class DashboardComponent {
     });
   }
 
-  onPeriodChange(period: string) {
-    this.selectedPeriod.set(period);
+  onScopeChange(scope: string) {
+    this.selectedScope.set(scope);
     this.loadData(this.viewState.view());
   }
 
   private loadData(view: string) {
-    const period = this.selectedPeriod() || undefined;
-    const summaryParams: Record<string, string> = { view };
-    if (period) summaryParams['period'] = period;
+    const scope = this.selectedScope();
+    const summaryParams: Record<string, string> = { view, scope };
 
     this.api.getDashboardSummary(summaryParams).subscribe((d) => this.summary.set(d));
-    this.api.getDashboardTrend({ periods: 8, view }).subscribe((d) => this.trend.set(d));
-    this.api.getDashboardComposition(period ? { period } : {}).subscribe((d) => this.composition.set(d));
-    this.api.getDashboardMembers(period ? { period } : {}).subscribe((d) => this.members.set(d));
+    this.api.getDashboardTrend({ view, scope }).subscribe((d) => this.trend.set(d));
+    this.api.getDashboardComposition({ scope }).subscribe((d) => this.composition.set(d));
+    this.api.getDashboardMembers({ scope }).subscribe((d) => this.members.set(d));
     this.api.getSuperGap().subscribe((d) => this.superGap.set(d));
+    this.api.getAssetPerformance({ view }).subscribe((d) => this.assetPerformance.set(d));
 
     const goal = this.goalService.goal().netWorthTarget;
     if (goal && goal > 0) {
-      this.api.getGoalProjection(goal, view).subscribe((d) => this.projection.set(d));
+      this.api.getGoalProjection(goal, view, scope).subscribe((d) => this.projection.set(d));
     } else {
       this.projection.set(null);
     }
+  }
+
+  exportReport() {
+    const summary = this.summary();
+    if (!summary) return;
+    this.pdfReport.generate({
+      summary,
+      trend: this.trend(),
+      members: this.members(),
+      superGap: this.superGap(),
+      assetPerformance: this.assetPerformance(),
+      projection: this.projection(),
+      scope: this.selectedScope(),
+    });
   }
 
   protected timeToGoal = computed(() => {

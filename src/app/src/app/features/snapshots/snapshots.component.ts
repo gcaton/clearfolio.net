@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe, DatePipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
@@ -50,6 +50,8 @@ export class SnapshotsComponent implements OnInit {
   private confirmService = inject(ConfirmationService);
   private messageService = inject(MessageService);
 
+  private periodSelector = viewChild<PeriodSelectorComponent>('periodSelector');
+
   protected snapshots = signal<Snapshot[]>([]);
   protected selectedPeriod = signal('');
   protected targets = signal<SnapshotTarget[]>([]);
@@ -97,6 +99,7 @@ export class SnapshotsComponent implements OnInit {
     this.loadTargets();
     this.api.getHousehold().subscribe((h) => {
       const convention = h.preferredPeriodType || 'FY';
+      this.bulkConvention = convention;
       this.periodOptions = this.buildPeriodRange(convention, new Date().getFullYear() - 4).reverse();
     });
   }
@@ -138,9 +141,15 @@ export class SnapshotsComponent implements OnInit {
         this.loadSnapshots();
       });
     } else {
+      const savedPeriod = this.form.period;
       this.api.upsertSnapshot(this.form).subscribe(() => {
         this.dialogVisible.set(false);
-        this.loadSnapshots();
+        if (!this.selectedPeriod()) {
+          this.selectedPeriod.set(savedPeriod);
+          this.periodSelector()?.refresh(savedPeriod);
+        } else {
+          this.loadSnapshots();
+        }
         this.api.getPeriods().subscribe((p) => this.periods.set(p));
       });
     }
@@ -181,7 +190,8 @@ export class SnapshotsComponent implements OnInit {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `snapshots-${this.selectedPeriod()}.csv`;
+    const period = this.selectedPeriod();
+    a.download = `snapshots-${period === 'ALL' ? 'all' : period}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -212,19 +222,28 @@ export class SnapshotsComponent implements OnInit {
     this.bulkPeriods.set(periods);
 
     const targets = this.targets();
-    const grid: BulkCell[] = [];
-    for (const target of targets) {
-      for (const period of periods) {
-        grid.push({
-          entityId: target.id,
-          entityType: target.entityType,
-          period,
-          currency: target.currency,
-          value: null,
-        });
+
+    // Fetch all existing snapshots to pre-populate the grid
+    this.api.getSnapshots({}).subscribe((existing) => {
+      const lookup = new Map<string, number>();
+      for (const s of existing) {
+        lookup.set(`${s.entityId}|${s.period}`, s.value);
       }
-    }
-    this.bulkGrid.set(grid);
+
+      const grid: BulkCell[] = [];
+      for (const target of targets) {
+        for (const period of periods) {
+          grid.push({
+            entityId: target.id,
+            entityType: target.entityType,
+            period,
+            currency: target.currency,
+            value: lookup.get(`${target.id}|${period}`) ?? null,
+          });
+        }
+      }
+      this.bulkGrid.set(grid);
+    });
   }
 
   getBulkCell(entityId: string, period: string): BulkCell | undefined {
@@ -308,7 +327,8 @@ export class SnapshotsComponent implements OnInit {
   private loadSnapshots() {
     const period = this.selectedPeriod();
     if (!period) return;
-    this.api.getSnapshots({ period }).subscribe((d) => this.snapshots.set(d));
+    const params = period === 'ALL' ? {} : { period };
+    this.api.getSnapshots(params).subscribe((d) => this.snapshots.set(d));
   }
 
   private loadTargets() {

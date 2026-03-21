@@ -8,13 +8,23 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      calver: ${{ steps.calver.outputs.version }}
+    steps:
+      - id: calver
+        run: echo "version=$(date -u +'%Y.%m.%d').${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
   build-api:
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/clearfolio-api
+      VERSION: ${{ needs.version.outputs.calver }}
     steps:
       - uses: actions/checkout@v4
 
@@ -29,15 +39,13 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
-        env:
-          COMMIT_SHA: ${{ github.sha }}
         with:
           context: src/api
           platforms: linux/arm64
           push: true
           tags: |
             ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
+            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -49,12 +57,14 @@ jobs:
           delete-only-untagged-versions: false
 
   build-app:
+    needs: version
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     env:
       IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/clearfolio-app
+      VERSION: ${{ needs.version.outputs.calver }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,15 +79,15 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: docker/build-push-action@v6
-        env:
-          COMMIT_SHA: ${{ github.sha }}
         with:
           context: src/app
           platforms: linux/arm64
           push: true
+          build-args: |
+            APP_VERSION=${{ env.VERSION }}
           tags: |
             ${{ env.IMAGE_NAME }}:latest
-            ${{ env.IMAGE_NAME }}:${{ env.COMMIT_SHA }}
+            ${{ env.IMAGE_NAME }}:${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

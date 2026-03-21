@@ -45,6 +45,13 @@ function currencyFormatter(value: number): string {
   return '$' + Math.round(value).toLocaleString();
 }
 
+function currencyAbbr(value: number): string {
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return '$' + (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (abs >= 1_000) return '$' + (value / 1_000).toFixed(0) + 'K';
+  return '$' + Math.round(value).toString();
+}
+
 const tooltipStyle = {
   trigger: 'axis' as const,
   axisPointer: { type: 'shadow' as const },
@@ -53,12 +60,13 @@ const tooltipStyle = {
 export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
   return {
     tooltip: tooltipStyle,
-    legend: { data: ['Assets', 'Liabilities', 'Net Worth'], bottom: 0 },
-    grid: { left: 60, right: 20, top: 20, bottom: 40 },
+    legend: { data: ['Assets', 'Financial Assets', 'Liabilities', 'Net Worth'], bottom: 0 },
+    grid: { left: 60, right: 20, top: 20, bottom: 60 },
     xAxis: { type: 'category', data: data.map((d) => d.period) },
     yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
     series: [
       { name: 'Assets', type: 'line', data: data.map((d) => d.assets), smooth: true, itemStyle: { color: '#34d399' } },
+      { name: 'Financial Assets', type: 'line', data: data.map((d) => d.financialAssets), smooth: true, itemStyle: { color: '#a78bfa' }, lineStyle: { type: 'dashed' } },
       { name: 'Liabilities', type: 'line', data: data.map((d) => d.liabilities), smooth: true, itemStyle: { color: '#f87171' } },
       { name: 'Net Worth', type: 'line', data: data.map((d) => d.netWorth), smooth: true, lineStyle: { type: 'dashed' }, itemStyle: { color: '#60a5fa' } },
     ],
@@ -92,7 +100,7 @@ export function buildLiquidityOptions(summary: DashboardSummary | null): ECharts
   return {
     tooltip: { ...tooltipStyle, trigger: 'axis' },
     grid: { left: 100, right: 20, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
+    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v) } },
     yAxis: { type: 'category', data: items.map((i) => label(i.liquidity)) },
     series: [
       {
@@ -129,7 +137,7 @@ export function buildDebtQualityOptions(summary: DashboardSummary | null): EChar
   return {
     tooltip: { ...tooltipStyle, trigger: 'axis' },
     grid: { left: 100, right: 20, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
+    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v) } },
     yAxis: { type: 'category', data: items.map((i) => label(i.debtQuality)) },
     series: [
       {

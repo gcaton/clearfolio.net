@@ -25,6 +25,7 @@ import {
   ScenarioResult,
   MonteCarloResult,
   ProjectionDefault,
+  AssetPerformance,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -152,30 +153,34 @@ export class ApiService {
   }
 
   // Dashboard
-  getDashboardSummary(params?: { period?: string; view?: string }) {
+  getDashboardSummary(params?: { period?: string; view?: string; scope?: string }) {
     return this.http.get<DashboardSummary>('/api/dashboard/summary', { params: params as Record<string, string> });
   }
 
-  getDashboardTrend(params?: { periods?: number; view?: string }) {
+  getDashboardTrend(params?: { view?: string; scope?: string }) {
     return this.http.get<TrendPoint[]>('/api/dashboard/trend', { params: params as Record<string, string> });
   }
 
-  getDashboardComposition(params?: { period?: string }) {
+  getDashboardComposition(params?: { period?: string; scope?: string }) {
     return this.http.get<CompositionPoint[]>('/api/dashboard/composition', { params: params as Record<string, string> });
   }
 
-  getDashboardMembers(params?: { period?: string }) {
+  getDashboardMembers(params?: { period?: string; scope?: string }) {
     return this.http.get<MemberComparison[]>('/api/dashboard/members', { params: params as Record<string, string> });
   }
 
-  getGoalProjection(target: number, view = 'household') {
+  getGoalProjection(target: number, view = 'household', scope = 'all') {
     return this.http.get<GoalProjection>('/api/dashboard/goal-projection', {
-      params: { target: target.toString(), view },
+      params: { target: target.toString(), view, scope },
     });
   }
 
   getSuperGap() {
     return this.http.get<SuperGap[]>('/api/dashboard/super-gap');
+  }
+
+  getAssetPerformance(params?: { view?: string }) {
+    return this.http.get<AssetPerformance[]>('/api/dashboard/asset-performance', { params: params as Record<string, string> });
   }
 
   // Projections

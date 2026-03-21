@@ -1,7 +1,7 @@
 <div class="page-header">
   <h1>Snapshots</h1>
   <div class="header-actions">
-    <app-period-selector (periodChange)="onPeriodChange($event)" />
+    <app-period-selector #periodSelector (periodChange)="onPeriodChange($event)" />
     <p-button label="Record Value" icon="pi pi-plus" (onClick)="openNew()" />
     <p-button label="Bulk Entry" icon="pi pi-table" severity="secondary" (onClick)="openBulk()" />
     <p-button label="Export CSV" icon="pi pi-download" severity="secondary"

@@ -24,11 +24,20 @@ export class PeriodSelectorComponent implements OnInit {
   periodChange = output<string>();
 
   ngOnInit() {
+    this.loadPeriods();
+  }
+
+  refresh(selectPeriod?: string) {
+    this.loadPeriods(selectPeriod);
+  }
+
+  private loadPeriods(selectPeriod?: string) {
     this.api.getPeriods().subscribe((periods) => {
-      this.periods.set(periods);
-      if (periods.length > 0) {
-        this.selected = periods[0];
-        this.periodChange.emit(periods[0]);
+      this.periods.set(['ALL', ...periods]);
+      const target = selectPeriod ?? (periods.length > 0 ? periods[0] : '');
+      if (target && target !== this.selected) {
+        this.selected = target;
+        this.periodChange.emit(target);
       }
     });
   }

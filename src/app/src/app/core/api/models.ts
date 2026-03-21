@@ -197,6 +197,7 @@ export interface DebtQualityBreakdown {
 export interface TrendPoint {
   period: string;
   assets: number;
+  financialAssets: number;
   liabilities: number;
   netWorth: number;
 }
@@ -219,6 +220,19 @@ export interface SuperGap {
   memberTag: string;
   displayName: string;
   superBalance: number;
+}
+
+export interface AssetPerformance {
+  assetId: string;
+  label: string;
+  category: string;
+  owner: string | null;
+  years: YearValue[];
+}
+
+export interface YearValue {
+  year: string;
+  value: number;
 }
 
 export interface GoalProjection {

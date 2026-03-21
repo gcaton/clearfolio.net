@@ -16,19 +16,20 @@ public static class DashboardEndpoints
         app.MapGet("/api/dashboard/composition", GetComposition);
         app.MapGet("/api/dashboard/members", GetMembers);
         app.MapGet("/api/dashboard/super-gap", GetSuperGap);
+        app.MapGet("/api/dashboard/asset-performance", GetAssetPerformance);
         return app;
     }
 
-    private static async Task<IResult> GetSummary(HttpContext context, ClearfolioDbContext db, string? period = null, string view = "household")
+    private static async Task<IResult> GetSummary(HttpContext context, ClearfolioDbContext db, string? period = null, string view = "household", string scope = "all")
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
-        var snapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, period);
-        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
-        var liabilities = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
+        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         var assetValues = CalculateAssetValues(snapshots, assets, members, view);
@@ -38,7 +39,7 @@ public static class DashboardEndpoints
         var totalLiabilities = liabilityValues.Sum(v => v.Value);
 
         var previousPeriod = PeriodHelper.PreviousPeriod(period);
-        var prevSnapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, previousPeriod);
+        var prevSnapshots = await GetEffectiveSnapshots(db, member.HouseholdId, previousPeriod);
         var prevAssetTotal = CalculateAssetValues(prevSnapshots, assets, members, view).Sum(v => v.Value);
         var prevLiabilityTotal = CalculateLiabilityValues(prevSnapshots, liabilities, members, view).Sum(v => v.Value);
         var prevNetWorth = prevAssetTotal - prevLiabilityTotal;
@@ -58,42 +59,62 @@ public static class DashboardEndpoints
         ));
     }
 
-    private static async Task<IResult> GetTrend(HttpContext context, ClearfolioDbContext db, int periods = 8, string view = "household")
+    private static async Task<IResult> GetTrend(HttpContext context, ClearfolioDbContext db, string view = "household", string scope = "all")
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var currentPeriod = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
-        var periodList = PeriodHelper.PreviousPeriods(currentPeriod, periods);
 
-        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
-        var liabilities = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var allAssetsRaw = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
+        var assets = ApplyScopeFilter(allAssetsRaw, scope);
+        var financialAssets = ApplyScopeFilter(allAssetsRaw, "financial");
+        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         var allSnapshots = await db.Snapshots.AsNoTracking()
-            .Where(s => s.HouseholdId == member.HouseholdId && periodList.Contains(s.Period))
+            .Where(s => s.HouseholdId == member.HouseholdId)
             .ToListAsync();
 
-        var trend = new List<TrendPointDto>();
-        foreach (var p in periodList)
+        // Build list of all periods from earliest snapshot through current period
+        var distinctPeriods = allSnapshots.Select(s => s.Period).Distinct().ToList();
+        if (distinctPeriods.Count == 0) return Results.Ok(new List<TrendPointDto>());
+
+        var earliestPeriod = distinctPeriods.Order().First();
+        var periodList = new List<string>();
+        var p = earliestPeriod;
+        while (string.Compare(p, currentPeriod, StringComparison.Ordinal) <= 0)
         {
-            var periodSnapshots = allSnapshots.Where(s => s.Period == p).ToList();
-            var assetTotal = CalculateAssetValues(periodSnapshots, assets, members, view).Sum(v => v.Value);
-            var liabilityTotal = CalculateLiabilityValues(periodSnapshots, liabilities, members, view).Sum(v => v.Value);
-            trend.Add(new TrendPointDto(p, assetTotal, liabilityTotal, assetTotal - liabilityTotal));
+            periodList.Add(p);
+            p = PeriodHelper.NextPeriod(p);
+        }
+
+        var latestByEntity = new Dictionary<Guid, Snapshot>();
+        var trend = new List<TrendPointDto>();
+        foreach (var period in periodList)
+        {
+            var periodSnapshots = allSnapshots.Where(s => s.Period == period).ToList();
+            foreach (var s in periodSnapshots)
+                latestByEntity[s.EntityId] = s;
+
+            var effective = latestByEntity.Values.ToList();
+            var assetTotal = CalculateAssetValues(effective, assets, members, view).Sum(v => v.Value);
+            var financialAssetTotal = CalculateAssetValues(effective, financialAssets, members, view).Sum(v => v.Value);
+            var liabilityTotal = CalculateLiabilityValues(effective, liabilities, members, view).Sum(v => v.Value);
+            trend.Add(new TrendPointDto(period, assetTotal, financialAssetTotal, liabilityTotal, assetTotal - liabilityTotal));
         }
 
         return Results.Ok(trend);
     }
 
-    private static async Task<IResult> GetGoalProjection(HttpContext context, ClearfolioDbContext db, double target, string view = "household")
+    private static async Task<IResult> GetGoalProjection(HttpContext context, ClearfolioDbContext db, double target, string view = "household", string scope = "all")
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
 
-        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
-        var liabilities = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         // Get all distinct periods that have snapshot data
@@ -176,15 +197,15 @@ public static class DashboardEndpoints
             dataPoints.Count, Math.Round(rSquared, 3)));
     }
 
-    private static async Task<IResult> GetComposition(HttpContext context, ClearfolioDbContext db, string? period = null)
+    private static async Task<IResult> GetComposition(HttpContext context, ClearfolioDbContext db, string? period = null, string scope = "all")
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
-        var snapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, period);
-        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
+        var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
+        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
 
         var composition = new List<CompositionPointDto>();
         foreach (var snapshot in snapshots.Where(s => s.EntityType == "asset"))
@@ -202,7 +223,7 @@ public static class DashboardEndpoints
         return Results.Ok(grouped);
     }
 
-    private static async Task<IResult> GetMembers(HttpContext context, ClearfolioDbContext db, string? period = null)
+    private static async Task<IResult> GetMembers(HttpContext context, ClearfolioDbContext db, string? period = null, string scope = "all")
     {
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
@@ -210,9 +231,9 @@ public static class DashboardEndpoints
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
-        var snapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, period);
-        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
-        var liabilities = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
+        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
 
         var result = new List<MemberComparisonDto>();
         foreach (var m in members)
@@ -233,7 +254,7 @@ public static class DashboardEndpoints
         var period = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
-        var snapshots = await GetSnapshotsForPeriod(db, member.HouseholdId, period);
+        var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
         var superAssets = await db.Assets.AsNoTracking().Include(a => a.AssetType)
             .Where(a => a.HouseholdId == member.HouseholdId && a.IsActive && a.AssetType.IsSuper)
             .ToListAsync();
@@ -248,12 +269,121 @@ public static class DashboardEndpoints
         return Results.Ok(result);
     }
 
-    private static async Task<List<Snapshot>> GetSnapshotsForPeriod(ClearfolioDbContext db, Guid householdId, string period)
+    private static async Task<IResult> GetAssetPerformance(HttpContext context, ClearfolioDbContext db, string view = "household")
     {
-        return await db.Snapshots.AsNoTracking()
-            .Where(s => s.HouseholdId == householdId && s.Period == period)
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
+        var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
+        var currentPeriod = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
+
+        var assets = await db.Assets.AsNoTracking().Include(a => a.AssetType)
+            .Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
+        var members = await db.HouseholdMembers.AsNoTracking()
+            .Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
+        var allSnapshots = await db.Snapshots.AsNoTracking()
+            .Where(s => s.HouseholdId == member.HouseholdId && s.EntityType == "asset")
             .ToListAsync();
+
+        if (allSnapshots.Count == 0) return Results.Ok(new List<AssetPerformanceDto>());
+
+        // Build period list from earliest to current
+        var distinctPeriods = allSnapshots.Select(s => s.Period).Distinct().Order().ToList();
+        var earliestPeriod = distinctPeriods[0];
+        var periodList = new List<string>();
+        var p = earliestPeriod;
+        while (string.Compare(p, currentPeriod, StringComparison.Ordinal) <= 0)
+        {
+            periodList.Add(p);
+            p = PeriodHelper.NextPeriod(p);
+        }
+
+        // Group periods by year — take last quarter per year
+        var yearEndPeriods = new Dictionary<string, string>(); // "CY 2024" → "CY2024-Q4"
+        foreach (var period in periodList)
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(period, @"^(CY|FY)(\d{4})");
+            if (!match.Success) continue;
+            var yearKey = $"{match.Groups[1].Value} {match.Groups[2].Value}";
+            yearEndPeriods[yearKey] = period; // last one wins
+        }
+        var years = yearEndPeriods.Keys.ToList();
+
+        // For each asset, carry-forward through periods and capture year-end values
+        var result = new List<AssetPerformanceDto>();
+        foreach (var asset in assets.OrderBy(a => a.AssetType.SortOrder).ThenBy(a => a.Label))
+        {
+            var assetSnapshots = allSnapshots.Where(s => s.EntityId == asset.Id).ToDictionary(s => s.Period);
+            if (assetSnapshots.Count == 0) continue;
+
+            double? latestValue = null;
+            var yearValues = new List<YearValueDto>();
+
+            foreach (var period in periodList)
+            {
+                if (assetSnapshots.TryGetValue(period, out var snap))
+                {
+                    latestValue = ApplyViewFilter(snap.Value, asset.OwnershipType, asset.OwnerMemberId, asset.JointSplit, members, view);
+                }
+
+                // If this period is a year-end period, record the value
+                var yearMatch = System.Text.RegularExpressions.Regex.Match(period, @"^(CY|FY)(\d{4})");
+                if (yearMatch.Success)
+                {
+                    var yearKey = $"{yearMatch.Groups[1].Value} {yearMatch.Groups[2].Value}";
+                    if (yearEndPeriods.TryGetValue(yearKey, out var yearEnd) && yearEnd == period && latestValue.HasValue)
+                    {
+                        yearValues.Add(new YearValueDto(yearKey, latestValue.Value));
+                    }
+                }
+            }
+
+            if (yearValues.Count > 0)
+            {
+                var ownerName = asset.OwnerMemberId.HasValue
+                    ? members.FirstOrDefault(m => m.Id == asset.OwnerMemberId)?.DisplayName
+                    : "Joint";
+                result.Add(new AssetPerformanceDto(asset.Id, asset.Label, asset.AssetType.Category, ownerName, yearValues));
+            }
+        }
+
+        return Results.Ok(result);
     }
+
+    /// <summary>
+    /// Returns the effective snapshots for a period, carrying forward the latest value
+    /// per entity from prior periods when no snapshot exists for the requested period.
+    /// </summary>
+    private static async Task<List<Snapshot>> GetEffectiveSnapshots(ClearfolioDbContext db, Guid householdId, string period)
+    {
+        var allSnapshots = await db.Snapshots.AsNoTracking()
+            .Where(s => s.HouseholdId == householdId &&
+                        string.Compare(s.Period, period) <= 0)
+            .ToListAsync();
+
+        var latestByEntity = new Dictionary<Guid, Snapshot>();
+        foreach (var s in allSnapshots.OrderBy(s => s.Period))
+            latestByEntity[s.EntityId] = s;
+
+        return latestByEntity.Values.ToList();
+    }
+
+    // Scope filters: "all" = everything, "financial" = cash+investable+retirement, "liquid" = cash+investable
+    private static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
+    private static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
+    private static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
+
+    private static List<Asset> ApplyScopeFilter(List<Asset> assets, string scope) => scope switch
+    {
+        "financial" => assets.Where(a => FinancialAssetCategories.Contains(a.AssetType.Category)).ToList(),
+        "liquid" => assets.Where(a => LiquidAssetCategories.Contains(a.AssetType.Category)).ToList(),
+        _ => assets,
+    };
+
+    private static List<Liability> ApplyScopeFilter(List<Liability> liabilities, string scope) => scope switch
+    {
+        "financial" or "liquid" => liabilities.Where(l => FinancialLiabilityCategories.Contains(l.LiabilityType.Category)).ToList(),
+        _ => liabilities,
+    };
 
     private record AssetValue(double Value, string Category, string Liquidity, string GrowthClass);
     private record LiabilityValue(double Value, string Category, string DebtQuality);

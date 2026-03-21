@@ -7,6 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from './core/auth/auth.service';
 import { ViewStateService, ViewState } from './core/auth/view-state.service';
 import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.component';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -76,6 +77,10 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
     <main class="app-content">
       <router-outlet />
     </main>
+
+    @if (!auth.needsSetup()) {
+      <footer class="app-footer">v{{ version }}</footer>
+    }
   `,
   styleUrl: './app.scss',
 })
@@ -83,6 +88,7 @@ export class App implements OnInit {
   protected auth = inject(AuthService);
   protected viewState = inject(ViewStateService);
   protected mobileMenuVisible = signal(false);
+  protected version = environment.version;
 
   protected viewOptions = computed(() => {
     const members = this.auth.members();
