@@ -2,7 +2,7 @@ namespace Clearfolio.Api.DTOs;
 
 public record MemberDto(
     Guid Id,
-    string Email,
+    string? Email,
     string DisplayName,
     string MemberTag,
     bool IsPrimary,
@@ -13,5 +13,5 @@ public record UpdateMemberRequest(
     string? Email = null);
 
 public record CreateMemberRequest(
-    string Email,
+    string? Email,
     string DisplayName);

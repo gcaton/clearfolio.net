@@ -33,39 +33,36 @@ public static class MembersEndpoints
         return Results.Ok(members);
     }
 
-    private static IResult GetCurrentMember(HttpContext context)
+    private static async Task<IResult> GetCurrentMember(HttpContext context, ClearfolioDbContext db)
     {
         var member = context.Items["HouseholdMember"] as HouseholdMember;
         if (member is null)
         {
-            var email = (string)context.Items["UserEmail"]!;
-            return Results.NotFound(new SetupStatusDto(true, email));
+            var setupComplete = await db.Households.AnyAsync();
+            if (!setupComplete)
+                return Results.NotFound();
+            return Results.Unauthorized();
         }
-        return Results.Ok(new MemberDto(member.Id, member.Email, member.DisplayName, member.MemberTag, member.IsPrimary, member.CreatedAt));
+
+        return Results.Ok(new MemberDto(
+            member.Id, member.Email, member.DisplayName,
+            member.MemberTag, member.IsPrimary, member.CreatedAt));
     }
 
     private static async Task<IResult> SetupMember(SetupRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        if (context.Items["HouseholdMember"] is HouseholdMember)
-            return Results.BadRequest("Already set up.");
-
-        var displayName = request.DisplayName?.Trim();
-        if (string.IsNullOrEmpty(displayName))
+        if (string.IsNullOrWhiteSpace(request.DisplayName))
             return Results.BadRequest("Display name is required.");
 
-        var email = (string)context.Items["UserEmail"]!;
-
-        // Handle race condition — if member was created concurrently
-        var existing = await db.HouseholdMembers
-            .Include(m => m.Household)
-            .FirstOrDefaultAsync(m => m.Email == email);
-        if (existing is not null)
-            return Results.Ok(new MemberDto(existing.Id, existing.Email, existing.DisplayName, existing.MemberTag, existing.IsPrimary, existing.CreatedAt));
+        if (await db.Households.AnyAsync())
+            return Results.BadRequest("Setup has already been completed.");
 
         var household = new Household
         {
             Id = Guid.NewGuid(),
-            Name = "My Household",
+            Name = request.HouseholdName ?? "My Household",
+            BaseCurrency = request.Currency ?? "AUD",
+            PreferredPeriodType = request.PeriodType ?? "FY",
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
         db.Households.Add(household);
@@ -74,8 +71,7 @@ public static class MembersEndpoints
         {
             Id = Guid.NewGuid(),
             HouseholdId = household.Id,
-            Email = email,
-            DisplayName = displayName,
+            DisplayName = request.DisplayName.Trim(),
             MemberTag = "p1",
             IsPrimary = true,
             CreatedAt = DateTime.UtcNow.ToString("o"),
@@ -83,33 +79,19 @@ public static class MembersEndpoints
         };
         db.HouseholdMembers.Add(member);
 
-        // Seed default expense categories
         ExpenseCategoriesEndpoints.SeedDefaultCategories(db, household.Id);
 
-        try
-        {
-            await db.SaveChangesAsync();
-        }
-        catch (DbUpdateException)
-        {
-            // Concurrent insert won the race — return the existing member
-            db.ChangeTracker.Clear();
-            var raced = await db.HouseholdMembers
-                .Include(m => m.Household)
-                .FirstAsync(m => m.Email == email);
-            return Results.Ok(new MemberDto(raced.Id, raced.Email, raced.DisplayName, raced.MemberTag, raced.IsPrimary, raced.CreatedAt));
-        }
+        await db.SaveChangesAsync();
 
-        return Results.Created($"/api/members/{member.Id}", new MemberDto(member.Id, member.Email, member.DisplayName, member.MemberTag, member.IsPrimary, member.CreatedAt));
+        return Results.Created($"/api/members/{member.Id}", new MemberDto(
+            member.Id, member.Email, member.DisplayName,
+            member.MemberTag, member.IsPrimary, member.CreatedAt));
     }
 
     private static async Task<IResult> CreateMember(CreateMemberRequest request, HttpContext context, ClearfolioDbContext db)
     {
         var currentMember = GetMemberOrNull(context);
         if (currentMember is null) return Results.Unauthorized();
-
-        var exists = await db.HouseholdMembers.AnyAsync(m => m.Email == request.Email);
-        if (exists) return Results.BadRequest("A member with this email already exists.");
 
         var memberCount = await db.HouseholdMembers.CountAsync(m => m.HouseholdId == currentMember.HouseholdId);
 
