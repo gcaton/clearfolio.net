@@ -35,5 +35,6 @@ app.MapProjectionEndpoints();
 app.MapExpenseCategoriesEndpoints();
 app.MapIncomeStreamsEndpoints();
 app.MapExpensesEndpoints();
+app.MapCashflowEndpoints();
 
 app.Run();
