@@ -1486,11 +1486,10 @@ export function buildScenarioOptions(data: ScenarioYearData[]): EChartsOption {
     xAxis: yearAxis(years),
     yAxis: valueAxis(),
     series: [
-      { name: 'range', type: 'line', data: data.map((d) => d.optimistic.netWorth), lineStyle: { opacity: 0 }, areaStyle: { color: 'rgba(37, 99, 235, 0.08)' }, stack: 'band', symbol: 'none' },
-      { name: 'range-lower', type: 'line', data: data.map((d, i) => d.pessimistic.netWorth - (i > 0 ? data[i].optimistic.netWorth : d.optimistic.netWorth)), lineStyle: { opacity: 0 }, areaStyle: { opacity: 0 }, stack: 'band', symbol: 'none' },
-      { name: 'Optimistic', type: 'line', data: data.map((d) => d.optimistic.netWorth), smooth: true, lineStyle: { width: 2 }, itemStyle: { color: COLORS.optimistic } },
-      { name: 'Base', type: 'line', data: data.map((d) => d.base.netWorth), smooth: true, lineStyle: { width: 3 }, itemStyle: { color: COLORS.netWorth } },
-      { name: 'Pessimistic', type: 'line', data: data.map((d) => d.pessimistic.netWorth), smooth: true, lineStyle: { width: 2 }, itemStyle: { color: COLORS.pessimistic } },
+      // Shaded band: optimistic line with areaStyle filling down to pessimistic
+      { name: 'Optimistic', type: 'line', data: data.map((d) => d.optimistic.netWorth), smooth: true, lineStyle: { width: 2 }, itemStyle: { color: COLORS.optimistic }, areaStyle: { color: 'rgba(37, 99, 235, 0.08)', origin: 'start' }, z: 1 },
+      { name: 'Pessimistic', type: 'line', data: data.map((d) => d.pessimistic.netWorth), smooth: true, lineStyle: { width: 2 }, itemStyle: { color: COLORS.pessimistic }, z: 2 },
+      { name: 'Base', type: 'line', data: data.map((d) => d.base.netWorth), smooth: true, lineStyle: { width: 3 }, itemStyle: { color: COLORS.netWorth }, z: 3 },
     ],
   };
 }
@@ -1504,20 +1503,20 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[]): EChartsOptio
     xAxis: yearAxis(years),
     yAxis: valueAxis(),
     series: [
-      // P10-P90 band (outer)
-      { name: 'P10–P90', type: 'line', data: data.map((d) => d.p90), lineStyle: { opacity: 0 }, areaStyle: { color: COLORS.p90band }, symbol: 'none', stack: 'outer' },
-      { name: 'p10-fill', type: 'line', data: data.map((d) => d.p10), lineStyle: { opacity: 0 }, areaStyle: { color: '#1a1a2e' }, symbol: 'none', stack: 'outer-lower' },
+      // P10-P90 band (outer) — use areaStyle with origin to fill between paired series
+      { name: 'P10–P90', type: 'line', data: data.map((d) => d.p90), lineStyle: { opacity: 0 }, areaStyle: { color: COLORS.p90band, origin: 'start' }, symbol: 'none', z: 1 },
+      { name: 'p10-boundary', type: 'line', data: data.map((d) => d.p10), lineStyle: { opacity: 0 }, symbol: 'none', z: 1 },
       // P25-P75 band (inner)
-      { name: 'P25–P75', type: 'line', data: data.map((d) => d.p75), lineStyle: { opacity: 0 }, areaStyle: { color: COLORS.p75band }, symbol: 'none', stack: 'inner' },
-      { name: 'p25-fill', type: 'line', data: data.map((d) => d.p25), lineStyle: { opacity: 0 }, areaStyle: { color: '#1a1a2e' }, symbol: 'none', stack: 'inner-lower' },
+      { name: 'P25–P75', type: 'line', data: data.map((d) => d.p75), lineStyle: { opacity: 0 }, areaStyle: { color: COLORS.p75band, origin: 'start' }, symbol: 'none', z: 2 },
+      { name: 'p25-boundary', type: 'line', data: data.map((d) => d.p25), lineStyle: { opacity: 0 }, symbol: 'none', z: 2 },
       // Median line
-      { name: 'Median (P50)', type: 'line', data: data.map((d) => d.p50), smooth: true, lineStyle: { width: 2.5 }, itemStyle: { color: COLORS.netWorth } },
+      { name: 'Median (P50)', type: 'line', data: data.map((d) => d.p50), smooth: true, lineStyle: { width: 2.5 }, itemStyle: { color: COLORS.netWorth }, z: 3 },
     ],
   };
 }
 ```
 
-**Note:** The band chart approach with stacking is an approximation. During implementation, test the actual rendering and adjust — ECharts band charts can be tricky. The implementer may need to use `areaStyle` with `origin: 'start'` and `'end'` on paired series, or use the custom series type for accurate band fills. The key shapes are: P10-P90 lightest, P25-P75 darker, P50 solid line.
+**Note:** ECharts band charts can be tricky to render precisely. During implementation, test the actual rendering and adjust if bands don't fill correctly. The key visual: P10-P90 lightest outer band, P25-P75 darker inner band, P50 solid median line. The implementer may need to use ECharts custom series for pixel-perfect band fills.
 
 - [ ] **Step 2: Verify the file is valid TypeScript**
 
@@ -1545,7 +1544,8 @@ git commit -m "feat: add projection chart option builders for all three modes"
 Create `src/app/src/app/features/projections/projections.component.ts`:
 
 ```typescript
-import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, untracked } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts/core';
@@ -1574,7 +1574,7 @@ type ProjectionMode = 'compound' | 'scenario' | 'monte-carlo';
   selector: 'app-projections',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, NgxEchartsDirective,
+    DecimalPipe, FormsModule, NgxEchartsDirective,
     Select, Button, InputNumber, Skeleton,
   ],
   providers: [provideEchartsCore({ echarts })],
@@ -1663,10 +1663,11 @@ export class ProjectionsComponent {
     // Load defaults on init
     this.api.getProjectionDefaults().subscribe((d) => this.defaults.set(d));
 
-    // React to view changes from global nav
+    // React to view changes from global nav — use untracked to avoid
+    // transitive signal tracking from refresh() causing double API calls
     effect(() => {
-      const view = this.viewState.view();
-      this.refresh();
+      const _view = this.viewState.view(); // only this signal is tracked
+      untracked(() => this.refresh());
     });
   }
 
