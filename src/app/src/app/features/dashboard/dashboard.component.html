@@ -76,30 +76,28 @@
     </div>
     <p-progressbar [value]="p.progressPercent" [showValue]="false" />
     <div class="goal-footer">
-      @if (p.projectedPeriod) {
-        <span class="goal-projected">
-          <i class="pi pi-calendar"></i>
-          On track to reach goal by <strong>{{ p.projectedPeriod | periodLabel }}</strong>
-          @if (timeToGoal()) {
-            <span class="time-to-goal">({{ timeToGoal() }} to go)</span>
-          }
-        </span>
-      } @else if (p.slope > 0) {
+      @if (p.goalReached) {
         <span class="goal-projected">
           <i class="pi pi-check-circle"></i>
           Goal reached
         </span>
+      } @else if (p.projectedYear) {
+        <span class="goal-projected">
+          <i class="pi pi-calendar"></i>
+          On track to reach goal by <strong>{{ p.projectedYear }}</strong>
+          @if (timeToGoal()) {
+            <span class="time-to-goal">({{ timeToGoal() }} to go)</span>
+          }
+        </span>
       } @else {
         <span class="goal-projected warning">
           <i class="pi pi-exclamation-triangle"></i>
-          Net worth is declining — not currently on track
+          Goal not reached within 30 years at current trajectory
         </span>
       }
-      @if (p.dataPoints >= 2) {
-        <span class="goal-confidence">
-          Based on {{ p.dataPoints }} data points (R² = {{ p.rSquared }})
-        </span>
-      }
+      <span class="goal-confidence">
+        Based on compound growth projection using per-asset return rates and contributions
+      </span>
     </div>
   </div>
 }

@@ -9,7 +9,7 @@ import {
   DashboardSummary,
   TrendPoint,
   MemberComparison,
-  GoalProjection,
+
   SuperGap,
   AssetPerformance,
 } from './api/models';
@@ -31,7 +31,7 @@ export interface ReportData {
   members: MemberComparison[];
   superGap: SuperGap[];
   assetPerformance: AssetPerformance[];
-  projection: GoalProjection | null;
+  projection: { target: number; current: number; progressPercent: number; projectedYear: number | null; goalReached: boolean } | null;
   scope: string;
 }
 
@@ -421,8 +421,8 @@ export class PdfReportService {
       doc.setTextColor(...colors.primary);
       doc.text(`${p.progressPercent}% of ${formatCurrency(p.target)}`, margin, barY + 10);
 
-      if (p.projectedPeriod) {
-        doc.text(`Projected: ${formatPeriod(p.projectedPeriod)}`, pageWidth - margin, barY + 10, { align: 'right' });
+      if (p.projectedYear) {
+        doc.text(`Projected: ${p.projectedYear}`, pageWidth - margin, barY + 10, { align: 'right' });
       }
     }
   }
