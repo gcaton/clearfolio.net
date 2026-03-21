@@ -1,45 +1,49 @@
 import type { EChartsOption } from 'echarts';
 import { CompoundYearData, ScenarioYearData, MonteCarloYearData } from '../../core/api/models';
 
-export function formatCurrency(value: number): string {
+export function formatCurrency(value: number, locale: string, currency: string): string {
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
+  const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 })
+    .format(0).replace(/[\d.,\s]/g, '').trim();
   if (abs >= 1_000_000) {
     const m = abs / 1_000_000;
-    return `${sign}$${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
+    return `${sign}${symbol}${m % 1 === 0 ? m.toFixed(0) : m.toFixed(1)}M`;
   }
   if (abs >= 1_000) {
     const k = abs / 1_000;
-    return `${sign}$${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}K`;
+    return `${sign}${symbol}${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}K`;
   }
-  return `${sign}$${Math.round(abs)}`;
+  return `${sign}${symbol}${Math.round(abs)}`;
 }
 
 const baseGrid = { left: 70, right: 20, top: 20, bottom: 40 };
 
-const baseTooltip = {
-  trigger: 'axis' as const,
-  axisPointer: { type: 'shadow' as const },
-  formatter: (params: unknown) => {
-    const items = params as Array<{ seriesName: string; value: number; marker: string }>;
-    if (!items?.length) return '';
-    const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
-    const lines = items.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value)}</strong>`);
-    return `<div style="font-size:0.8125rem"><strong>Year ${year}</strong><br/>${lines.join('<br/>')}</div>`;
-  },
-};
+function baseTooltip(locale: string, currency: string) {
+  return {
+    trigger: 'axis' as const,
+    axisPointer: { type: 'shadow' as const },
+    formatter: (params: unknown) => {
+      const items = params as Array<{ seriesName: string; value: number; marker: string }>;
+      if (!items?.length) return '';
+      const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
+      const lines = items.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value, locale, currency)}</strong>`);
+      return `<div style="font-size:0.8125rem"><strong>Year ${year}</strong><br/>${lines.join('<br/>')}</div>`;
+    },
+  };
+}
 
-export function buildCompoundOptions(data: CompoundYearData[]): EChartsOption {
+export function buildCompoundOptions(data: CompoundYearData[], locale: string, currency: string): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
   return {
-    tooltip: baseTooltip,
+    tooltip: baseTooltip(locale, currency),
     legend: { data: ['Net Worth', 'Assets', 'Liabilities'], bottom: 0 },
     grid: baseGrid,
     xAxis: { type: 'category', data: years },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v) },
+      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
     },
     series: [
       {
@@ -70,7 +74,7 @@ export function buildCompoundOptions(data: CompoundYearData[]): EChartsOption {
   };
 }
 
-export function buildScenarioOptions(data: ScenarioYearData[]): EChartsOption {
+export function buildScenarioOptions(data: ScenarioYearData[], locale: string, currency: string): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
   return {
@@ -82,7 +86,7 @@ export function buildScenarioOptions(data: ScenarioYearData[]): EChartsOption {
         if (!items?.length) return '';
         const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
         const visible = items.filter((p) => p.seriesName !== 'Band');
-        const lines = visible.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value)}</strong>`);
+        const lines = visible.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value, locale, currency)}</strong>`);
         return `<div style="font-size:0.8125rem"><strong>Year ${year}</strong><br/>${lines.join('<br/>')}</div>`;
       },
     },
@@ -91,7 +95,7 @@ export function buildScenarioOptions(data: ScenarioYearData[]): EChartsOption {
     xAxis: { type: 'category', data: years },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v) },
+      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
     },
     series: [
       {
@@ -125,7 +129,7 @@ export function buildScenarioOptions(data: ScenarioYearData[]): EChartsOption {
   };
 }
 
-export function buildMonteCarloOptions(data: MonteCarloYearData[]): EChartsOption {
+export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: string, currency: string): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
 
@@ -151,11 +155,11 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[]): EChartsOptio
         if (!point) return '';
         return `<div style="font-size:0.8125rem">
           <strong>Year ${year}</strong><br/>
-          P90: <strong>${formatCurrency(point.p90)}</strong><br/>
-          P75: <strong>${formatCurrency(point.p75)}</strong><br/>
-          P50 (median): <strong>${formatCurrency(point.p50)}</strong><br/>
-          P25: <strong>${formatCurrency(point.p25)}</strong><br/>
-          P10: <strong>${formatCurrency(point.p10)}</strong>
+          P90: <strong>${formatCurrency(point.p90, locale, currency)}</strong><br/>
+          P75: <strong>${formatCurrency(point.p75, locale, currency)}</strong><br/>
+          P50 (median): <strong>${formatCurrency(point.p50, locale, currency)}</strong><br/>
+          P25: <strong>${formatCurrency(point.p25, locale, currency)}</strong><br/>
+          P10: <strong>${formatCurrency(point.p10, locale, currency)}</strong>
         </div>`;
       },
     },
@@ -164,7 +168,7 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[]): EChartsOptio
     xAxis: { type: 'category', data: years },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v) },
+      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
     },
     series: [
       // Outer band base (P10, invisible)

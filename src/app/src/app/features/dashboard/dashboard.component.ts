@@ -28,6 +28,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
 import { PdfReportService } from '../../core/pdf-report.service';
 import { ViewStateService } from '../../core/auth/view-state.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import {
   DashboardSummary,
   TrendPoint,
@@ -59,6 +60,7 @@ export class DashboardComponent {
   private pdfReport = inject(PdfReportService);
   private messageService = inject(MessageService);
   private onboarding = inject(OnboardingService);
+  protected localeService = inject(LocaleService);
 
   protected selectedScope = signal('all');
   protected scopeOptions = [
@@ -74,13 +76,13 @@ export class DashboardComponent {
   protected assetPerformance = signal<AssetPerformance[]>([]);
   protected cashflowSummary = signal<CashflowSummary | null>(null);
 
-  protected trendOptions = computed(() => buildTrendOptions(this.trend()));
+  protected trendOptions = computed(() => buildTrendOptions(this.trend(), this.localeService.locale(), this.localeService.currency()));
   protected compositionOptions = computed(() => buildCompositionOptions(this.summary()));
-  protected liquidityOptions = computed(() => buildLiquidityOptions(this.summary()));
+  protected liquidityOptions = computed(() => buildLiquidityOptions(this.summary(), this.localeService.locale(), this.localeService.currency()));
   protected growthOptions = computed(() => buildGrowthOptions(this.summary()));
-  protected debtQualityOptions = computed(() => buildDebtQualityOptions(this.summary()));
-  protected memberOptions = computed(() => buildMemberOptions(this.members()));
-  protected superGapOptions = computed(() => buildSuperGapOptions(this.superGap()));
+  protected debtQualityOptions = computed(() => buildDebtQualityOptions(this.summary(), this.localeService.locale(), this.localeService.currency()));
+  protected memberOptions = computed(() => buildMemberOptions(this.members(), this.localeService.locale(), this.localeService.currency()));
+  protected superGapOptions = computed(() => buildSuperGapOptions(this.superGap(), this.localeService.locale(), this.localeService.currency()));
 
   protected savingsRateClass = computed(() => {
     const cf = this.cashflowSummary();
@@ -187,9 +189,12 @@ export class DashboardComponent {
     const crossedMilestone = milestones.find(m => current >= m && previous < m);
 
     if (crossedMilestone) {
+      const symbol = new Intl.NumberFormat(this.localeService.locale(), {
+        style: 'currency', currency: this.localeService.currency(), maximumFractionDigits: 0
+      }).format(0).replace(/[\d.,\s]/g, '').trim();
       const formatted = crossedMilestone >= 1000000
-        ? `$${(crossedMilestone / 1000000).toFixed(crossedMilestone % 1000000 === 0 ? 0 : 1)}M`
-        : `$${(crossedMilestone / 1000).toFixed(0)}K`;
+        ? `${symbol}${(crossedMilestone / 1000000).toFixed(crossedMilestone % 1000000 === 0 ? 0 : 1)}M`
+        : `${symbol}${(crossedMilestone / 1000).toFixed(0)}K`;
       this.messageService.add({
         severity: 'success',
         summary: `Milestone reached!`,

@@ -41,15 +41,17 @@ function label(key: string): string {
   return LABEL_MAP[key] ?? key;
 }
 
-function currencyFormatter(value: number): string {
-  return '$' + Math.round(value).toLocaleString();
+function currencyFormatter(value: number, locale: string, currency: string): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-function currencyAbbr(value: number): string {
+function currencyAbbr(value: number, locale: string, currency: string): string {
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return '$' + (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (abs >= 1_000) return '$' + (value / 1_000).toFixed(0) + 'K';
-  return '$' + Math.round(value).toString();
+  const symbol = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 })
+    .format(0).replace(/[\d.,\s]/g, '').trim();
+  if (abs >= 1_000_000) return symbol + (value / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (abs >= 1_000) return symbol + (value / 1_000).toFixed(0) + 'K';
+  return symbol + Math.round(value).toString();
 }
 
 const tooltipStyle = {
@@ -83,7 +85,7 @@ const itemTooltipStyle = {
   extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
 };
 
-export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
+export function buildTrendOptions(data: TrendPoint[], locale: string, currency: string): EChartsOption {
   return {
     tooltip: {
       ...tooltipStyle,
@@ -93,7 +95,7 @@ export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
         let html = `<div style="font-weight:600;margin-bottom:4px">${period}</div>`;
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -114,7 +116,7 @@ export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
     },
     yAxis: {
       type: 'value',
-      axisLabel: { formatter: (v: number) => currencyAbbr(v), fontSize: 11, color: '#94a3b8' },
+      axisLabel: { formatter: (v: number) => currencyAbbr(v, locale, currency), fontSize: 11, color: '#94a3b8' },
       splitLine: { lineStyle: { color: 'rgba(148,163,184,0.15)' } },
     },
     series: [
@@ -188,13 +190,13 @@ export function buildCompositionOptions(summary: DashboardSummary | null): EChar
   };
 }
 
-export function buildLiquidityOptions(summary: DashboardSummary | null): EChartsOption {
+export function buildLiquidityOptions(summary: DashboardSummary | null, locale: string, currency: string): EChartsOption {
   if (!summary) return {};
   const items = summary.liquidityBreakdown;
   return {
     tooltip: { ...tooltipStyle, trigger: 'axis' },
     grid: { left: 100, right: 20, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v) } },
+    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v, locale, currency) } },
     yAxis: { type: 'category', data: items.map((i) => label(i.liquidity)) },
     series: [
       {
@@ -229,13 +231,13 @@ export function buildGrowthOptions(summary: DashboardSummary | null): EChartsOpt
   };
 }
 
-export function buildDebtQualityOptions(summary: DashboardSummary | null): EChartsOption {
+export function buildDebtQualityOptions(summary: DashboardSummary | null, locale: string, currency: string): EChartsOption {
   if (!summary || summary.debtQualityBreakdown.length === 0) return {};
   const items = summary.debtQualityBreakdown;
   return {
     tooltip: { ...tooltipStyle, trigger: 'axis' },
     grid: { left: 130, right: 20, top: 10, bottom: 30 },
-    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v) } },
+    xAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyAbbr(v, locale, currency) } },
     yAxis: { type: 'category', data: items.map((i) => label(i.debtQuality)) },
     series: [
       {
@@ -253,14 +255,14 @@ export function buildDebtQualityOptions(summary: DashboardSummary | null): EChar
   };
 }
 
-export function buildMemberOptions(data: MemberComparison[]): EChartsOption {
+export function buildMemberOptions(data: MemberComparison[], locale: string, currency: string): EChartsOption {
   if (data.length === 0) return {};
   return {
     tooltip: tooltipStyle,
     legend: { data: ['Assets', 'Liabilities', 'Net Worth'], bottom: 0 },
     grid: { left: 60, right: 20, top: 20, bottom: 40 },
     xAxis: { type: 'category', data: data.map((d) => d.displayName) },
-    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v, locale, currency) } },
     series: [
       { name: 'Assets', type: 'bar', data: data.map((d) => d.assets), itemStyle: { color: '#34d399' } },
       { name: 'Liabilities', type: 'bar', data: data.map((d) => d.liabilities), itemStyle: { color: '#f87171' } },
@@ -271,13 +273,13 @@ export function buildMemberOptions(data: MemberComparison[]): EChartsOption {
   };
 }
 
-export function buildSuperGapOptions(data: SuperGap[]): EChartsOption {
+export function buildSuperGapOptions(data: SuperGap[], locale: string, currency: string): EChartsOption {
   if (data.length === 0) return {};
   return {
     tooltip: tooltipStyle,
     grid: { left: 60, right: 20, top: 10, bottom: 30 },
     xAxis: { type: 'category', data: data.map((d) => d.displayName) },
-    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v) } },
+    yAxis: { type: 'value', axisLabel: { formatter: (v: number) => currencyFormatter(v, locale, currency) } },
     series: [
       {
         type: 'bar',

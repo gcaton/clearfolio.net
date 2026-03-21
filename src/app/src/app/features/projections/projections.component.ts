@@ -24,6 +24,7 @@ import {
 import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
 import { ViewStateService } from '../../core/auth/view-state.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import {
   ProjectionResult,
   ProjectionDefault,
@@ -62,6 +63,7 @@ interface EntityCard {
 export class ProjectionsComponent {
   private api = inject(ApiService);
   private viewState = inject(ViewStateService);
+  private localeService = inject(LocaleService);
 
   protected selectedMode = signal<ProjectionMode>('compound');
   protected selectedHorizon = signal(5);
@@ -92,13 +94,15 @@ export class ProjectionsComponent {
   protected chartOptions = computed(() => {
     const r = this.result();
     if (!r) return {};
+    const locale = this.localeService.locale();
+    const currency = this.localeService.currency();
     switch (r.mode) {
       case 'compound':
-        return buildCompoundOptions((r as CompoundResult).years);
+        return buildCompoundOptions((r as CompoundResult).years, locale, currency);
       case 'scenario':
-        return buildScenarioOptions((r as ScenarioResult).years);
+        return buildScenarioOptions((r as ScenarioResult).years, locale, currency);
       case 'monte-carlo':
-        return buildMonteCarloOptions((r as MonteCarloResult).years);
+        return buildMonteCarloOptions((r as MonteCarloResult).years, locale, currency);
     }
   });
 
@@ -257,7 +261,7 @@ export class ProjectionsComponent {
   }
 
   protected formatCurrency(value: number): string {
-    return formatCurrency(value);
+    return formatCurrency(value, this.localeService.locale(), this.localeService.currency());
   }
 
   protected getFinalYearData() {
