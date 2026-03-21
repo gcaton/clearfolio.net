@@ -7,7 +7,7 @@ import { Component, ChangeDetectionStrategy, input } from '@angular/core';
     <div class="empty-state">
       <div class="empty-icon">
         <div class="icon-glow"></div>
-        <i [class]="'pi ' + icon()" style="font-size: 2rem"></i>
+        <i [class]="'pi ' + icon()" style="font-size: 2rem; position: relative; z-index: 1"></i>
       </div>
       <h3>{{ title() }}</h3>
       <p>{{ message() }}</p>
