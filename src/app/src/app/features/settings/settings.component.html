@@ -83,11 +83,11 @@
       <div class="settings-form">
         <label for="nwTarget">Net Worth Target</label>
         <p-inputnumber id="nwTarget" [(ngModel)]="netWorthTarget"
-          mode="currency" currency="AUD" locale="en-AU" />
+          mode="currency" [currency]="localeService.currency()" [locale]="localeService.locale()" />
 
         <label for="superTarget">Super Target</label>
         <p-inputnumber id="superTarget" [(ngModel)]="superTarget"
-          mode="currency" currency="AUD" locale="en-AU" />
+          mode="currency" [currency]="localeService.currency()" [locale]="localeService.locale()" />
 
         <p-button label="Save Goals" icon="pi pi-check" (onClick)="saveGoals()" />
       </div>

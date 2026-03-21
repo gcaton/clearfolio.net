@@ -137,7 +137,7 @@
   <div class="form-grid">
     <label>Repayment</label>
     <div class="inline-group">
-      <p-inputNumber [(ngModel)]="form.repaymentAmount" mode="currency" [currency]="form.currency || 'AUD'" [minFractionDigits]="0" placeholder="0" />
+      <p-inputNumber [(ngModel)]="form.repaymentAmount" mode="currency" [currency]="form.currency || localeService.currency()" [minFractionDigits]="0" placeholder="0" />
       <p-select [(ngModel)]="form.repaymentFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Frequency" [showClear]="true" />
     </div>
 

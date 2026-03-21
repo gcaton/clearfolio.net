@@ -14,6 +14,7 @@ import { Toast } from 'primeng/toast';
 import { Skeleton } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import { Asset, AssetType, Member, CreateAssetRequest, Quote, LatestSnapshot } from '../../core/api/models';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
@@ -34,6 +35,7 @@ export class AssetsComponent implements OnInit {
   private api = inject(ApiService);
   private confirmService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  protected localeService = inject(LocaleService);
 
   protected assets = signal<Asset[]>([]);
   protected assetTypes = signal<AssetType[]>([]);
@@ -216,7 +218,7 @@ export class AssetsComponent implements OnInit {
       jointSplit: 0.5,
       label: '',
       symbol: null,
-      currency: 'AUD',
+      currency: this.localeService.currency(),
       notes: null,
       contributionAmount: null,
       contributionFrequency: null,

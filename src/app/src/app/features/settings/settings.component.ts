@@ -36,7 +36,7 @@ export class SettingsComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private goalService = inject(GoalService);
-  private localeService = inject(LocaleService);
+  protected localeService = inject(LocaleService);
   private messageService = inject(MessageService);
   private router = inject(Router);
   private confirmationService = inject(ConfirmationService);
