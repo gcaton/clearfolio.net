@@ -87,6 +87,9 @@ export class CashflowComponent implements OnInit {
   protected members = signal<Member[]>([]);
   protected loading = signal(true);
   protected savingsAssets = signal<Asset[]>([]);
+  protected savingsTotal = computed(() =>
+    this.savingsAssets().reduce((sum, a) => sum + this.annualise(a.contributionAmount ?? 0, a.contributionFrequency ?? 'monthly'), 0)
+  );
 
   // Income dialog
   protected incomeDialogVisible = signal(false);
