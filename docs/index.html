@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>clearfolio — self-hosted household net worth tracker</title>
+  <meta name="description" content="Track your household's assets and liabilities over time. Self-hosted, open source, runs anywhere Docker runs.">
+  <meta property="og:title" content="clearfolio">
+  <meta property="og:description" content="Self-hosted household net worth tracker. Track assets, liabilities, and net worth over time.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+
+    <header class="header">
+      <h1>clearfolio</h1>
+      <p class="tagline">Self-hosted household net worth tracker</p>
+    </header>
+
+    <section>
+      <p>Track your household's assets and liabilities over time. Record quarterly snapshots, see how your net worth trends, and compare positions across household members. Runs on your own hardware — your data never leaves your network.</p>
+    </section>
+
+    <section>
+      <h2>Get started</h2>
+      <pre class="code-block">docker run -d -p 8080:80 -v clearfolio-data:/data ghcr.io/gcaton/clearfolio</pre>
+      <p class="after-code">Then open <code>localhost:8080</code> · <a href="https://github.com/gcaton/clearfolio.net#self-hosting" target="_blank" rel="noopener noreferrer">full instructions on GitHub</a></p>
+    </section>
+
+    <section class="features">
+      <h2>What you get</h2>
+      <ul>
+        <li>Dashboard with trend charts and composition breakdowns</li>
+        <li>Asset &amp; liability tracking with type classification</li>
+        <li>Quarterly snapshots with bulk backfill</li>
+        <li>Household, P1, and P2 views with configurable splits</li>
+        <li>Projections engine for future net worth modeling</li>
+        <li>Cashflow tracking</li>
+        <li>Optional passphrase protection</li>
+        <li>Runs anywhere Docker runs (amd64 + arm64)</li>
+      </ul>
+    </section>
+
+    <footer class="footer">
+      <p>Open source · <a href="https://github.com/gcaton/clearfolio.net" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </footer>
+
+  </div>
+</body>
+</html>
