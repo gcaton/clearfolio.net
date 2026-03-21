@@ -37,7 +37,17 @@ builder.Services.AddRateLimiter(options =>
             }));
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+        | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -46,7 +56,7 @@ using (var scope = app.Services.CreateScope())
     // Back up database before applying migrations
     if (File.Exists(dbPath) && db.Database.GetPendingMigrations().Any())
     {
-        var backupPath = $"{dbPath}.pre-migration-backup";
+        var backupPath = $"{dbPath}.{DateTime.UtcNow:yyyyMMddHHmmss}.pre-migration-backup";
         File.Copy(dbPath, backupPath, overwrite: true);
         Log.Information("Pending migrations detected — backed up database to {BackupPath}", backupPath);
     }

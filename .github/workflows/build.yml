@@ -54,28 +54,11 @@ jobs:
       - name: Generate changelog
         run: |
           out="src/app/public/changelog.json"
-          feats=$(git log --pretty=format:'{"hash":"%h","date":"%cs","message":"%s"}' --grep="^feat[:(]" --no-merges)
-          fixes=$(git log --pretty=format:'{"hash":"%h","date":"%cs","message":"%s"}' --grep="^fix[:(]" --no-merges)
-          echo '{' > "$out"
-          echo '  "features": [' >> "$out"
-          first=true
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            $first && first=false || echo "," >> "$out"
-            printf "    %s" "$line" >> "$out"
-          done <<< "$feats"
-          echo "" >> "$out"
-          echo '  ],' >> "$out"
-          echo '  "fixes": [' >> "$out"
-          first=true
-          while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            $first && first=false || echo "," >> "$out"
-            printf "    %s" "$line" >> "$out"
-          done <<< "$fixes"
-          echo "" >> "$out"
-          echo '  ]' >> "$out"
-          echo "}" >> "$out"
+          feats=$(git log --pretty=format:'%h%x09%cs%x09%s' --grep="^feat[:(]" --no-merges \
+            | jq -R -s 'split("\n")[:-1] | map(select(length > 0) | split("\t") | {hash: .[0], date: .[1], message: .[2]})')
+          fixes=$(git log --pretty=format:'%h%x09%cs%x09%s' --grep="^fix[:(]" --no-merges \
+            | jq -R -s 'split("\n")[:-1] | map(select(length > 0) | split("\t") | {hash: .[0], date: .[1], message: .[2]})')
+          jq -n --argjson feats "$feats" --argjson fixes "$fixes" '{features: $feats, fixes: $fixes}' > "$out"
 
       - uses: docker/setup-qemu-action@v3
 

@@ -13,7 +13,7 @@ public class ValidationFilter<T> : IEndpointFilter
         var results = new List<ValidationResult>();
         if (!Validator.TryValidateObject(argument, new ValidationContext(argument), results, validateAllProperties: true))
         {
-            var errors = results.Select(r => r.ErrorMessage).ToArray();
+            var errors = results.Select(r => r.ErrorMessage).Where(m => !string.IsNullOrEmpty(m)).ToArray();
             return Results.BadRequest(new { errors });
         }
 
