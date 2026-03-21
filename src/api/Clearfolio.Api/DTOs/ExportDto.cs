@@ -36,6 +36,7 @@ public record ExportAssetDto(
     double? ContributionAmount,
     string? ContributionFrequency,
     string? ContributionEndDate,
+    bool IsPreTaxContribution,
     double? ExpectedReturnRate,
     double? ExpectedVolatility);
 

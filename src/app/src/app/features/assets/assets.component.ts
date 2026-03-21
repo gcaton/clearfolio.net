@@ -19,11 +19,12 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
 import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
 import { Tooltip } from 'primeng/tooltip';
 import { Divider } from 'primeng/divider';
+import { Checkbox } from 'primeng/checkbox';
 
 @Component({
   selector: 'app-assets',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, CurrencyPipe, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip, Divider],
+  imports: [FormsModule, CurrencyPipe, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip, Divider, Checkbox],
   providers: [ConfirmationService, MessageService],
   templateUrl: './assets.component.html',
   styleUrl: './assets.component.scss',
@@ -85,6 +86,7 @@ export class AssetsComponent implements OnInit {
       contributionAmount: asset.contributionAmount,
       contributionFrequency: asset.contributionFrequency,
       contributionEndDate: asset.contributionEndDate,
+      isPreTaxContribution: asset.isPreTaxContribution,
       expectedReturnRate: asset.expectedReturnRate ? asset.expectedReturnRate * 100 : null,
       expectedVolatility: asset.expectedVolatility ? asset.expectedVolatility * 100 : null,
     };
@@ -212,6 +214,7 @@ export class AssetsComponent implements OnInit {
       contributionAmount: null,
       contributionFrequency: null,
       contributionEndDate: null,
+      isPreTaxContribution: false,
       expectedReturnRate: null,
       expectedVolatility: null,
     };

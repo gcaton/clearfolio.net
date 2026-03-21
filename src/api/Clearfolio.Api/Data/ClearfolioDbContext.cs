@@ -100,6 +100,7 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.Property(a => a.ContributionAmount).HasColumnName("contribution_amount");
             e.Property(a => a.ContributionFrequency).HasColumnName("contribution_frequency");
             e.Property(a => a.ContributionEndDate).HasColumnName("contribution_end_date");
+            e.Property(a => a.IsPreTaxContribution).HasColumnName("is_pre_tax_contribution").HasDefaultValue(false);
             e.Property(a => a.ExpectedReturnRate).HasColumnName("expected_return_rate");
             e.Property(a => a.ExpectedVolatility).HasColumnName("expected_volatility");
 

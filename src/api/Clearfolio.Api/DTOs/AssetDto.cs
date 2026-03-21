@@ -18,6 +18,7 @@ public record AssetDto(
     double? ContributionAmount,
     string? ContributionFrequency,
     string? ContributionEndDate,
+    bool IsPreTaxContribution,
     double? ExpectedReturnRate,
     double? ExpectedVolatility);
 
@@ -33,6 +34,7 @@ public record CreateAssetRequest(
     double? ContributionAmount,
     string? ContributionFrequency,
     string? ContributionEndDate,
+    bool IsPreTaxContribution,
     double? ExpectedReturnRate,
     double? ExpectedVolatility);
 
@@ -48,5 +50,6 @@ public record UpdateAssetRequest(
     double? ContributionAmount,
     string? ContributionFrequency,
     string? ContributionEndDate,
+    bool IsPreTaxContribution,
     double? ExpectedReturnRate,
     double? ExpectedVolatility);

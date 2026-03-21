@@ -128,7 +128,7 @@ public static class HouseholdEndpoints
                 a.AssetTypeId,
                 a.OwnerMemberId.HasValue && memberLookup.TryGetValue(a.OwnerMemberId.Value, out var atag) ? atag : null,
                 a.OwnershipType, a.JointSplit, a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive,
-                a.ContributionAmount, a.ContributionFrequency, a.ContributionEndDate, a.ExpectedReturnRate, a.ExpectedVolatility
+                a.ContributionAmount, a.ContributionFrequency, a.ContributionEndDate, a.IsPreTaxContribution, a.ExpectedReturnRate, a.ExpectedVolatility
             )).ToList(),
             Liabilities: liabilities.Select(l => new ExportLiabilityDto(
                 l.LiabilityTypeId,
@@ -228,6 +228,7 @@ public static class HouseholdEndpoints
                 ContributionAmount = a.ContributionAmount,
                 ContributionFrequency = a.ContributionFrequency,
                 ContributionEndDate = a.ContributionEndDate,
+                IsPreTaxContribution = a.IsPreTaxContribution,
                 ExpectedReturnRate = a.ExpectedReturnRate,
                 ExpectedVolatility = a.ExpectedVolatility,
                 CreatedAt = now,

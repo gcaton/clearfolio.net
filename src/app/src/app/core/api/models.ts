@@ -63,6 +63,7 @@ export interface Asset {
   contributionAmount: number | null;
   contributionFrequency: string | null;
   contributionEndDate: string | null;
+  isPreTaxContribution: boolean;
   expectedReturnRate: number | null;
   expectedVolatility: number | null;
 }
@@ -79,6 +80,7 @@ export interface CreateAssetRequest {
   contributionAmount: number | null;
   contributionFrequency: string | null;
   contributionEndDate: string | null;
+  isPreTaxContribution: boolean;
   expectedReturnRate: number | null;
   expectedVolatility: number | null;
 }

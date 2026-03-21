@@ -20,6 +20,7 @@ public class Asset
     public double? ContributionAmount { get; set; }
     public string? ContributionFrequency { get; set; }
     public string? ContributionEndDate { get; set; }
+    public bool IsPreTaxContribution { get; set; }
     public double? ExpectedReturnRate { get; set; }
     public double? ExpectedVolatility { get; set; }
 

@@ -164,6 +164,11 @@
     <label>Contribution End Date <span class="optional">(optional)</span></label>
     <input type="date" [(ngModel)]="form.contributionEndDate" pInputText />
 
+    <div class="inline-group">
+      <p-checkbox [(ngModel)]="form.isPreTaxContribution" [binary]="true" inputId="preTax" />
+      <label for="preTax" style="font-weight: 400">Pre-tax <span class="optional">(e.g. super, salary sacrifice — already deducted from take-home pay)</span></label>
+    </div>
+
     <label>Expected Return <span class="optional">(%)</span></label>
     <p-inputNumber [(ngModel)]="form.expectedReturnRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
 

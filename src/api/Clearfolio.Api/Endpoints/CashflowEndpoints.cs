@@ -104,22 +104,34 @@ public static class CashflowEndpoints
             expensesByCategory[catName] = expensesByCategory.GetValueOrDefault(catName) + effective;
         }
 
+        double totalPreTaxContributions = 0;
+
         foreach (var asset in assets)
         {
             if (asset.ContributionAmount is null or 0 || asset.ContributionFrequency is null) continue;
             var annual = Annualise(asset.ContributionAmount.Value, asset.ContributionFrequency);
+            double effective;
 
             if (targetMember is null)
             {
-                totalContributions += annual;
+                effective = annual;
+            }
+            else if (asset.OwnerMemberId == targetMember.Id)
+            {
+                effective = asset.OwnershipType == "joint" ? annual * asset.JointSplit : annual;
+            }
+            else if (asset.OwnershipType == "joint" && asset.OwnerMemberId != targetMember.Id)
+            {
+                effective = annual * (1 - asset.JointSplit);
             }
             else
             {
-                if (asset.OwnerMemberId == targetMember.Id)
-                    totalContributions += asset.OwnershipType == "joint" ? annual * asset.JointSplit : annual;
-                else if (asset.OwnershipType == "joint" && asset.OwnerMemberId != targetMember.Id)
-                    totalContributions += annual * (1 - asset.JointSplit);
+                continue;
             }
+
+            totalContributions += effective;
+            if (asset.IsPreTaxContribution)
+                totalPreTaxContributions += effective;
         }
 
         foreach (var liability in liabilities)
@@ -140,8 +152,9 @@ public static class CashflowEndpoints
             }
         }
 
+        var postTaxContributions = totalContributions - totalPreTaxContributions;
         var disposable = totalIncome - totalExpenses;
-        var netCashflow = disposable - totalContributions - totalRepayments;
+        var netCashflow = disposable - postTaxContributions - totalRepayments;
         var savingsRate = totalIncome > 0 ? totalContributions / totalIncome : 0;
         var debtToIncomeRatio = totalIncome > 0 ? totalRepayments / totalIncome : 0;
 

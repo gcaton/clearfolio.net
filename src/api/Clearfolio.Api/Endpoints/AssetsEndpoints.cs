@@ -55,6 +55,7 @@ public static class AssetsEndpoints
             ContributionAmount = request.ContributionAmount,
             ContributionFrequency = request.ContributionFrequency,
             ContributionEndDate = request.ContributionEndDate,
+            IsPreTaxContribution = request.IsPreTaxContribution,
             ExpectedReturnRate = request.ExpectedReturnRate,
             ExpectedVolatility = request.ExpectedVolatility,
             CreatedAt = now,
@@ -94,6 +95,7 @@ public static class AssetsEndpoints
         asset.ContributionAmount = request.ContributionAmount;
         asset.ContributionFrequency = request.ContributionFrequency;
         asset.ContributionEndDate = request.ContributionEndDate;
+        asset.IsPreTaxContribution = request.IsPreTaxContribution;
         asset.ExpectedReturnRate = request.ExpectedReturnRate;
         asset.ExpectedVolatility = request.ExpectedVolatility;
         asset.UpdatedAt = DateTime.UtcNow.ToString("o");
@@ -131,6 +133,7 @@ public static class AssetsEndpoints
         ContributionAmount: a.ContributionAmount,
         ContributionFrequency: a.ContributionFrequency,
         ContributionEndDate: a.ContributionEndDate,
+        IsPreTaxContribution: a.IsPreTaxContribution,
         ExpectedReturnRate: a.ExpectedReturnRate,
         ExpectedVolatility: a.ExpectedVolatility);
 
