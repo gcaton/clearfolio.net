@@ -90,6 +90,38 @@ export class AssetsComponent implements OnInit {
     };
     this.editing.set(asset);
     this.dialogVisible.set(true);
+    this.prefillRatesFromSymbol(asset);
+  }
+
+  private prefillRatesFromSymbol(asset: Asset) {
+    if (!asset.symbol) {
+      // Fall back to type defaults if no custom rate set
+      if (!this.form.expectedReturnRate) {
+        const assetType = this.assetTypes().find(t => t.id === asset.assetTypeId);
+        if (assetType) {
+          this.form.expectedReturnRate = Math.round(assetType.defaultReturnRate * 10000) / 100;
+          this.form.expectedVolatility = Math.round(assetType.defaultVolatility * 10000) / 100;
+        }
+      }
+      return;
+    }
+    // If user already set custom values, don't overwrite
+    if (asset.expectedReturnRate) return;
+
+    this.api.getHistoricalReturns(asset.symbol).subscribe({
+      next: (hr) => {
+        this.form.expectedReturnRate = Math.round(hr.annualisedReturn * 10000) / 100;
+        this.form.expectedVolatility = Math.round(hr.volatility * 10000) / 100;
+      },
+      error: () => {
+        // Symbol lookup failed — fall back to type defaults
+        const assetType = this.assetTypes().find(t => t.id === asset.assetTypeId);
+        if (assetType) {
+          this.form.expectedReturnRate = Math.round(assetType.defaultReturnRate * 10000) / 100;
+          this.form.expectedVolatility = Math.round(assetType.defaultVolatility * 10000) / 100;
+        }
+      },
+    });
   }
 
   save() {

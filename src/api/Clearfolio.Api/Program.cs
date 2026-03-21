@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.Endpoints;
 using Clearfolio.Api.Middleware;
+using Clearfolio.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +10,8 @@ var dbPath = builder.Configuration["DB_PATH"] ?? "clearfolio.db";
 builder.Services.AddDbContext<ClearfolioDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<HistoricalReturnsService>();
 
 var app = builder.Build();
 

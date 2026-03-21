@@ -15,6 +15,7 @@ public static class ProjectionEndpoints
         app.MapPost("/api/projections/scenario", RunScenarioProjection);
         app.MapPost("/api/projections/monte-carlo", RunMonteCarloProjection);
         app.MapGet("/api/projections/defaults", GetDefaults);
+        app.MapGet("/api/historical-returns/{symbol}", GetHistoricalReturns);
     }
 
     private static HouseholdMember? GetMemberOrNull(HttpContext context)
@@ -210,6 +211,23 @@ public static class ProjectionEndpoints
 
         var p1 = members.FirstOrDefault(m => m.MemberTag == "p1");
         return targetMember.Id == p1?.Id ? value * jointSplit : value * (1 - jointSplit);
+    }
+
+    private static async Task<IResult> GetHistoricalReturns(
+        string symbol, HttpContext context, HistoricalReturnsService service)
+    {
+        var member = GetMemberOrNull(context);
+        if (member is null) return Results.Unauthorized();
+
+        var result = await service.GetHistoricalReturn(symbol);
+        if (result is null) return Results.NotFound();
+
+        return Results.Ok(new HistoricalReturnDto(
+            symbol,
+            result.AnnualisedReturn,
+            result.Volatility,
+            result.DataPoints,
+            result.PeriodYears));
     }
 
     private static async Task<Dictionary<Guid, double>> GetLatestSnapshots(ClearfolioDbContext db, Guid householdId)

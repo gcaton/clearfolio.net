@@ -25,6 +25,7 @@ import {
   ScenarioResult,
   MonteCarloResult,
   ProjectionDefault,
+  HistoricalReturn,
   AssetPerformance,
 } from './models';
 
@@ -198,5 +199,9 @@ export class ApiService {
 
   getProjectionDefaults() {
     return this.http.get<ProjectionDefault[]>('/api/projections/defaults');
+  }
+
+  getHistoricalReturns(symbol: string) {
+    return this.http.get<HistoricalReturn>(`/api/historical-returns/${encodeURIComponent(symbol)}`);
   }
 }

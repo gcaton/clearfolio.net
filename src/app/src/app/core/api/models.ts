@@ -356,3 +356,11 @@ export interface ProjectionDefault {
   currentValue: number | null;
   hasCurrentValue: boolean;
 }
+
+export interface HistoricalReturn {
+  symbol: string;
+  annualisedReturn: number;
+  volatility: number;
+  dataPoints: number;
+  periodYears: number;
+}
