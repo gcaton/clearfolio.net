@@ -7,6 +7,7 @@ import { Toast } from 'primeng/toast';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './core/auth/auth.service';
 import { KeyboardShortcutsService } from './core/keyboard-shortcuts.service';
+import { LocaleService } from './core/locale/locale.service';
 import { ViewStateService, ViewState } from './core/auth/view-state.service';
 import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.component';
 import { environment } from '../environments/environment';
@@ -119,6 +120,7 @@ export class App implements OnInit {
   protected auth = inject(AuthService);
   protected viewState = inject(ViewStateService);
   private keyboardShortcuts = inject(KeyboardShortcutsService);
+  private localeService = inject(LocaleService);
   protected mobileMenuVisible = signal(false);
   protected version = environment.version;
 
@@ -150,6 +152,7 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.auth.init();
+    this.localeService.init();
     this.keyboardShortcuts.init();
   }
 }
