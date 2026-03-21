@@ -29,7 +29,12 @@ public record ExportAssetDto(
     string? Symbol,
     string Currency,
     string? Notes,
-    bool IsActive);
+    bool IsActive,
+    double? ContributionAmount,
+    string? ContributionFrequency,
+    string? ContributionEndDate,
+    double? ExpectedReturnRate,
+    double? ExpectedVolatility);
 
 public record ExportLiabilityDto(
     Guid LiabilityTypeId,
@@ -39,7 +44,11 @@ public record ExportLiabilityDto(
     string Label,
     string Currency,
     string? Notes,
-    bool IsActive);
+    bool IsActive,
+    double? RepaymentAmount,
+    string? RepaymentFrequency,
+    string? RepaymentEndDate,
+    double? InterestRate);
 
 public record ExportSnapshotDto(
     string EntityLabel,

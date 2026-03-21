@@ -108,12 +108,14 @@ public static class HouseholdEndpoints
             Assets: assets.Select(a => new ExportAssetDto(
                 a.AssetTypeId,
                 a.OwnerMemberId.HasValue && memberLookup.TryGetValue(a.OwnerMemberId.Value, out var atag) ? atag : null,
-                a.OwnershipType, a.JointSplit, a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive
+                a.OwnershipType, a.JointSplit, a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive,
+                a.ContributionAmount, a.ContributionFrequency, a.ContributionEndDate, a.ExpectedReturnRate, a.ExpectedVolatility
             )).ToList(),
             Liabilities: liabilities.Select(l => new ExportLiabilityDto(
                 l.LiabilityTypeId,
                 l.OwnerMemberId.HasValue && memberLookup.TryGetValue(l.OwnerMemberId.Value, out var ltag) ? ltag : null,
-                l.OwnershipType, l.JointSplit, l.Label, l.Currency, l.Notes, l.IsActive
+                l.OwnershipType, l.JointSplit, l.Label, l.Currency, l.Notes, l.IsActive,
+                l.RepaymentAmount, l.RepaymentFrequency, l.RepaymentEndDate, l.InterestRate
             )).ToList(),
             Snapshots: snapshots
                 .Where(s => entityLabelLookup.ContainsKey(s.EntityId))
@@ -192,6 +194,11 @@ public static class HouseholdEndpoints
                 Currency = a.Currency,
                 Notes = a.Notes,
                 IsActive = a.IsActive,
+                ContributionAmount = a.ContributionAmount,
+                ContributionFrequency = a.ContributionFrequency,
+                ContributionEndDate = a.ContributionEndDate,
+                ExpectedReturnRate = a.ExpectedReturnRate,
+                ExpectedVolatility = a.ExpectedVolatility,
                 CreatedAt = now,
                 UpdatedAt = now
             });
@@ -215,6 +222,10 @@ public static class HouseholdEndpoints
                 Currency = l.Currency,
                 Notes = l.Notes,
                 IsActive = l.IsActive,
+                RepaymentAmount = l.RepaymentAmount,
+                RepaymentFrequency = l.RepaymentFrequency,
+                RepaymentEndDate = l.RepaymentEndDate,
+                InterestRate = l.InterestRate,
                 CreatedAt = now,
                 UpdatedAt = now
             });
