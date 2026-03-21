@@ -31,6 +31,8 @@ export interface AssetType {
   isCgtExempt: boolean;
   sortOrder: number;
   isSystem: boolean;
+  defaultReturnRate: number;
+  defaultVolatility: number;
 }
 
 export interface LiabilityType {
@@ -58,6 +60,11 @@ export interface Asset {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  contributionAmount: number | null;
+  contributionFrequency: string | null;
+  contributionEndDate: string | null;
+  expectedReturnRate: number | null;
+  expectedVolatility: number | null;
 }
 
 export interface CreateAssetRequest {
@@ -69,6 +76,11 @@ export interface CreateAssetRequest {
   symbol: string | null;
   currency: string;
   notes: string | null;
+  contributionAmount: number | null;
+  contributionFrequency: string | null;
+  contributionEndDate: string | null;
+  expectedReturnRate: number | null;
+  expectedVolatility: number | null;
 }
 
 export interface Quote {
@@ -95,6 +107,10 @@ export interface Liability {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  repaymentAmount: number | null;
+  repaymentFrequency: string | null;
+  repaymentEndDate: string | null;
+  interestRate: number | null;
 }
 
 export interface CreateLiabilityRequest {
@@ -105,6 +121,10 @@ export interface CreateLiabilityRequest {
   label: string;
   currency: string;
   notes: string | null;
+  repaymentAmount: number | null;
+  repaymentFrequency: string | null;
+  repaymentEndDate: string | null;
+  interestRate: number | null;
 }
 
 export interface Snapshot {
@@ -209,4 +229,116 @@ export interface GoalProjection {
   slope: number;
   dataPoints: number;
   rSquared: number;
+}
+
+// --- Projections ---
+
+export interface ProjectionRequest {
+  horizon: number;
+  view: string;
+  scope: string;
+  entityIds?: string[];
+  simulations?: number;
+}
+
+export interface CompoundYearData {
+  year: number;
+  assets: number;
+  liabilities: number;
+  netWorth: number;
+}
+
+export interface EntityProjection {
+  id: string;
+  label: string;
+  category: string;
+  entityType: string;
+  years: { year: number; value: number }[];
+}
+
+export interface CompoundResult {
+  mode: 'compound';
+  horizon: number;
+  years: CompoundYearData[];
+  entities: EntityProjection[];
+}
+
+export interface ScenarioValues {
+  assets: number;
+  liabilities: number;
+  netWorth: number;
+}
+
+export interface ScenarioYearData {
+  year: number;
+  pessimistic: ScenarioValues;
+  base: ScenarioValues;
+  optimistic: ScenarioValues;
+}
+
+export interface ScenarioEntityYear {
+  year: number;
+  pessimistic: number;
+  base: number;
+  optimistic: number;
+}
+
+export interface ScenarioEntityProjection {
+  id: string;
+  label: string;
+  category: string;
+  entityType: string;
+  years: ScenarioEntityYear[];
+}
+
+export interface ScenarioResult {
+  mode: 'scenario';
+  horizon: number;
+  years: ScenarioYearData[];
+  entities: ScenarioEntityProjection[];
+}
+
+export interface MonteCarloYearData {
+  year: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+}
+
+export interface MonteCarloEntityProjection {
+  id: string;
+  label: string;
+  category: string;
+  entityType: string;
+  years: MonteCarloYearData[];
+}
+
+export interface MonteCarloResult {
+  mode: 'monte-carlo';
+  horizon: number;
+  simulations: number;
+  years: MonteCarloYearData[];
+  entities: MonteCarloEntityProjection[];
+}
+
+export type ProjectionResult = CompoundResult | ScenarioResult | MonteCarloResult;
+
+export interface ProjectionDefault {
+  entityId: string;
+  entityType: string;
+  label: string;
+  effectiveReturnRate: number | null;
+  effectiveVolatility: number | null;
+  effectiveInterestRate: number | null;
+  rateSource: string;
+  contributionAmount: number | null;
+  contributionFrequency: string | null;
+  annualContribution: number;
+  repaymentAmount: number | null;
+  repaymentFrequency: string | null;
+  annualRepayment: number;
+  currentValue: number | null;
+  hasCurrentValue: boolean;
 }

@@ -73,6 +73,11 @@ export class AssetsComponent implements OnInit {
       symbol: asset.symbol,
       currency: asset.currency,
       notes: asset.notes,
+      contributionAmount: asset.contributionAmount,
+      contributionFrequency: asset.contributionFrequency,
+      contributionEndDate: asset.contributionEndDate,
+      expectedReturnRate: asset.expectedReturnRate,
+      expectedVolatility: asset.expectedVolatility,
     };
     this.editing.set(asset);
     this.dialogVisible.set(true);
@@ -158,6 +163,11 @@ export class AssetsComponent implements OnInit {
       symbol: null,
       currency: 'AUD',
       notes: null,
+      contributionAmount: null,
+      contributionFrequency: null,
+      contributionEndDate: null,
+      expectedReturnRate: null,
+      expectedVolatility: null,
     };
   }
 }

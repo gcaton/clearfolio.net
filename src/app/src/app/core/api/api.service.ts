@@ -20,6 +20,11 @@ import {
   CompositionPoint,
   MemberComparison,
   SuperGap,
+  ProjectionRequest,
+  CompoundResult,
+  ScenarioResult,
+  MonteCarloResult,
+  ProjectionDefault,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -171,5 +176,22 @@ export class ApiService {
 
   getSuperGap() {
     return this.http.get<SuperGap[]>('/api/dashboard/super-gap');
+  }
+
+  // Projections
+  runCompoundProjection(request: ProjectionRequest) {
+    return this.http.post<CompoundResult>('/api/projections/compound', request);
+  }
+
+  runScenarioProjection(request: ProjectionRequest) {
+    return this.http.post<ScenarioResult>('/api/projections/scenario', request);
+  }
+
+  runMonteCarloProjection(request: ProjectionRequest) {
+    return this.http.post<MonteCarloResult>('/api/projections/monte-carlo', request);
+  }
+
+  getProjectionDefaults() {
+    return this.http.get<ProjectionDefault[]>('/api/projections/defaults');
   }
 }

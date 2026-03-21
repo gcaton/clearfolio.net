@@ -71,6 +71,10 @@ export class LiabilitiesComponent implements OnInit {
       label: liability.label,
       currency: liability.currency,
       notes: liability.notes,
+      repaymentAmount: liability.repaymentAmount,
+      repaymentFrequency: liability.repaymentFrequency,
+      repaymentEndDate: liability.repaymentEndDate,
+      interestRate: liability.interestRate,
     };
     this.editing.set(liability);
     this.dialogVisible.set(true);
@@ -138,6 +142,10 @@ export class LiabilitiesComponent implements OnInit {
       label: '',
       currency: 'AUD',
       notes: null,
+      repaymentAmount: null,
+      repaymentFrequency: null,
+      repaymentEndDate: null,
+      interestRate: null,
     };
   }
 }
