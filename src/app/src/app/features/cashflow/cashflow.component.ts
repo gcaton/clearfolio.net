@@ -251,11 +251,17 @@ export class CashflowComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Income stream updated' });
       });
     } else {
-      this.api.createIncomeStream(this.incomeForm).subscribe(() => {
-        this.incomeDialogVisible.set(false);
-        this.loadIncomeStreams();
-        this.loadSummary(this.viewState.view());
-        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Income stream created' });
+      this.api.createIncomeStream(this.incomeForm).subscribe({
+        next: () => {
+          this.incomeDialogVisible.set(false);
+          this.loadIncomeStreams();
+          this.loadSummary(this.viewState.view());
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Income stream created' });
+        },
+        error: (err) => {
+          const msg = typeof err.error === 'string' ? err.error : 'Failed to create income stream';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
       });
     }
   }
@@ -307,11 +313,17 @@ export class CashflowComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense updated' });
       });
     } else {
-      this.api.createExpense(this.expenseForm).subscribe(() => {
-        this.expenseDialogVisible.set(false);
-        this.loadExpenses();
-        this.loadSummary(this.viewState.view());
-        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense created' });
+      this.api.createExpense(this.expenseForm).subscribe({
+        next: () => {
+          this.expenseDialogVisible.set(false);
+          this.loadExpenses();
+          this.loadSummary(this.viewState.view());
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense created' });
+        },
+        error: (err) => {
+          const msg = typeof err.error === 'string' ? err.error : 'Failed to create expense';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+        },
       });
     }
   }
