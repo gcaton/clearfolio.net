@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as echarts from 'echarts/core';
@@ -23,6 +23,7 @@ import {
   buildMemberOptions,
   buildSuperGapOptions,
 } from '../features/dashboard/chart-options';
+import { LocaleService } from './locale/locale.service';
 
 echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
@@ -71,7 +72,7 @@ function renderLogoDataUrl(): Promise<string> {
   });
 }
 
-function drawPageHeader(doc: jsPDF, data: ReportData, colors: Colors, margin: number, pageWidth: number, subtitle: string, logoDataUrl: string) {
+function drawPageHeader(doc: jsPDF, data: ReportData, colors: Colors, margin: number, pageWidth: number, subtitle: string, logoDataUrl: string, locale: string) {
   doc.setFillColor(...colors.primary);
   doc.rect(0, 0, pageWidth, HEADER_HEIGHT, 'F');
 
@@ -108,19 +109,24 @@ function drawPageHeader(doc: jsPDF, data: ReportData, colors: Colors, margin: nu
   const scopeLabel = data.scope === 'financial' ? 'Financial Net Worth' : data.scope === 'liquid' ? 'Liquid Net Worth' : 'Total Net Worth';
   doc.text(scopeLabel, pageWidth - margin, 18, { align: 'right' });
   doc.text(
-    new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }),
+    new Date().toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric' }),
     pageWidth - margin, 24, { align: 'right' },
   );
 }
 
 @Injectable({ providedIn: 'root' })
 export class PdfReportService {
+  private localeService = inject(LocaleService);
+
   async generate(data: ReportData) {
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 14;
     const contentWidth = pageWidth - margin * 2;
+
+    const locale = this.localeService.locale();
+    const currency = this.localeService.currency();
 
     const colors: Colors = {
       primary: [30, 58, 95],
@@ -136,26 +142,26 @@ export class PdfReportService {
     const totalPages = data.assetPerformance.length > 0 ? 3 : 2;
 
     // ===== PAGE 1: Tables =====
-    this.buildPage1(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl);
+    this.buildPage1(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl, locale, currency);
     drawFooter(doc, margin, pageWidth, pageHeight, colors.muted, 1, totalPages);
 
     // ===== PAGE 2: Charts =====
     doc.addPage();
-    this.buildPage2(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl);
+    this.buildPage2(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl, locale, currency);
     drawFooter(doc, margin, pageWidth, pageHeight, colors.muted, 2, totalPages);
 
     // ===== PAGE 3: Asset Performance =====
     if (data.assetPerformance.length > 0) {
       doc.addPage();
-      this.buildPage3(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl);
+      this.buildPage3(doc, data, colors, margin, contentWidth, pageWidth, logoDataUrl, locale, currency);
       drawFooter(doc, margin, pageWidth, pageHeight, colors.muted, 3, totalPages);
     }
 
     doc.save(`financial-summary-${data.summary.period}.pdf`);
   }
 
-  private buildPage1(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string) {
-    drawPageHeader(doc, data, colors, margin, pageWidth, 'Financial Summary Report', logoDataUrl);
+  private buildPage1(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string, locale: string, currency: string) {
+    drawPageHeader(doc, data, colors, margin, pageWidth, 'Financial Summary Report', logoDataUrl, locale);
     let y = HEADER_HEIGHT + 6;
 
     // --- Key Metrics ---
@@ -185,10 +191,10 @@ export class PdfReportService {
         const sign = val >= 0 ? '+' : '';
         const pct = data.summary.netWorthChangePercent;
         const pctStr = pct != null ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%)` : '';
-        doc.text(`${sign}${formatCurrency(val)}${pctStr}`, x, y + 15, { align: 'center' });
+        doc.text(`${sign}${formatCurrency(val, locale, currency)}${pctStr}`, x, y + 15, { align: 'center' });
       } else {
         doc.setTextColor(...colors.primary);
-        doc.text(formatCurrency(m.value), x, y + 15, { align: 'center' });
+        doc.text(formatCurrency(m.value, locale, currency), x, y + 15, { align: 'center' });
       }
     });
     y += 28;
@@ -208,7 +214,7 @@ export class PdfReportService {
         .sort((a, b) => b.value - a.value)
         .map((c) => [
           formatCategory(c.category),
-          formatCurrency(c.value),
+          formatCurrency(c.value, locale, currency),
           total > 0 ? `${((c.value / total) * 100).toFixed(1)}%` : '0%',
         ]);
 
@@ -245,7 +251,7 @@ export class PdfReportService {
         .sort((a, b) => b.value - a.value)
         .map((c) => [
           formatCategory(c.category),
-          formatCurrency(c.value),
+          formatCurrency(c.value, locale, currency),
           total > 0 ? `${((c.value / total) * 100).toFixed(1)}%` : '0%',
         ]);
 
@@ -273,7 +279,7 @@ export class PdfReportService {
       rightY = drawSectionHeader(doc, 'Liquidity Profile', rightX, rightY, colWidth, colors.primary);
       const liqRows = data.summary.liquidityBreakdown
         .sort((a, b) => b.value - a.value)
-        .map((l) => [formatCategory(l.liquidity), formatCurrency(l.value)]);
+        .map((l) => [formatCategory(l.liquidity), formatCurrency(l.value, locale, currency)]);
       autoTable(doc, {
         startY: rightY,
         margin: { left: rightX },
@@ -297,7 +303,7 @@ export class PdfReportService {
       leftY = drawSectionHeader(doc, 'Growth vs Defensive', leftX, leftY, colWidth, colors.primary);
       const growthRows = data.summary.growthBreakdown
         .sort((a, b) => b.value - a.value)
-        .map((g) => [formatCategory(g.growthClass), formatCurrency(g.value)]);
+        .map((g) => [formatCategory(g.growthClass), formatCurrency(g.value, locale, currency)]);
       autoTable(doc, {
         startY: leftY,
         margin: { left: leftX },
@@ -343,10 +349,10 @@ export class PdfReportService {
           const changeStr = pct == null ? '-' : `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
           return {
             year: row.year,
-            assets: formatCurrency(row.assets),
-            finAssets: formatCurrency(row.financialAssets),
-            liabilities: formatCurrency(row.liabilities),
-            netWorth: formatCurrency(row.netWorth),
+            assets: formatCurrency(row.assets, locale, currency),
+            finAssets: formatCurrency(row.financialAssets, locale, currency),
+            liabilities: formatCurrency(row.liabilities, locale, currency),
+            netWorth: formatCurrency(row.netWorth, locale, currency),
             change: changeStr,
           };
         }),
@@ -381,9 +387,9 @@ export class PdfReportService {
       y = drawSectionHeader(doc, 'Member Comparison', margin, y, contentWidth, colors.primary);
       const memberRows = data.members.map((m) => [
         m.displayName,
-        formatCurrency(m.assets),
-        formatCurrency(m.liabilities),
-        formatCurrency(m.netWorth),
+        formatCurrency(m.assets, locale, currency),
+        formatCurrency(m.liabilities, locale, currency),
+        formatCurrency(m.netWorth, locale, currency),
       ]);
 
       autoTable(doc, {
@@ -420,7 +426,7 @@ export class PdfReportService {
 
       doc.setFontSize(7);
       doc.setTextColor(...colors.primary);
-      doc.text(`${p.progressPercent}% of ${formatCurrency(p.target)}`, margin, barY + 10);
+      doc.text(`${p.progressPercent}% of ${formatCurrency(p.target, locale, currency)}`, margin, barY + 10);
 
       if (p.projectedYear) {
         doc.text(`Projected: ${p.projectedYear}`, pageWidth - margin, barY + 10, { align: 'right' });
@@ -428,8 +434,8 @@ export class PdfReportService {
     }
   }
 
-  private buildPage2(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string) {
-    drawPageHeader(doc, data, colors, margin, pageWidth, 'Charts & Visualisations', logoDataUrl);
+  private buildPage2(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string, locale: string, currency: string) {
+    drawPageHeader(doc, data, colors, margin, pageWidth, 'Charts & Visualisations', logoDataUrl, locale);
     let y = HEADER_HEIGHT + 6;
     const pxPerMm = 6;
 
@@ -441,7 +447,7 @@ export class PdfReportService {
     // --- Row 1: Net Worth Trend (full width) ---
     if (data.trend.length > 1) {
       y = drawSectionHeader(doc, 'Net Worth Trend', margin, y, contentWidth, colors.primary);
-      const img = renderChart(buildTrendOptions(data.trend), contentWidth * pxPerMm, wideChartH * pxPerMm);
+      const img = renderChart(buildTrendOptions(data.trend, locale, currency), contentWidth * pxPerMm, wideChartH * pxPerMm);
       if (img) {
         doc.addImage(img, 'PNG', margin, y, contentWidth, wideChartH);
         y += wideChartH + gap;
@@ -451,19 +457,19 @@ export class PdfReportService {
     // --- Row 2: Asset Composition + Liquidity Breakdown ---
     y = this.addChartRow(doc, y, margin, colWidth, halfChartH, gap, pxPerMm, colors,
       data.summary.assetsByCategory?.length > 0 ? { title: 'Asset Composition', options: buildCompositionOptions(data.summary) } : null,
-      data.summary.liquidityBreakdown?.length > 0 ? { title: 'Liquidity Breakdown', options: buildLiquidityOptions(data.summary) } : null,
+      data.summary.liquidityBreakdown?.length > 0 ? { title: 'Liquidity Breakdown', options: buildLiquidityOptions(data.summary, locale, currency) } : null,
     );
 
     // --- Row 3: Growth vs Defensive + Debt Quality ---
     y = this.addChartRow(doc, y, margin, colWidth, halfChartH, gap, pxPerMm, colors,
       data.summary.growthBreakdown?.length > 0 ? { title: 'Growth vs Defensive', options: buildGrowthOptions(data.summary) } : null,
-      data.summary.debtQualityBreakdown?.length > 0 ? { title: 'Debt Quality', options: buildDebtQualityOptions(data.summary) } : null,
+      data.summary.debtQualityBreakdown?.length > 0 ? { title: 'Debt Quality', options: buildDebtQualityOptions(data.summary, locale, currency) } : null,
     );
 
     // --- Row 4: Member Comparison + Super Balance Comparison ---
     this.addChartRow(doc, y, margin, colWidth, halfChartH, gap, pxPerMm, colors,
-      data.members.length > 1 ? { title: 'Member Comparison', options: buildMemberOptions(data.members) } : null,
-      data.superGap.length > 0 ? { title: 'Super Balance Comparison', options: buildSuperGapOptions(data.superGap) } : null,
+      data.members.length > 1 ? { title: 'Member Comparison', options: buildMemberOptions(data.members, locale, currency) } : null,
+      data.superGap.length > 0 ? { title: 'Super Balance Comparison', options: buildSuperGapOptions(data.superGap, locale, currency) } : null,
     );
   }
 
@@ -497,8 +503,8 @@ export class PdfReportService {
     return drawn ? y + 8 + chartH + gap : y;
   }
 
-  private buildPage3(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string) {
-    drawPageHeader(doc, data, colors, margin, pageWidth, 'Asset Performance (YoY)', logoDataUrl);
+  private buildPage3(doc: jsPDF, data: ReportData, colors: Colors, margin: number, contentWidth: number, pageWidth: number, logoDataUrl: string, locale: string, currency: string) {
+    drawPageHeader(doc, data, colors, margin, pageWidth, 'Asset Performance (YoY)', logoDataUrl, locale);
     let y = HEADER_HEIGHT + 6;
 
     // Collect all years across all assets
@@ -535,7 +541,7 @@ export class PdfReportService {
         for (const yr of years) {
           const yv = a.years.find((v) => v.year === yr);
           if (yv) {
-            row[yr] = formatCurrency(yv.value);
+            row[yr] = formatCurrency(yv.value, locale, currency);
             prevVal = lastVal;
             lastVal = yv.value;
           } else {
@@ -665,11 +671,11 @@ function aggregateByYear(trend: TrendPoint[]): YearlyTrend[] {
   }));
 }
 
-function formatCurrency(value: number | null | undefined): string {
-  if (value == null) return '$0';
-  return new Intl.NumberFormat('en-AU', {
+function formatCurrency(value: number | null | undefined, locale: string, currency: string): string {
+  if (value == null) return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(0);
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'AUD',
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
