@@ -20,11 +20,17 @@
     </div>
 
     <div class="setup-form">
-      <label for="email">Email</label>
-      <input pInputText id="email" [value]="email()" readonly class="email-readonly" />
+      <label for="householdName">Household Name</label>
+      <input pInputText id="householdName" [(ngModel)]="householdName" placeholder="My Household" />
 
-      <label for="displayName">Display Name</label>
+      <label for="displayName">Your Name</label>
       <input pInputText id="displayName" [(ngModel)]="displayName" placeholder="e.g. Sarah" (keydown.enter)="submit()" />
+
+      <label for="currency">Currency</label>
+      <input pInputText id="currency" [(ngModel)]="currency" placeholder="AUD" />
+
+      <label>Period Type</label>
+      <p-selectbutton [options]="periodOptions" [(ngModel)]="periodType" />
 
       <p-button label="Get Started" icon="pi pi-arrow-right" iconPos="right" (onClick)="submit()"
         [disabled]="!displayName().trim() || saving()" [loading]="saving()" styleClass="setup-btn" />
