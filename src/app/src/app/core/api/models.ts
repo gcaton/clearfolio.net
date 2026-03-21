@@ -448,3 +448,11 @@ export interface HistoricalReturn {
   dataPoints: number;
   periodYears: number;
 }
+
+export interface DashboardGoalProjection {
+  target: number;
+  current: number;
+  progressPercent: number;
+  projectedYear: number | null;
+  goalReached: boolean;
+}

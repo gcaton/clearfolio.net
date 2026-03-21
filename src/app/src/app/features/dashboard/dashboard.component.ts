@@ -37,17 +37,10 @@ import {
   AssetPerformance,
   CashflowSummary,
   CompoundResult,
+  DashboardGoalProjection,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
 import { FadeInDirective } from '../../shared/directives/fade-in.directive';
-
-interface DashboardGoalProjection {
-  target: number;
-  current: number;
-  progressPercent: number;
-  projectedYear: number | null;
-  goalReached: boolean;
-}
 
 echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 

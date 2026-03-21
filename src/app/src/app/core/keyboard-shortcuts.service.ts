@@ -5,27 +5,36 @@ import { Router } from '@angular/router';
 export class KeyboardShortcutsService implements OnDestroy {
   private router = inject(Router);
   private handler = this.onKeyDown.bind(this);
+  private initialized = false;
+  private helpVisible = false;
+  private dismissHandler: (() => void) | null = null;
 
   init() {
+    if (this.initialized) return;
     document.addEventListener('keydown', this.handler);
+    this.initialized = true;
   }
 
   ngOnDestroy() {
-    document.removeEventListener('keydown', this.handler);
+    if (this.initialized) {
+      document.removeEventListener('keydown', this.handler);
+      this.initialized = false;
+    }
+    this.hideHelp();
   }
 
   private onKeyDown(e: KeyboardEvent) {
-    // Ignore when typing in inputs/textareas/selects
     const tag = (e.target as HTMLElement)?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-    // Ignore when modifier keys are held (allow user's browser shortcuts)
     if (e.ctrlKey || e.metaKey || e.altKey) return;
 
+    if (this.helpVisible) {
+      e.preventDefault();
+      this.hideHelp();
+      return;
+    }
+
     switch (e.key) {
-      case 'g':
-        // g then wait for second key — but simpler: just use single keys
-        break;
       case 'd':
         e.preventDefault();
         this.router.navigate(['/dashboard']);
@@ -61,8 +70,6 @@ export class KeyboardShortcutsService implements OnDestroy {
     }
   }
 
-  private helpVisible = false;
-
   private showHelp() {
     if (this.helpVisible) {
       this.hideHelp();
@@ -88,7 +95,6 @@ export class KeyboardShortcutsService implements OnDestroy {
       </div>
     `;
     overlay.addEventListener('click', () => this.hideHelp());
-    document.addEventListener('keydown', () => this.hideHelp(), { once: true });
     document.body.appendChild(overlay);
     this.helpVisible = true;
   }
@@ -97,7 +103,7 @@ export class KeyboardShortcutsService implements OnDestroy {
     const el = document.getElementById('keyboard-help-overlay');
     if (el) {
       el.remove();
-      this.helpVisible = false;
     }
+    this.helpVisible = false;
   }
 }

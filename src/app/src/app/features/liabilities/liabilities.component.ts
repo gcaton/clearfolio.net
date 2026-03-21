@@ -19,14 +19,7 @@ import { RecordValueDialogComponent } from '../../shared/components/record-value
 import { Tooltip } from 'primeng/tooltip';
 import { DecimalPipe } from '@angular/common';
 import { Divider } from 'primeng/divider';
-
-const CATEGORY_COLORS: Record<string, string> = {
-  mortgage: '#f87171',
-  personal: '#fb923c',
-  credit: '#ef4444',
-  student: '#a3a3a3',
-  tax: '#d4d4d8',
-};
+import { CATEGORY_COLORS } from '../dashboard/chart-options';
 
 @Component({
   selector: 'app-liabilities',

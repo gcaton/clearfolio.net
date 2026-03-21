@@ -12,6 +12,7 @@ import {
 
   SuperGap,
   AssetPerformance,
+  DashboardGoalProjection,
 } from './api/models';
 import {
   buildTrendOptions,
@@ -31,7 +32,7 @@ export interface ReportData {
   members: MemberComparison[];
   superGap: SuperGap[];
   assetPerformance: AssetPerformance[];
-  projection: { target: number; current: number; progressPercent: number; projectedYear: number | null; goalReached: boolean } | null;
+  projection: DashboardGoalProjection | null;
   scope: string;
 }
 

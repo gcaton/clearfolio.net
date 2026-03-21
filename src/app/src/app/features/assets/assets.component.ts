@@ -20,14 +20,7 @@ import { RecordValueDialogComponent } from '../../shared/components/record-value
 import { Tooltip } from 'primeng/tooltip';
 import { Divider } from 'primeng/divider';
 import { Checkbox } from 'primeng/checkbox';
-
-const CATEGORY_COLORS: Record<string, string> = {
-  cash: '#60a5fa',
-  investable: '#34d399',
-  retirement: '#a78bfa',
-  property: '#fbbf24',
-  other: '#94a3b8',
-};
+import { CATEGORY_COLORS } from '../dashboard/chart-options';
 
 @Component({
   selector: 'app-assets',
