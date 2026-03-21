@@ -19,27 +19,6 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ClearfolioDbContext>();
     db.Database.Migrate();
-
-    // Fix: re-seed expense categories for households that have none
-    // (the SQL-based migration generated GUIDs that don't match EF Core's format)
-    var householdIds = db.Households.Select(h => h.Id).ToList();
-    foreach (var hid in householdIds)
-    {
-        var hasCategories = db.ExpenseCategories.Any(c => c.HouseholdId == hid);
-        if (!hasCategories)
-            ExpenseCategoriesEndpoints.SeedDefaultCategories(db, hid);
-    }
-    // Also clean up any categories with IDs that EF Core can't round-trip
-    var brokenCategories = db.Database.ExecuteSqlRaw(
-        "DELETE FROM expense_categories WHERE id != lower(id)");
-    // Re-seed for households that lost categories from the cleanup
-    foreach (var hid in householdIds)
-    {
-        var hasCategories = db.ExpenseCategories.Any(c => c.HouseholdId == hid);
-        if (!hasCategories)
-            ExpenseCategoriesEndpoints.SeedDefaultCategories(db, hid);
-    }
-    db.SaveChanges();
 }
 
 app.UseMiddleware<CloudflareJwtMiddleware>();

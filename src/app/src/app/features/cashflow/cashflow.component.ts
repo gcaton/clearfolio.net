@@ -259,8 +259,8 @@ export class CashflowComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Income stream created' });
         },
         error: (err) => {
-          const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 10000 });
+          const msg = typeof err.error === 'string' ? err.error : 'Failed to create income stream';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
         },
       });
     }
@@ -313,7 +313,6 @@ export class CashflowComponent implements OnInit {
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense updated' });
       });
     } else {
-      console.log('Expense form payload:', JSON.stringify(this.expenseForm));
       this.api.createExpense(this.expenseForm).subscribe({
         next: () => {
           this.expenseDialogVisible.set(false);
@@ -322,9 +321,8 @@ export class CashflowComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense created' });
         },
         error: (err) => {
-          console.error('Expense create error:', err.status, err.error);
-          const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 10000 });
+          const msg = typeof err.error === 'string' ? err.error : 'Failed to create expense';
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
         },
       });
     }
