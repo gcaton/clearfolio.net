@@ -15,7 +15,8 @@ public record ExportDto(
 public record ExportHouseholdDto(
     string Name,
     string BaseCurrency,
-    string PreferredPeriodType);
+    string PreferredPeriodType,
+    string? Locale);
 
 public record ExportMemberDto(
     string? Email,
