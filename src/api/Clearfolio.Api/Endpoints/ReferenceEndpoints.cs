@@ -20,7 +20,9 @@ public static class ReferenceEndpoints
             .OrderBy(t => t.SortOrder)
             .Select(t => new AssetTypeDto(
                 t.Id, t.Name, t.Category, t.Liquidity, t.GrowthClass,
-                t.IsSuper, t.IsCgtExempt, t.SortOrder, t.IsSystem))
+                t.IsSuper, t.IsCgtExempt, t.SortOrder, t.IsSystem,
+                DefaultReturnRate: t.DefaultReturnRate,
+                DefaultVolatility: t.DefaultVolatility))
             .ToListAsync();
 
         return Results.Ok(types);

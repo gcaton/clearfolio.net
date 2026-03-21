@@ -52,6 +52,11 @@ public static class AssetsEndpoints
             Symbol = request.Symbol?.Trim().ToUpperInvariant(),
             Currency = request.Currency,
             Notes = request.Notes,
+            ContributionAmount = request.ContributionAmount,
+            ContributionFrequency = request.ContributionFrequency,
+            ContributionEndDate = request.ContributionEndDate,
+            ExpectedReturnRate = request.ExpectedReturnRate,
+            ExpectedVolatility = request.ExpectedVolatility,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -86,6 +91,11 @@ public static class AssetsEndpoints
         asset.Symbol = request.Symbol?.Trim().ToUpperInvariant();
         asset.Currency = request.Currency;
         asset.Notes = request.Notes;
+        asset.ContributionAmount = request.ContributionAmount;
+        asset.ContributionFrequency = request.ContributionFrequency;
+        asset.ContributionEndDate = request.ContributionEndDate;
+        asset.ExpectedReturnRate = request.ExpectedReturnRate;
+        asset.ExpectedVolatility = request.ExpectedVolatility;
         asset.UpdatedAt = DateTime.UtcNow.ToString("o");
 
         await db.SaveChangesAsync();
@@ -117,7 +127,12 @@ public static class AssetsEndpoints
         a.OwnerMemberId, a.OwnerMember?.DisplayName,
         a.OwnershipType, a.JointSplit,
         a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive,
-        a.CreatedAt, a.UpdatedAt);
+        a.CreatedAt, a.UpdatedAt,
+        ContributionAmount: a.ContributionAmount,
+        ContributionFrequency: a.ContributionFrequency,
+        ContributionEndDate: a.ContributionEndDate,
+        ExpectedReturnRate: a.ExpectedReturnRate,
+        ExpectedVolatility: a.ExpectedVolatility);
 
     private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
         context.Items["HouseholdMember"] as HouseholdMember;

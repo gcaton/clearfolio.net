@@ -51,6 +51,10 @@ public static class LiabilitiesEndpoints
             Label = request.Label,
             Currency = request.Currency,
             Notes = request.Notes,
+            RepaymentAmount = request.RepaymentAmount,
+            RepaymentFrequency = request.RepaymentFrequency,
+            RepaymentEndDate = request.RepaymentEndDate,
+            InterestRate = request.InterestRate,
             CreatedAt = now,
             UpdatedAt = now
         };
@@ -84,6 +88,10 @@ public static class LiabilitiesEndpoints
         liability.Label = request.Label;
         liability.Currency = request.Currency;
         liability.Notes = request.Notes;
+        liability.RepaymentAmount = request.RepaymentAmount;
+        liability.RepaymentFrequency = request.RepaymentFrequency;
+        liability.RepaymentEndDate = request.RepaymentEndDate;
+        liability.InterestRate = request.InterestRate;
         liability.UpdatedAt = DateTime.UtcNow.ToString("o");
 
         await db.SaveChangesAsync();
@@ -115,7 +123,11 @@ public static class LiabilitiesEndpoints
         l.OwnerMemberId, l.OwnerMember?.DisplayName,
         l.OwnershipType, l.JointSplit,
         l.Label, l.Currency, l.Notes, l.IsActive,
-        l.CreatedAt, l.UpdatedAt);
+        l.CreatedAt, l.UpdatedAt,
+        RepaymentAmount: l.RepaymentAmount,
+        RepaymentFrequency: l.RepaymentFrequency,
+        RepaymentEndDate: l.RepaymentEndDate,
+        InterestRate: l.InterestRate);
 
     private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
         context.Items["HouseholdMember"] as HouseholdMember;

@@ -9,4 +9,6 @@ public record AssetTypeDto(
     bool IsSuper,
     bool IsCgtExempt,
     int SortOrder,
-    bool IsSystem);
+    bool IsSystem,
+    double DefaultReturnRate,
+    double DefaultVolatility);

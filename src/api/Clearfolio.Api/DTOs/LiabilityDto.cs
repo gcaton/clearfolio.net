@@ -13,7 +13,11 @@ public record LiabilityDto(
     string? Notes,
     bool IsActive,
     string CreatedAt,
-    string UpdatedAt);
+    string UpdatedAt,
+    double? RepaymentAmount,
+    string? RepaymentFrequency,
+    string? RepaymentEndDate,
+    double? InterestRate);
 
 public record CreateLiabilityRequest(
     Guid LiabilityTypeId,
@@ -22,7 +26,11 @@ public record CreateLiabilityRequest(
     double JointSplit,
     string Label,
     string Currency,
-    string? Notes);
+    string? Notes,
+    double? RepaymentAmount,
+    string? RepaymentFrequency,
+    string? RepaymentEndDate,
+    double? InterestRate);
 
 public record UpdateLiabilityRequest(
     Guid LiabilityTypeId,
@@ -31,4 +39,8 @@ public record UpdateLiabilityRequest(
     double JointSplit,
     string Label,
     string Currency,
-    string? Notes);
+    string? Notes,
+    double? RepaymentAmount,
+    string? RepaymentFrequency,
+    string? RepaymentEndDate,
+    double? InterestRate);

@@ -14,7 +14,12 @@ public record AssetDto(
     string? Notes,
     bool IsActive,
     string CreatedAt,
-    string UpdatedAt);
+    string UpdatedAt,
+    double? ContributionAmount,
+    string? ContributionFrequency,
+    string? ContributionEndDate,
+    double? ExpectedReturnRate,
+    double? ExpectedVolatility);
 
 public record CreateAssetRequest(
     Guid AssetTypeId,
@@ -24,7 +29,12 @@ public record CreateAssetRequest(
     string Label,
     string? Symbol,
     string Currency,
-    string? Notes);
+    string? Notes,
+    double? ContributionAmount,
+    string? ContributionFrequency,
+    string? ContributionEndDate,
+    double? ExpectedReturnRate,
+    double? ExpectedVolatility);
 
 public record UpdateAssetRequest(
     Guid AssetTypeId,
@@ -34,4 +44,9 @@ public record UpdateAssetRequest(
     string Label,
     string? Symbol,
     string Currency,
-    string? Notes);
+    string? Notes,
+    double? ContributionAmount,
+    string? ContributionFrequency,
+    string? ContributionEndDate,
+    double? ExpectedReturnRate,
+    double? ExpectedVolatility);
