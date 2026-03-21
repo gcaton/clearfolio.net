@@ -18,11 +18,12 @@ import { Asset, AssetType, Member, CreateAssetRequest, Quote, LatestSnapshot } f
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
 import { Tooltip } from 'primeng/tooltip';
+import { Divider } from 'primeng/divider';
 
 @Component({
   selector: 'app-assets',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip],
+  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip, Divider],
   providers: [ConfirmationService, MessageService],
   templateUrl: './assets.component.html',
   styleUrl: './assets.component.scss',
@@ -51,6 +52,14 @@ export class AssetsComponent implements OnInit {
     { label: 'Joint', value: 'joint' },
   ];
 
+  protected frequencyOptions = [
+    { label: 'Weekly', value: 'weekly' },
+    { label: 'Fortnightly', value: 'fortnightly' },
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Quarterly', value: 'quarterly' },
+    { label: 'Yearly', value: 'yearly' },
+  ];
+
   ngOnInit() {
     this.loadAssets();
     this.api.getAssetTypes().subscribe((d) => this.assetTypes.set(d));
@@ -76,8 +85,8 @@ export class AssetsComponent implements OnInit {
       contributionAmount: asset.contributionAmount,
       contributionFrequency: asset.contributionFrequency,
       contributionEndDate: asset.contributionEndDate,
-      expectedReturnRate: asset.expectedReturnRate,
-      expectedVolatility: asset.expectedVolatility,
+      expectedReturnRate: asset.expectedReturnRate ? asset.expectedReturnRate * 100 : null,
+      expectedVolatility: asset.expectedVolatility ? asset.expectedVolatility * 100 : null,
     };
     this.editing.set(asset);
     this.dialogVisible.set(true);
@@ -85,14 +94,19 @@ export class AssetsComponent implements OnInit {
 
   save() {
     const current = this.editing();
+    const payload = {
+      ...this.form,
+      expectedReturnRate: this.form.expectedReturnRate ? this.form.expectedReturnRate / 100 : null,
+      expectedVolatility: this.form.expectedVolatility ? this.form.expectedVolatility / 100 : null,
+    };
     if (current) {
-      this.api.updateAsset(current.id, this.form).subscribe(() => {
+      this.api.updateAsset(current.id, payload).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadAssets();
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset updated' });
       });
     } else {
-      this.api.createAsset(this.form).subscribe(() => {
+      this.api.createAsset(payload).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadAssets();
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset created' });

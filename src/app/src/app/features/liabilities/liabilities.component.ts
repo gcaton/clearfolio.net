@@ -18,11 +18,12 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
 import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
 import { Tooltip } from 'primeng/tooltip';
 import { DecimalPipe } from '@angular/common';
+import { Divider } from 'primeng/divider';
 
 @Component({
   selector: 'app-liabilities',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip],
+  imports: [FormsModule, DecimalPipe, TableModule, Tag, Button, DialogModule, InputText, Select, InputNumber, Textarea, ConfirmDialog, Toast, Skeleton, EmptyStateComponent, RecordValueDialogComponent, Tooltip, Divider],
   providers: [ConfirmationService, MessageService],
   templateUrl: './liabilities.component.html',
   styleUrl: './liabilities.component.scss',
@@ -50,6 +51,14 @@ export class LiabilitiesComponent implements OnInit {
     { label: 'Joint', value: 'joint' },
   ];
 
+  protected frequencyOptions = [
+    { label: 'Weekly', value: 'weekly' },
+    { label: 'Fortnightly', value: 'fortnightly' },
+    { label: 'Monthly', value: 'monthly' },
+    { label: 'Quarterly', value: 'quarterly' },
+    { label: 'Yearly', value: 'yearly' },
+  ];
+
   ngOnInit() {
     this.loadLiabilities();
     this.api.getLiabilityTypes().subscribe((d) => this.liabilityTypes.set(d));
@@ -74,7 +83,7 @@ export class LiabilitiesComponent implements OnInit {
       repaymentAmount: liability.repaymentAmount,
       repaymentFrequency: liability.repaymentFrequency,
       repaymentEndDate: liability.repaymentEndDate,
-      interestRate: liability.interestRate,
+      interestRate: liability.interestRate ? liability.interestRate * 100 : null,
     };
     this.editing.set(liability);
     this.dialogVisible.set(true);
@@ -82,14 +91,18 @@ export class LiabilitiesComponent implements OnInit {
 
   save() {
     const current = this.editing();
+    const payload = {
+      ...this.form,
+      interestRate: this.form.interestRate ? this.form.interestRate / 100 : null,
+    };
     if (current) {
-      this.api.updateLiability(current.id, this.form).subscribe(() => {
+      this.api.updateLiability(current.id, payload).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadLiabilities();
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability updated' });
       });
     } else {
-      this.api.createLiability(this.form).subscribe(() => {
+      this.api.createLiability(payload).subscribe(() => {
         this.dialogVisible.set(false);
         this.loadLiabilities();
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability created' });

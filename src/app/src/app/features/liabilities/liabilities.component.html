@@ -130,6 +130,27 @@
     <textarea pTextarea id="notes" [(ngModel)]="form.notes" [rows]="3"></textarea>
   </div>
 
+  <p-divider />
+  <h4 class="section-label">Projections</h4>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Repayment Amount</label>
+      <p-inputNumber [(ngModel)]="form.repaymentAmount" mode="currency" [currency]="form.currency || 'AUD'" [minFractionDigits]="0" placeholder="0" />
+    </div>
+    <div class="form-field">
+      <label>Frequency</label>
+      <p-select [(ngModel)]="form.repaymentFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Select..." [showClear]="true" />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Interest Rate (%)</label>
+      <p-inputNumber [(ngModel)]="form.interestRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="0" />
+    </div>
+  </div>
+
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" (onClick)="dialogVisible.set(false)" />
     <p-button label="Save" (onClick)="save()" [disabled]="!form.label || !form.liabilityTypeId" />

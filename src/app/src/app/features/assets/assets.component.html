@@ -149,6 +149,31 @@
     <textarea pTextarea id="notes" [(ngModel)]="form.notes" [rows]="3"></textarea>
   </div>
 
+  <p-divider />
+  <h4 class="section-label">Projections</h4>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Contribution Amount</label>
+      <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" [currency]="form.currency || 'AUD'" [minFractionDigits]="0" placeholder="0" />
+    </div>
+    <div class="form-field">
+      <label>Frequency</label>
+      <p-select [(ngModel)]="form.contributionFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Select..." [showClear]="true" />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <div class="form-field">
+      <label>Expected Return (%)</label>
+      <p-inputNumber [(ngModel)]="form.expectedReturnRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
+    </div>
+    <div class="form-field">
+      <label>Volatility (%)</label>
+      <p-inputNumber [(ngModel)]="form.expectedVolatility" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" placeholder="Type default" />
+    </div>
+  </div>
+
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" (onClick)="dialogVisible.set(false)" />
     <p-button label="Save" (onClick)="save()" [disabled]="!form.label || !form.assetTypeId" />
