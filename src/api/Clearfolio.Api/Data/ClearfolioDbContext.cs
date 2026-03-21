@@ -58,6 +58,8 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.Property(a => a.IsCgtExempt).HasColumnName("is_cgt_exempt");
             e.Property(a => a.SortOrder).HasColumnName("sort_order");
             e.Property(a => a.IsSystem).HasColumnName("is_system");
+            e.Property(t => t.DefaultReturnRate).HasColumnName("default_return_rate").HasDefaultValue(0.0);
+            e.Property(t => t.DefaultVolatility).HasColumnName("default_volatility").HasDefaultValue(0.0);
         });
 
         // LiabilityType
@@ -92,6 +94,11 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.Property(a => a.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             e.Property(a => a.CreatedAt).HasColumnName("created_at").IsRequired();
             e.Property(a => a.UpdatedAt).HasColumnName("updated_at").IsRequired();
+            e.Property(a => a.ContributionAmount).HasColumnName("contribution_amount");
+            e.Property(a => a.ContributionFrequency).HasColumnName("contribution_frequency");
+            e.Property(a => a.ContributionEndDate).HasColumnName("contribution_end_date");
+            e.Property(a => a.ExpectedReturnRate).HasColumnName("expected_return_rate");
+            e.Property(a => a.ExpectedVolatility).HasColumnName("expected_volatility");
 
             e.HasIndex(a => new { a.HouseholdId, a.IsActive });
             e.HasOne(a => a.Household).WithMany(h => h.Assets).HasForeignKey(a => a.HouseholdId);
@@ -116,6 +123,10 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.Property(l => l.IsActive).HasColumnName("is_active").HasDefaultValue(true);
             e.Property(l => l.CreatedAt).HasColumnName("created_at").IsRequired();
             e.Property(l => l.UpdatedAt).HasColumnName("updated_at").IsRequired();
+            e.Property(l => l.RepaymentAmount).HasColumnName("repayment_amount");
+            e.Property(l => l.RepaymentFrequency).HasColumnName("repayment_frequency");
+            e.Property(l => l.RepaymentEndDate).HasColumnName("repayment_end_date");
+            e.Property(l => l.InterestRate).HasColumnName("interest_rate");
 
             e.HasIndex(l => new { l.HouseholdId, l.IsActive });
             e.HasOne(l => l.Household).WithMany(h => h.Liabilities).HasForeignKey(l => l.HouseholdId);
@@ -151,21 +162,21 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
     private static void SeedData(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<AssetType>().HasData(
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000001"), Name = "Cash — savings / transaction", Category = "cash", Liquidity = "immediate", GrowthClass = "defensive", SortOrder = 1, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000002"), Name = "Cash — term deposit (≤90 days)", Category = "cash", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 2, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"), Name = "Term deposit (>90 days)", Category = "cash", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 3, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000004"), Name = "Australian shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 4, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000005"), Name = "International shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 5, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000f"), Name = "Managed fund", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 6, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000006"), Name = "Bonds / fixed income", Category = "investable", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 7, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000007"), Name = "Cryptocurrency", Category = "investable", Liquidity = "immediate", GrowthClass = "growth", SortOrder = 8, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000e"), Name = "Investment bond", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 9, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000008"), Name = "Superannuation — Accumulation", Category = "retirement", Liquidity = "restricted", GrowthClass = "mixed", IsSuper = true, SortOrder = 10, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000009"), Name = "Superannuation — Pension phase", Category = "retirement", Liquidity = "long_term", GrowthClass = "mixed", IsSuper = true, SortOrder = 11, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000a"), Name = "Primary residence (PPOR)", Category = "property", Liquidity = "long_term", GrowthClass = "growth", IsCgtExempt = true, SortOrder = 12, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000b"), Name = "Investment property", Category = "property", Liquidity = "long_term", GrowthClass = "growth", SortOrder = 13, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000c"), Name = "Vehicle", Category = "other", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 14, IsSystem = true },
-            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000d"), Name = "Other physical asset", Category = "other", Liquidity = "long_term", GrowthClass = "mixed", SortOrder = 15, IsSystem = true }
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000001"), Name = "Cash — savings / transaction", Category = "cash", Liquidity = "immediate", GrowthClass = "defensive", SortOrder = 1, IsSystem = true, DefaultReturnRate = 0.04, DefaultVolatility = 0.01 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000002"), Name = "Cash — term deposit (≤90 days)", Category = "cash", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 2, IsSystem = true, DefaultReturnRate = 0.04, DefaultVolatility = 0.01 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"), Name = "Term deposit (>90 days)", Category = "cash", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 3, IsSystem = true, DefaultReturnRate = 0.045, DefaultVolatility = 0.01 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000004"), Name = "Australian shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 4, IsSystem = true, DefaultReturnRate = 0.07, DefaultVolatility = 0.15 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000005"), Name = "International shares / ETFs", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 5, IsSystem = true, DefaultReturnRate = 0.08, DefaultVolatility = 0.17 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000f"), Name = "Managed fund", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 6, IsSystem = true, DefaultReturnRate = 0.06, DefaultVolatility = 0.12 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000006"), Name = "Bonds / fixed income", Category = "investable", Liquidity = "short_term", GrowthClass = "defensive", SortOrder = 7, IsSystem = true, DefaultReturnRate = 0.04, DefaultVolatility = 0.05 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000007"), Name = "Cryptocurrency", Category = "investable", Liquidity = "immediate", GrowthClass = "growth", SortOrder = 8, IsSystem = true, DefaultReturnRate = 0.0, DefaultVolatility = 0.50 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000e"), Name = "Investment bond", Category = "investable", Liquidity = "short_term", GrowthClass = "growth", SortOrder = 9, IsSystem = true, DefaultReturnRate = 0.05, DefaultVolatility = 0.08 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000008"), Name = "Superannuation — Accumulation", Category = "retirement", Liquidity = "restricted", GrowthClass = "mixed", IsSuper = true, SortOrder = 10, IsSystem = true, DefaultReturnRate = 0.07, DefaultVolatility = 0.12 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000009"), Name = "Superannuation — Pension phase", Category = "retirement", Liquidity = "long_term", GrowthClass = "mixed", IsSuper = true, SortOrder = 11, IsSystem = true, DefaultReturnRate = 0.06, DefaultVolatility = 0.10 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000a"), Name = "Primary residence (PPOR)", Category = "property", Liquidity = "long_term", GrowthClass = "growth", IsCgtExempt = true, SortOrder = 12, IsSystem = true, DefaultReturnRate = 0.05, DefaultVolatility = 0.10 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000b"), Name = "Investment property", Category = "property", Liquidity = "long_term", GrowthClass = "growth", SortOrder = 13, IsSystem = true, DefaultReturnRate = 0.05, DefaultVolatility = 0.10 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000c"), Name = "Vehicle", Category = "other", Liquidity = "long_term", GrowthClass = "defensive", SortOrder = 14, IsSystem = true, DefaultReturnRate = -0.10, DefaultVolatility = 0.05 },
+            new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-00000000000d"), Name = "Other physical asset", Category = "other", Liquidity = "long_term", GrowthClass = "mixed", SortOrder = 15, IsSystem = true, DefaultReturnRate = 0.0, DefaultVolatility = 0.10 }
         );
 
         modelBuilder.Entity<LiabilityType>().HasData(
