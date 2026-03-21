@@ -108,6 +108,13 @@
       </td>
     </tr>
   </ng-template>
+  <ng-template #footer>
+    <tr class="group-footer-row">
+      <td colspan="5" style="text-align: right; font-weight: 600;">Total</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ incomeTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
+      <td></td>
+    </tr>
+  </ng-template>
   <ng-template #emptymessage>
     <tr>
       <td colspan="7">
@@ -186,6 +193,13 @@
       <td></td>
     </tr>
   </ng-template>
+  <ng-template #footer>
+    <tr class="group-footer-row">
+      <td colspan="4" style="text-align: right; font-weight: 600;">Total</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ expenseTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
+      <td></td>
+    </tr>
+  </ng-template>
   <ng-template #emptymessage>
     <tr>
       <td colspan="6">
@@ -240,9 +254,9 @@
     </tr>
   </ng-template>
   <ng-template #footer>
-    <tr>
+    <tr class="group-footer-row">
       <td colspan="5" style="text-align: right; font-weight: 600;">Total</td>
-      <td style="text-align: right; font-weight: 600; font-variant-numeric: tabular-nums;">{{ savingsTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ savingsTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
       <td></td>
     </tr>
   </ng-template>

@@ -87,6 +87,12 @@ export class CashflowComponent implements OnInit {
   protected members = signal<Member[]>([]);
   protected loading = signal(true);
   protected savingsAssets = signal<Asset[]>([]);
+  protected incomeTotal = computed(() =>
+    this.incomeStreams().reduce((sum, i) => sum + this.annualise(i.amount, i.frequency), 0)
+  );
+  protected expenseTotal = computed(() =>
+    this.expenses().reduce((sum, e) => sum + this.annualise(e.amount, e.frequency), 0)
+  );
   protected savingsTotal = computed(() =>
     this.savingsAssets().reduce((sum, a) => sum + this.annualise(a.contributionAmount ?? 0, a.contributionFrequency ?? 'monthly'), 0)
   );
