@@ -103,8 +103,8 @@ export class CashflowComponent implements OnInit {
   ];
 
   protected incomeTypeOptions = [
-    { label: 'Primary', value: 'primary' },
-    { label: 'Additional', value: 'additional' },
+    { label: 'Primary', value: 'Primary' },
+    { label: 'Additional', value: 'Additional' },
   ];
 
   protected ownerOptionsForExpense = computed(() => {
@@ -355,7 +355,7 @@ export class CashflowComponent implements OnInit {
     return {
       ownerMemberId: '',
       label: '',
-      incomeType: 'primary',
+      incomeType: 'Primary',
       amount: 0,
       frequency: 'monthly',
       isActive: true,
