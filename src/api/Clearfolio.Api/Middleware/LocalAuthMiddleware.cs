@@ -14,8 +14,10 @@ public class LocalAuthMiddleware
 
     public async Task InvokeAsync(HttpContext context, ClearfolioDbContext db)
     {
-        // Auth endpoints are always exempt
-        if (context.Request.Path.StartsWithSegments("/api/auth"))
+        // Auth status/login/logout are exempt from auth checks
+        if (context.Request.Path.StartsWithSegments("/api/auth/status") ||
+            context.Request.Path.StartsWithSegments("/api/auth/login") ||
+            context.Request.Path.StartsWithSegments("/api/auth/logout"))
         {
             await _next(context);
             return;
