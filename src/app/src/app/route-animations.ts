@@ -1,17 +1,16 @@
-import { trigger, transition, style, animate, query, group } from '@angular/animations';
+import { trigger, transition, style, animate, query } from '@angular/animations';
 
 export const routeAnimation = trigger('routeAnimation', [
   transition('* <=> *', [
     query(':enter', [
-      style({ opacity: 0, transform: 'translateY(8px)' }),
+      style({ opacity: 0 }),
     ], { optional: true }),
-    group([
-      query(':leave', [
-        animate('150ms ease-out', style({ opacity: 0 })),
-      ], { optional: true }),
-      query(':enter', [
-        animate('250ms 100ms ease-out', style({ opacity: 1, transform: 'translateY(0)' })),
-      ], { optional: true }),
-    ]),
+    query(':leave', [
+      style({ position: 'absolute', width: '100%', opacity: 1 }),
+      animate('120ms ease-out', style({ opacity: 0 })),
+    ], { optional: true }),
+    query(':enter', [
+      animate('200ms ease-out', style({ opacity: 1 })),
+    ], { optional: true }),
   ]),
 ]);
