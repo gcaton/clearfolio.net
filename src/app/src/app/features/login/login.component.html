@@ -1,34 +1,34 @@
-<div class="flex align-items-center justify-content-center" style="min-height: 80vh">
-  <div class="surface-card p-5 border-round-xl shadow-2" style="width: 100%; max-width: 400px">
-    <div class="text-center mb-4">
-      <h1 class="text-2xl font-bold m-0">Clearfolio</h1>
-      <p class="text-color-secondary mt-2">Enter your passphrase to continue</p>
-    </div>
+<div class="login-page">
+  <div class="login-card" [class.shaking]="shaking()" (animationend)="shaking.set(false)">
+    <img src="logo.svg" alt="" class="login-logo" />
+    <h1>Welcome back</h1>
+    <p class="login-subtitle">Enter your passphrase to continue.</p>
 
-    <div class="flex flex-column gap-3">
-      <div class="flex flex-column gap-2">
-        <label for="passphrase">Passphrase</label>
-        <p-password
-          id="passphrase"
-          [(ngModel)]="passphrase"
-          [feedback]="false"
-          [toggleMask]="true"
-          (keydown.enter)="submit()"
-          styleClass="w-full"
-          [inputStyleClass]="'w-full'"
-          placeholder="Enter passphrase" />
-      </div>
+    <div class="login-form">
+      <label for="passphrase">Passphrase</label>
+      <p-password
+        id="passphrase"
+        [(ngModel)]="passphrase"
+        [feedback]="false"
+        [toggleMask]="true"
+        [autofocus]="true"
+        (keydown.enter)="submit()"
+        styleClass="w-full"
+        [inputStyleClass]="'w-full'"
+        placeholder="Enter passphrase" />
 
       @if (error()) {
-        <small class="text-red-500">{{ error() }}</small>
+        <small class="login-error" role="alert">{{ error() }}</small>
       }
 
       <p-button
         label="Unlock"
+        icon="pi pi-lock-open"
+        iconPos="right"
         (onClick)="submit()"
         [disabled]="!passphrase() || submitting()"
         [loading]="submitting()"
-        styleClass="w-full" />
+        styleClass="login-btn" />
     </div>
   </div>
 </div>

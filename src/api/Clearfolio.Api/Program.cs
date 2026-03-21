@@ -52,16 +52,20 @@ app.UseForwardedHeaders();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ClearfolioDbContext>();
+    db.Database.EnsureCreated();
 
-    // Back up database before applying migrations
-    if (File.Exists(dbPath) && db.Database.GetPendingMigrations().Any())
+    // Apply any pending migrations (backs up DB first)
+    if (db.Database.GetPendingMigrations().Any())
     {
-        var backupPath = $"{dbPath}.{DateTime.UtcNow:yyyyMMddHHmmss}.pre-migration-backup";
-        File.Copy(dbPath, backupPath, overwrite: true);
-        Log.Information("Pending migrations detected — backed up database to {BackupPath}", backupPath);
-    }
+        if (File.Exists(dbPath))
+        {
+            var backupPath = $"{dbPath}.{DateTime.UtcNow:yyyyMMddHHmmss}.pre-migration-backup";
+            File.Copy(dbPath, backupPath, overwrite: true);
+            Log.Information("Pending migrations detected — backed up database to {BackupPath}", backupPath);
+        }
 
-    db.Database.Migrate();
+        db.Database.Migrate();
+    }
 }
 
 // Passphrase reset escape hatch

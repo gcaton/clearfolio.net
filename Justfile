@@ -52,10 +52,16 @@ rebuild:
       -v clearfolio-data:/data \
       {{image}}
 
-# Run Angular dev server locally (with API proxy)
+# Run API and Angular dev server locally
 [group('dev')]
 dev:
-    cd src/app && npx ng serve
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'kill 0' EXIT
+    cd "{{justfile_directory()}}"
+    (cd src/api/Clearfolio.Api && dotnet run) &
+    (cd src/app && npx ng serve --proxy-config proxy.conf.dev.json) &
+    wait
 
 # Generate changelog.json from conventional commits (feats and fixes)
 [group('dev')]

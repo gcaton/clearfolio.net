@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
   standalone: true,
   imports: [FormsModule, Password, Button],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.scss',
 })
 export class LoginComponent {
   private api = inject(ApiService);
@@ -21,6 +22,7 @@ export class LoginComponent {
   passphrase = model('');
   submitting = signal(false);
   error = signal<string | null>(null);
+  shaking = signal(false);
 
   async submit() {
     if (!this.passphrase() || this.submitting()) return;
@@ -33,6 +35,7 @@ export class LoginComponent {
       this.router.navigate(['/dashboard']);
     } catch {
       this.error.set('Incorrect passphrase.');
+      this.shaking.set(true);
     } finally {
       this.submitting.set(false);
     }
