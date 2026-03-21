@@ -27,7 +27,12 @@
   <ng-template #body let-liability>
     <tr>
       <td>{{ liability.label }}</td>
-      <td>{{ liability.liabilityTypeName }}</td>
+      <td>
+        <span class="type-with-dot">
+          <span class="category-dot" [style.background]="getLiabilityCategoryColor(liability)"></span>
+          {{ liability.liabilityTypeName }}
+        </span>
+      </td>
       <td>
         @if (liability.ownerDisplayName) {
           <p-tag [value]="liability.ownerDisplayName" />

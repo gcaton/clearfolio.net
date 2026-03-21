@@ -61,7 +61,7 @@
 }
 
 <!-- Income Section -->
-<div class="section-header">
+<div class="section-header" appFadeIn>
   <h2>Income</h2>
   <p-button label="Add Income" icon="pi pi-plus" (onClick)="openNewIncome()" />
 </div>
@@ -130,7 +130,7 @@
 }
 
 <!-- Expenses Section -->
-<div class="section-header">
+<div class="section-header" appFadeIn>
   <h2>Expenses</h2>
   <p-button label="Add Expense" icon="pi pi-plus" (onClick)="openNewExpense()" />
 </div>
@@ -215,7 +215,7 @@
 }
 
 <!-- Savings Section (read-only contributions from assets) -->
-<div class="section-header">
+<div class="section-header" appFadeIn>
   <h2>Savings</h2>
 </div>
 
@@ -266,7 +266,7 @@
 }
 
 <!-- Charts Section -->
-<div class="chart-grid">
+<div class="chart-grid" appFadeIn>
   <div class="chart-panel">
     <h3>Income vs Expenses</h3>
     @if (incomeVsExpenseOptions(); as opts) {

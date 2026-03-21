@@ -39,13 +39,14 @@ import {
   CashflowSummary,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
+import { FadeInDirective } from '../../shared/directives/fade-in.directive';
 
 echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent],
+  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent, FadeInDirective],
   providers: [provideEchartsCore({ echarts }), MessageService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',

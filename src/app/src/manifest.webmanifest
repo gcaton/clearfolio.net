@@ -1,0 +1,17 @@
+{
+  "name": "Clearfolio",
+  "short_name": "Clearfolio",
+  "description": "Household net worth tracker",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111827",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

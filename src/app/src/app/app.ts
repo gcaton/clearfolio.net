@@ -1,10 +1,12 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { routeAnimation } from './route-animations';
 import { SelectButton } from 'primeng/selectbutton';
 import { Drawer } from 'primeng/drawer';
 import { Button } from 'primeng/button';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './core/auth/auth.service';
+import { KeyboardShortcutsService } from './core/keyboard-shortcuts.service';
 import { ViewStateService, ViewState } from './core/auth/view-state.service';
 import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.component';
 import { environment } from '../environments/environment';
@@ -90,8 +92,8 @@ import { environment } from '../environments/environment';
     </p-drawer>
     }
 
-    <main class="app-content">
-      <router-outlet />
+    <main class="app-content" [@routeAnimation]="outlet?.activatedRouteData">
+      <router-outlet #outlet="outlet" />
     </main>
 
     @if (!auth.needsSetup()) {
@@ -99,10 +101,12 @@ import { environment } from '../environments/environment';
     }
   `,
   styleUrl: './app.scss',
+  animations: [routeAnimation],
 })
 export class App implements OnInit {
   protected auth = inject(AuthService);
   protected viewState = inject(ViewStateService);
+  private keyboardShortcuts = inject(KeyboardShortcutsService);
   protected mobileMenuVisible = signal(false);
   protected version = environment.version;
 
@@ -134,5 +138,6 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.auth.init();
+    this.keyboardShortcuts.init();
   }
 }

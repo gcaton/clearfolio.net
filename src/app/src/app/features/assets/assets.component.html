@@ -44,7 +44,12 @@
           </span>
         }
       </td>
-      <td>{{ asset.assetTypeName }}</td>
+      <td>
+        <span class="type-with-dot">
+          <span class="category-dot" [style.background]="getCategoryColor(asset)"></span>
+          {{ asset.assetTypeName }}
+        </span>
+      </td>
       <td>
         @if (asset.ownerDisplayName) {
           <p-tag [value]="asset.ownerDisplayName" />

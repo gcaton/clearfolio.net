@@ -1,32 +1,90 @@
 .setup-page {
   display: flex;
-  align-items: flex-start;
-  padding-top: 20vh;
+  align-items: center;
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(96, 165, 250, 0.08) 0%, transparent 50%),
+    var(--p-surface-ground, #f8f9fa);
+
+  :root.app-dark & {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 80%, rgba(96, 165, 250, 0.1) 0%, transparent 50%),
+      var(--p-surface-ground, #111827);
+  }
 }
 
 .setup-card {
   text-align: center;
-  max-width: 400px;
+  max-width: 420px;
   width: 100%;
+  animation: cardEntry 0.6s ease-out;
+}
+
+@keyframes cardEntry {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .setup-logo {
-  width: 64px;
-  height: 64px;
-  margin-bottom: 1rem;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 1.25rem;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 h1 {
   margin: 0 0 0.25rem;
   font-size: 1.75rem;
+  font-weight: 700;
 }
 
 .setup-subtitle {
   color: var(--p-text-muted-color);
-  margin-bottom: 2rem;
+  margin: 0 0 2rem;
+  font-size: 1rem;
+}
+
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--p-text-muted-color);
+
+  i {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background: color-mix(in srgb, var(--p-primary-color) 12%, transparent);
+    color: var(--p-primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+  }
 }
 
 .setup-form {
@@ -34,6 +92,10 @@ h1 {
   flex-direction: column;
   gap: 0.75rem;
   text-align: left;
+  background: var(--p-content-background);
+  border: 1px solid var(--p-content-border-color);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
 
   label {
     font-weight: 600;
@@ -43,5 +105,24 @@ h1 {
 }
 
 .email-readonly {
-  opacity: 0.7;
+  opacity: 0.6;
+}
+
+:host ::ng-deep .setup-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .features {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .feature {
+    flex-direction: row;
+    gap: 0.75rem;
+  }
 }

@@ -20,6 +20,14 @@ import { Tooltip } from 'primeng/tooltip';
 import { DecimalPipe } from '@angular/common';
 import { Divider } from 'primeng/divider';
 
+const CATEGORY_COLORS: Record<string, string> = {
+  mortgage: '#f87171',
+  personal: '#fb923c',
+  credit: '#ef4444',
+  student: '#a3a3a3',
+  tax: '#d4d4d8',
+};
+
 @Component({
   selector: 'app-liabilities',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -144,6 +152,11 @@ export class LiabilitiesComponent implements OnInit {
       const map = new Map(snapshots.filter(s => s.entityType === 'liability').map(s => [s.entityId, s]));
       this.latestValues.set(map);
     });
+  }
+
+  getLiabilityCategoryColor(liability: Liability): string {
+    const type = this.liabilityTypes().find(t => t.id === liability.liabilityTypeId);
+    return CATEGORY_COLORS[type?.category ?? ''] ?? '#94a3b8';
   }
 
   private emptyForm(): CreateLiabilityRequest {

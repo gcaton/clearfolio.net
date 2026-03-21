@@ -21,6 +21,14 @@ import { Tooltip } from 'primeng/tooltip';
 import { Divider } from 'primeng/divider';
 import { Checkbox } from 'primeng/checkbox';
 
+const CATEGORY_COLORS: Record<string, string> = {
+  cash: '#60a5fa',
+  investable: '#34d399',
+  retirement: '#a78bfa',
+  property: '#fbbf24',
+  other: '#94a3b8',
+};
+
 @Component({
   selector: 'app-assets',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -199,6 +207,11 @@ export class AssetsComponent implements OnInit {
       const map = new Map(snapshots.filter(s => s.entityType === 'asset').map(s => [s.entityId, s]));
       this.latestValues.set(map);
     });
+  }
+
+  getCategoryColor(asset: Asset): string {
+    const type = this.assetTypes().find(t => t.id === asset.assetTypeId);
+    return CATEGORY_COLORS[type?.category ?? ''] ?? '#94a3b8';
   }
 
   private emptyForm(): CreateAssetRequest {
