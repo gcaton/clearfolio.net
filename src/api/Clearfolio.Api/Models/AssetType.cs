@@ -11,6 +11,8 @@ public class AssetType
     public bool IsCgtExempt { get; set; }
     public int SortOrder { get; set; }
     public bool IsSystem { get; set; }
+    public double DefaultReturnRate { get; set; }
+    public double DefaultVolatility { get; set; }
 
     public List<Asset> Assets { get; set; } = [];
 }

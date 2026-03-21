@@ -15,6 +15,12 @@ public class Liability
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 
+    // Projection fields
+    public double? RepaymentAmount { get; set; }
+    public string? RepaymentFrequency { get; set; }
+    public string? RepaymentEndDate { get; set; }
+    public double? InterestRate { get; set; }
+
     public Household Household { get; set; } = null!;
     public LiabilityType LiabilityType { get; set; } = null!;
     public HouseholdMember? OwnerMember { get; set; }

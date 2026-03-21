@@ -16,6 +16,13 @@ public class Asset
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
     public string UpdatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 
+    // Projection fields
+    public double? ContributionAmount { get; set; }
+    public string? ContributionFrequency { get; set; }
+    public string? ContributionEndDate { get; set; }
+    public double? ExpectedReturnRate { get; set; }
+    public double? ExpectedVolatility { get; set; }
+
     public Household Household { get; set; } = null!;
     public AssetType AssetType { get; set; } = null!;
     public HouseholdMember? OwnerMember { get; set; }
