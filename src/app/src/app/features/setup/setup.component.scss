@@ -1,8 +1,9 @@
 .setup-page {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   padding: 2rem;
   background:
     radial-gradient(ellipse at 30% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
@@ -55,8 +56,15 @@ h1 {
 
 .setup-subtitle {
   color: var(--p-text-muted-color);
-  margin: 0 0 2rem;
+  margin: 0 0 0.75rem;
   font-size: 1rem;
+}
+
+.setup-disclaimer {
+  color: var(--p-text-muted-color);
+  margin: 0 0 2rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
 }
 
 .features {

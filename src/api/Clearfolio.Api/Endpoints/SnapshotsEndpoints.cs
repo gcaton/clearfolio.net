@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -10,8 +12,8 @@ public static class SnapshotsEndpoints
     public static WebApplication MapSnapshotsEndpoints(this WebApplication app)
     {
         app.MapGet("/api/snapshots", GetSnapshots);
-        app.MapPost("/api/snapshots", UpsertSnapshot);
-        app.MapPut("/api/snapshots/{id:guid}", UpdateSnapshot);
+        app.MapPost("/api/snapshots", UpsertSnapshot).AddEndpointFilter<ValidationFilter<CreateSnapshotRequest>>();
+        app.MapPut("/api/snapshots/{id:guid}", UpdateSnapshot).AddEndpointFilter<ValidationFilter<UpdateSnapshotRequest>>();
         app.MapDelete("/api/snapshots/{id:guid}", DeleteSnapshot);
         app.MapGet("/api/periods", GetPeriods);
         app.MapGet("/api/snapshots/latest", GetLatestSnapshots);
@@ -49,7 +51,7 @@ public static class SnapshotsEndpoints
         if (member is null) return Results.Unauthorized();
 
         if (request.EntityType is not ("asset" or "liability"))
-            return Results.BadRequest("entityType must be 'asset' or 'liability'");
+            return ApiErrors.BadRequest("entityType must be 'asset' or 'liability'");
 
         var existing = await db.Snapshots
             .FirstOrDefaultAsync(s =>

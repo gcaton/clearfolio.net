@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, signal, OnInit, viewChild } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CurrencyPipe, DecimalPipe } from '@angular/common';
 import { TableModule } from 'primeng/table';
@@ -42,6 +42,7 @@ export class AssetsComponent implements OnInit {
   protected editing = signal<Asset | null>(null);
   protected quotes = signal<Record<string, Quote>>({});
   protected loading = signal(true);
+  protected hasQuotedAssets = computed(() => this.assets().some(a => a.symbol));
   protected latestValues = signal<Map<string, LatestSnapshot>>(new Map());
   protected recordingAssetId = signal<string | null>(null);
   protected recordingLabel = signal('');

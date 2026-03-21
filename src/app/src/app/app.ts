@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { SelectButton } from 'primeng/selectbutton';
 import { Drawer } from 'primeng/drawer';
 import { Button } from 'primeng/button';
+import { Toast } from 'primeng/toast';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './core/auth/auth.service';
 import { KeyboardShortcutsService } from './core/keyboard-shortcuts.service';
@@ -13,7 +14,7 @@ import { environment } from '../environments/environment';
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, SelectButton, Drawer, Button, FormsModule, DarkModeToggleComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, SelectButton, Drawer, Button, Toast, FormsModule, DarkModeToggleComponent],
   template: `
     @if (auth.setupComplete() && auth.authenticated()) {
     @if (viewAccentColor() !== 'transparent') {
@@ -100,12 +101,16 @@ import { environment } from '../environments/environment';
     </p-drawer>
     }
 
+    <p-toast />
     <main class="app-content">
       <router-outlet />
     </main>
 
     @if (auth.setupComplete() && auth.authenticated()) {
-      <footer class="app-footer">v{{ version }}</footer>
+      <footer class="app-footer">
+        <span class="footer-disclaimer">Clearfolio is a personal tracking tool, not a financial adviser. It does not provide financial advice.</span>
+        <span class="footer-version">v{{ version }}</span>
+      </footer>
     }
   `,
   styleUrl: './app.scss',

@@ -26,6 +26,7 @@ export class AuthService {
   readonly needsSetup = computed(() => !this._setupComplete());
 
   async init() {
+    this._loading.set(true);
     try {
       const status = await firstValueFrom(this.api.getAuthStatus());
       this._setupComplete.set(status.setupComplete);
@@ -36,6 +37,9 @@ export class AuthService {
         const member = await firstValueFrom(this.api.getCurrentMember());
         this._currentMember.set(member);
         await this.loadMembers();
+      } else {
+        this._currentMember.set(null);
+        this._members.set([]);
       }
     } catch {
       // Status endpoint should always succeed; if it fails, leave defaults

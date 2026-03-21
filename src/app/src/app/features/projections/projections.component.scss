@@ -11,6 +11,14 @@
   }
 }
 
+// ---- Disclaimer ----
+
+:host ::ng-deep .projection-disclaimer {
+  margin-bottom: 1.25rem;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.8125rem;
+}
+
 // ---- Controls Bar ----
 
 .controls-bar {

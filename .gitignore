@@ -19,6 +19,7 @@ dist/
 .claude/
 .superpowers/
 .worktrees/
+docs/superpowers/
 
 ## IDE
 .vs/

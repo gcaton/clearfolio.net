@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -13,8 +15,8 @@ public static class ExpensesEndpoints
     public static WebApplication MapExpensesEndpoints(this WebApplication app)
     {
         app.MapGet("/api/expenses", GetExpenses);
-        app.MapPost("/api/expenses", CreateExpense);
-        app.MapPut("/api/expenses/{id:guid}", UpdateExpense);
+        app.MapPost("/api/expenses", CreateExpense).AddEndpointFilter<ValidationFilter<CreateExpenseRequest>>();
+        app.MapPut("/api/expenses/{id:guid}", UpdateExpense).AddEndpointFilter<ValidationFilter<UpdateExpenseRequest>>();
         app.MapDelete("/api/expenses/{id:guid}", DeleteExpense);
         return app;
     }
@@ -43,19 +45,19 @@ public static class ExpensesEndpoints
 
         var label = request.Label?.Trim();
         if (string.IsNullOrEmpty(label) || label.Length > 200)
-            return Results.BadRequest("Label is required and must be 200 characters or fewer.");
+            return ApiErrors.BadRequest("Label is required and must be 200 characters or fewer.");
         if (request.Amount <= 0)
-            return Results.BadRequest("Amount must be greater than 0.");
+            return ApiErrors.BadRequest("Amount must be greater than 0.");
         if (!ValidFrequencies.Contains(request.Frequency))
-            return Results.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
+            return ApiErrors.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
         if (request.Notes?.Length > 1000)
-            return Results.BadRequest("Notes must be 1000 characters or fewer.");
+            return ApiErrors.BadRequest("Notes must be 1000 characters or fewer.");
 
         // Verify category belongs to household
         var categoryExists = await db.ExpenseCategories.AnyAsync(c =>
             c.Id == request.ExpenseCategoryId && c.HouseholdId == member.HouseholdId);
         if (!categoryExists)
-            return Results.BadRequest("Invalid expense category.");
+            return ApiErrors.BadRequest("Invalid expense category.");
 
         var now = DateTime.UtcNow.ToString("o");
         var item = new Expense
@@ -96,18 +98,18 @@ public static class ExpensesEndpoints
 
         var label = request.Label?.Trim();
         if (string.IsNullOrEmpty(label) || label.Length > 200)
-            return Results.BadRequest("Label is required and must be 200 characters or fewer.");
+            return ApiErrors.BadRequest("Label is required and must be 200 characters or fewer.");
         if (request.Amount <= 0)
-            return Results.BadRequest("Amount must be greater than 0.");
+            return ApiErrors.BadRequest("Amount must be greater than 0.");
         if (!ValidFrequencies.Contains(request.Frequency))
-            return Results.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
+            return ApiErrors.BadRequest($"Frequency must be one of: {string.Join(", ", ValidFrequencies)}.");
         if (request.Notes?.Length > 1000)
-            return Results.BadRequest("Notes must be 1000 characters or fewer.");
+            return ApiErrors.BadRequest("Notes must be 1000 characters or fewer.");
 
         var categoryExists = await db.ExpenseCategories.AnyAsync(c =>
             c.Id == request.ExpenseCategoryId && c.HouseholdId == member.HouseholdId);
         if (!categoryExists)
-            return Results.BadRequest("Invalid expense category.");
+            return ApiErrors.BadRequest("Invalid expense category.");
 
         item.OwnerMemberId = request.OwnerMemberId;
         item.ExpenseCategoryId = request.ExpenseCategoryId;

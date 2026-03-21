@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -10,8 +12,8 @@ public static class ExpenseCategoriesEndpoints
     public static WebApplication MapExpenseCategoriesEndpoints(this WebApplication app)
     {
         app.MapGet("/api/expense-categories", GetCategories);
-        app.MapPost("/api/expense-categories", CreateCategory);
-        app.MapPut("/api/expense-categories/{id:guid}", UpdateCategory);
+        app.MapPost("/api/expense-categories", CreateCategory).AddEndpointFilter<ValidationFilter<CreateExpenseCategoryRequest>>();
+        app.MapPut("/api/expense-categories/{id:guid}", UpdateCategory).AddEndpointFilter<ValidationFilter<UpdateExpenseCategoryRequest>>();
         app.MapDelete("/api/expense-categories/{id:guid}", DeleteCategory);
         return app;
     }
@@ -61,7 +63,7 @@ public static class ExpenseCategoriesEndpoints
 
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 100)
-            return Results.BadRequest("Name is required and must be 100 characters or fewer.");
+            return ApiErrors.BadRequest("Name is required and must be 100 characters or fewer.");
 
         var maxSort = await db.ExpenseCategories
             .Where(c => c.HouseholdId == member.HouseholdId)
@@ -95,7 +97,7 @@ public static class ExpenseCategoriesEndpoints
 
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 100)
-            return Results.BadRequest("Name is required and must be 100 characters or fewer.");
+            return ApiErrors.BadRequest("Name is required and must be 100 characters or fewer.");
 
         category.Name = name;
         category.SortOrder = request.SortOrder;
@@ -114,11 +116,11 @@ public static class ExpenseCategoriesEndpoints
         if (category is null) return Results.NotFound();
 
         if (category.IsDefault)
-            return Results.BadRequest("Cannot delete a default category.");
+            return ApiErrors.BadRequest("Cannot delete a default category.");
 
         var hasExpenses = await db.Expenses.AnyAsync(e => e.ExpenseCategoryId == id);
         if (hasExpenses)
-            return Results.BadRequest("Cannot delete a category that has expenses. Remove or reassign the expenses first.");
+            return ApiErrors.BadRequest("Cannot delete a category that has expenses. Remove or reassign the expenses first.");
 
         db.ExpenseCategories.Remove(category);
         await db.SaveChangesAsync();

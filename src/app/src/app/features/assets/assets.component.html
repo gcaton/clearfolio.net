@@ -92,6 +92,10 @@
     </tr>
   </ng-template>
 </p-table>
+
+@if (hasQuotedAssets()) {
+  <p class="quote-source">Price data sourced from Yahoo Finance. Data may be delayed. Not suitable for trading decisions.</p>
+}
 }
 
 <p-dialog

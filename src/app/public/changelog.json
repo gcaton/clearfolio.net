@@ -1,0 +1,521 @@
+{
+  "features": [
+    {
+      "hash": "171b899",
+      "date": "2026-03-21",
+      "message": "feat: production readiness hardening"
+    },
+    {
+      "hash": "2b7ed62",
+      "date": "2026-03-21",
+      "message": "feat: add inline SVG logo to landing page header and favicon"
+    },
+    {
+      "hash": "c8df647",
+      "date": "2026-03-21",
+      "message": "feat: add clearfolio.net landing page"
+    },
+    {
+      "hash": "f8ed85f",
+      "date": "2026-03-21",
+      "message": "feat: add landing page stylesheet"
+    },
+    {
+      "hash": "9d72da3",
+      "date": "2026-03-21",
+      "message": "feat: add CNAME for GitHub Pages custom domain"
+    },
+    {
+      "hash": "ce2660e",
+      "date": "2026-03-21",
+      "message": "feat: single-image multi-arch CI pipeline"
+    },
+    {
+      "hash": "bbf83ca",
+      "date": "2026-03-21",
+      "message": "feat: single Docker image with nginx + .NET API"
+    },
+    {
+      "hash": "dc183b7",
+      "date": "2026-03-21",
+      "message": "feat: update compose files for single service, fix proxy config"
+    },
+    {
+      "hash": "30c1c3d",
+      "date": "2026-03-21",
+      "message": "feat: update app shell auth gating, add passphrase management to settings"
+    },
+    {
+      "hash": "7c8cd0b",
+      "date": "2026-03-21",
+      "message": "feat: expand setup wizard with household name, currency, period type"
+    },
+    {
+      "hash": "a9d1062",
+      "date": "2026-03-21",
+      "message": "feat: add login component, requireAuthenticated guard, login route"
+    },
+    {
+      "hash": "a73bc39",
+      "date": "2026-03-21",
+      "message": "feat: rewrite auth service for local auth model"
+    },
+    {
+      "hash": "5886d9f",
+      "date": "2026-03-21",
+      "message": "feat: update DTOs and member endpoints for local auth model"
+    },
+    {
+      "hash": "1514ac6",
+      "date": "2026-03-21",
+      "message": "feat: add auth endpoints (status, login, logout, passphrase management)"
+    },
+    {
+      "hash": "57400ed",
+      "date": "2026-03-21",
+      "message": "feat: add LocalAuthMiddleware with passphrase gate and session validation"
+    },
+    {
+      "hash": "35d167d",
+      "date": "2026-03-21",
+      "message": "feat(api): remove Cloudflare auth packages, add BCrypt; delete CloudflareJwtMiddleware and SetupStatusDto"
+    },
+    {
+      "hash": "c95efd3",
+      "date": "2026-03-21",
+      "message": "feat: add AppSetting model, make Email nullable, regenerate migrations"
+    },
+    {
+      "hash": "17bfce3",
+      "date": "2026-03-21",
+      "message": "feat: add help page with getting started guide, concepts, features, shortcuts, and FAQ"
+    },
+    {
+      "hash": "bdae565",
+      "date": "2026-03-21",
+      "message": "feat(ux): UI modernization round 2 — animations, PWA, keyboard shortcuts"
+    },
+    {
+      "hash": "af24920",
+      "date": "2026-03-21",
+      "message": "feat(ux): implement 11 UX improvements across dashboard, navigation, and mobile"
+    },
+    {
+      "hash": "56001a0",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add annualised total row to savings table"
+    },
+    {
+      "hash": "bf00505",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add read-only savings section showing asset contributions"
+    },
+    {
+      "hash": "2de1841",
+      "date": "2026-03-21",
+      "message": "feat: add pre-tax contribution flag to assets"
+    },
+    {
+      "hash": "bcb7ce5",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add expense categories management to settings"
+    },
+    {
+      "hash": "9e3adae",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add cashflow summary widget to dashboard"
+    },
+    {
+      "hash": "ef84c5b",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): seed default expense categories for existing households"
+    },
+    {
+      "hash": "5c3fccd",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add cashflow page with income/expense CRUD and metrics"
+    },
+    {
+      "hash": "6711497",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add frontend TypeScript models and API service methods"
+    },
+    {
+      "hash": "32ab3f8",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): update cascade deletes and export/import for cashflow entities"
+    },
+    {
+      "hash": "75461d5",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add cashflow summary endpoint"
+    },
+    {
+      "hash": "4e097fd",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add expenses endpoints"
+    },
+    {
+      "hash": "6760999",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add income streams endpoints"
+    },
+    {
+      "hash": "6627383",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add expense categories endpoints with seeding"
+    },
+    {
+      "hash": "91ecf91",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add cashflow DTOs"
+    },
+    {
+      "hash": "9be84f5",
+      "date": "2026-03-21",
+      "message": "feat(cashflow): add IncomeStream, Expense, ExpenseCategory models and migration"
+    },
+    {
+      "hash": "2a372a3",
+      "date": "2026-03-21",
+      "message": "feat: add inflation adjustment to projections (real vs nominal values)"
+    },
+    {
+      "hash": "6a2b85a",
+      "date": "2026-03-21",
+      "message": "feat: add historical returns service and pre-populate return rates from symbol"
+    },
+    {
+      "hash": "0281664",
+      "date": "2026-03-21",
+      "message": "feat: include contribution and projection fields in data export/import"
+    },
+    {
+      "hash": "3139575",
+      "date": "2026-03-21",
+      "message": "feat: show contribution column on assets table"
+    },
+    {
+      "hash": "00f66d1",
+      "date": "2026-03-21",
+      "message": "feat: dashboard enhancements, asset performance, PDF reports, and UI improvements"
+    },
+    {
+      "hash": "54109ca",
+      "date": "2026-03-21",
+      "message": "feat: create projections page with chart visualisation and entity drill-down"
+    },
+    {
+      "hash": "4d726b9",
+      "date": "2026-03-21",
+      "message": "feat: add contribution and projection fields to asset/liability edit dialogs"
+    },
+    {
+      "hash": "a8ea666",
+      "date": "2026-03-21",
+      "message": "feat: add projection TypeScript models and API service methods"
+    },
+    {
+      "hash": "090b54f",
+      "date": "2026-03-21",
+      "message": "feat: add projection API endpoints (compound, scenario, Monte Carlo)"
+    },
+    {
+      "hash": "01557f6",
+      "date": "2026-03-21",
+      "message": "feat: add projection engines (compound, scenario, Monte Carlo)"
+    },
+    {
+      "hash": "7467867",
+      "date": "2026-03-21",
+      "message": "feat: extend asset/liability DTOs and endpoints with projection fields"
+    },
+    {
+      "hash": "544066c",
+      "date": "2026-03-21",
+      "message": "feat: configure projection columns and seed default return rates"
+    },
+    {
+      "hash": "c65ebd4",
+      "date": "2026-03-21",
+      "message": "feat: add projection fields to Asset, Liability, and AssetType entities"
+    },
+    {
+      "hash": "335ea56",
+      "date": "2026-03-21",
+      "message": "feat: add data export and import"
+    },
+    {
+      "hash": "546f8c9",
+      "date": "2026-03-21",
+      "message": "feat(app): add member deletion and danger zone to settings"
+    },
+    {
+      "hash": "ea736f5",
+      "date": "2026-03-21",
+      "message": "feat(app): add setup route with guards, hide nav during setup"
+    },
+    {
+      "hash": "5744fe1",
+      "date": "2026-03-21",
+      "message": "feat(app): add first-time setup component"
+    },
+    {
+      "hash": "f758225",
+      "date": "2026-03-21",
+      "message": "feat(app): add route guards for setup flow"
+    },
+    {
+      "hash": "c579118",
+      "date": "2026-03-21",
+      "message": "feat(api): handle null member in all endpoints after middleware change"
+    },
+    {
+      "hash": "b273d53",
+      "date": "2026-03-21",
+      "message": "feat(app): handle needsSetup state in AuthService"
+    },
+    {
+      "hash": "5d5733f",
+      "date": "2026-03-21",
+      "message": "feat(app): add setup, deleteMember, deleteAllData API methods"
+    },
+    {
+      "hash": "de116d2",
+      "date": "2026-03-21",
+      "message": "feat(api): add delete household endpoint for nuclear reset"
+    },
+    {
+      "hash": "bad77a4",
+      "date": "2026-03-21",
+      "message": "feat(api): add delete member endpoint with cascading data purge"
+    },
+    {
+      "hash": "f6a9af6",
+      "date": "2026-03-21",
+      "message": "feat(api): add setup endpoint and handle needsSetup in /me"
+    },
+    {
+      "hash": "4933d51",
+      "date": "2026-03-21",
+      "message": "feat(api): stop auto-provisioning members in middleware"
+    },
+    {
+      "hash": "f70a593",
+      "date": "2026-03-21",
+      "message": "feat(api): add DTOs for setup flow"
+    },
+    {
+      "hash": "f2982d1",
+      "date": "2026-03-15",
+      "message": "feat(api): add managed fund asset type"
+    },
+    {
+      "hash": "e49ecb2",
+      "date": "2026-03-15",
+      "message": "feat(api): add investment bond asset type"
+    },
+    {
+      "hash": "6705e37",
+      "date": "2026-03-15",
+      "message": "feat(app): replace period text inputs with dropdown selectors"
+    },
+    {
+      "hash": "a612d4d",
+      "date": "2026-03-15",
+      "message": "feat(settings): allow editing member email addresses"
+    },
+    {
+      "hash": "d226c86",
+      "date": "2026-03-15",
+      "message": "feat(api): implement Cloudflare Access JWT validation"
+    },
+    {
+      "hash": "a1d82e5",
+      "date": "2026-03-15",
+      "message": "feat(app): show years and months to goal on dashboard"
+    },
+    {
+      "hash": "1f89dfc",
+      "date": "2026-03-15",
+      "message": "feat: add net worth goal projection with linear regression"
+    },
+    {
+      "hash": "2c6a698",
+      "date": "2026-03-15",
+      "message": "feat(app): add SVG logo and favicon"
+    },
+    {
+      "hash": "ab5ca7b",
+      "date": "2026-03-15",
+      "message": "feat: UI polish and new features"
+    }
+  ],
+  "fixes": [
+    {
+      "hash": "88c5f47",
+      "date": "2026-03-21",
+      "message": "fix: allow unsafe-inline scripts for PrimeNG, fix empty state icon z-index"
+    },
+    {
+      "hash": "fce3b7e",
+      "date": "2026-03-21",
+      "message": "fix: match html background color, wrap long docker command"
+    },
+    {
+      "hash": "8806934",
+      "date": "2026-03-21",
+      "message": "fix: use single background color with gradient overlays to avoid banding"
+    },
+    {
+      "hash": "6fd4c24",
+      "date": "2026-03-21",
+      "message": "fix: match landing page background to app (noise texture + gradients)"
+    },
+    {
+      "hash": "13f28aa",
+      "date": "2026-03-21",
+      "message": "fix: improve landing page accessibility (focus states, contrast)"
+    },
+    {
+      "hash": "b2a711e",
+      "date": "2026-03-21",
+      "message": "fix: exempt only status/login/logout from auth middleware"
+    },
+    {
+      "hash": "069fc21",
+      "date": "2026-03-21",
+      "message": "fix: address PR review feedback"
+    },
+    {
+      "hash": "5236ce4",
+      "date": "2026-03-21",
+      "message": "fix(dashboard): use compound projection engine for goal timeline"
+    },
+    {
+      "hash": "f6fc713",
+      "date": "2026-03-21",
+      "message": "fix(ux): enable count-up animation on initial currency display load"
+    },
+    {
+      "hash": "5bbcf70",
+      "date": "2026-03-21",
+      "message": "fix(projections): remove duplicate padding/max-width that caused inconsistent margins"
+    },
+    {
+      "hash": "028c00d",
+      "date": "2026-03-21",
+      "message": "fix(ux): replace Angular route animation with CSS-only page fade"
+    },
+    {
+      "hash": "9d5900a",
+      "date": "2026-03-21",
+      "message": "fix(ux): remove translateY from route animation to prevent content jump"
+    },
+    {
+      "hash": "1fc1f29",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): improve readability of expense category subheadings"
+    },
+    {
+      "hash": "9670f9f",
+      "date": "2026-03-21",
+      "message": "fix(snapshots): make entity type filter reactive so switching to liabilities updates the list"
+    },
+    {
+      "hash": "44457c9",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): add consistent total rows to income, expenses, and savings tables"
+    },
+    {
+      "hash": "e72417f",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): add bottom margin to income vs expense chart to prevent label overlap"
+    },
+    {
+      "hash": "13f95c8",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): append select dropdowns to body so they overflow dialog bounds"
+    },
+    {
+      "hash": "5ad9f9f",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): clean up debug logging and startup workaround"
+    },
+    {
+      "hash": "c9e55a2",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): re-seed expense categories on startup to fix SQLite GUID case mismatch"
+    },
+    {
+      "hash": "f27bb6b",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): show full error body in toast for debugging"
+    },
+    {
+      "hash": "14228ce",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): add error handling to income/expense create to surface validation errors"
+    },
+    {
+      "hash": "381b27e",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): use PascalCase income type values to match backend validation"
+    },
+    {
+      "hash": "82c0943",
+      "date": "2026-03-21",
+      "message": "fix(cashflow): add expense category grouping with subtotals"
+    },
+    {
+      "hash": "a24b5f3",
+      "date": "2026-03-21",
+      "message": "fix: constrain simulations and inflation input widths to prevent overflow"
+    },
+    {
+      "hash": "de0c615",
+      "date": "2026-03-21",
+      "message": "fix: group simulations and inflation controls to prevent overlap"
+    },
+    {
+      "hash": "4cd6fe8",
+      "date": "2026-03-21",
+      "message": "fix: match projections section layout to existing form-grid style in edit dialogs"
+    },
+    {
+      "hash": "9de41ff",
+      "date": "2026-03-21",
+      "message": "fix: use CurrencyPipe for contribution display on assets table"
+    },
+    {
+      "hash": "8ae6d0e",
+      "date": "2026-03-21",
+      "message": "fix: correct scope options, horizon presets, entity filtering, and missing date pickers"
+    },
+    {
+      "hash": "10be528",
+      "date": "2026-03-15",
+      "message": "fix(app): increase spacing below goal progress bar"
+    },
+    {
+      "hash": "7218df1",
+      "date": "2026-03-15",
+      "message": "fix(app): fix record value dialog and dashboard period=undefined"
+    },
+    {
+      "hash": "2cc533e",
+      "date": "2026-03-15",
+      "message": "fix(app): remove old Angular favicon"
+    },
+    {
+      "hash": "d5af0ae",
+      "date": "2026-03-15",
+      "message": "fix(app): use small rounded icon button for dark mode toggle"
+    },
+    {
+      "hash": "c6718af",
+      "date": "2026-03-15",
+      "message": "fix(app): use semantic PrimeNG tokens for dark mode support"
+    }
+  ]
+}

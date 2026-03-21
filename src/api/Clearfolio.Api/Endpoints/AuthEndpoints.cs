@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -11,10 +12,10 @@ public static class AuthEndpoints
         var group = app.MapGroup("/api/auth");
 
         group.MapGet("/status", GetStatus);
-        group.MapPost("/login", Login);
+        group.MapPost("/login", Login).RequireRateLimiting("auth");
         group.MapPost("/logout", Logout);
-        group.MapPut("/passphrase", SetPassphrase);
-        group.MapDelete("/passphrase", RemovePassphrase);
+        group.MapPut("/passphrase", SetPassphrase).RequireRateLimiting("auth");
+        group.MapDelete("/passphrase", RemovePassphrase).RequireRateLimiting("auth");
     }
 
     private static async Task<IResult> GetStatus(HttpContext context, ClearfolioDbContext db)
@@ -48,13 +49,13 @@ public static class AuthEndpoints
     {
         var request = await context.Request.ReadFromJsonAsync<LoginRequest>();
         if (request is null || string.IsNullOrEmpty(request.Passphrase))
-            return Results.BadRequest("Passphrase is required.");
+            return ApiErrors.BadRequest("Passphrase is required.");
 
         var passphraseSetting = await db.AppSettings
             .FirstOrDefaultAsync(s => s.Key == "passphrase");
 
         if (passphraseSetting is null)
-            return Results.BadRequest("No passphrase is set.");
+            return ApiErrors.BadRequest("No passphrase is set.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.Passphrase, passphraseSetting.Value))
             return Results.Unauthorized();
@@ -110,7 +111,7 @@ public static class AuthEndpoints
 
         var request = await context.Request.ReadFromJsonAsync<SetPassphraseRequest>();
         if (request is null || string.IsNullOrEmpty(request.NewPassphrase))
-            return Results.BadRequest("New passphrase is required.");
+            return ApiErrors.BadRequest("New passphrase is required.");
 
         var existing = await db.AppSettings.FirstOrDefaultAsync(s => s.Key == "passphrase");
 
@@ -143,11 +144,11 @@ public static class AuthEndpoints
 
         var request = await context.Request.ReadFromJsonAsync<RemovePassphraseRequest>();
         if (request is null || string.IsNullOrEmpty(request.CurrentPassphrase))
-            return Results.BadRequest("Current passphrase is required.");
+            return ApiErrors.BadRequest("Current passphrase is required.");
 
         var existing = await db.AppSettings.FirstOrDefaultAsync(s => s.Key == "passphrase");
         if (existing is null)
-            return Results.BadRequest("No passphrase is set.");
+            return ApiErrors.BadRequest("No passphrase is set.");
 
         if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassphrase, existing.Value))
             return Results.Unauthorized();

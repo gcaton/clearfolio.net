@@ -1,7 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Clearfolio.Api.DTOs;
 
 public record SetupRequest(
-    string DisplayName,
-    string? HouseholdName,
-    string? Currency,
-    string? PeriodType);
+    [Required, StringLength(100)] string DisplayName,
+    [StringLength(100)] string? HouseholdName,
+    [StringLength(10)] string? Currency,
+    [StringLength(2)] string? PeriodType);

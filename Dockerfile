@@ -23,7 +23,7 @@ RUN dotnet publish Clearfolio.Api/Clearfolio.Api.csproj -c Release -o /app/publi
 # Stage 3: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 
-RUN apt-get update && apt-get install -y --no-install-recommends nginx && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends nginx curl && rm -rf /var/lib/apt/lists/*
 
 COPY --from=frontend-build /app/dist/app/browser /usr/share/nginx/html
 COPY src/app/nginx.conf /etc/nginx/conf.d/default.conf
@@ -40,5 +40,8 @@ ENV ASPNETCORE_URLS=http://+:8080
 
 EXPOSE 80
 VOLUME /data
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost/api/health || exit 1
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

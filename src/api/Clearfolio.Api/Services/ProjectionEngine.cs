@@ -254,7 +254,9 @@ public static class ProjectionEngine
 
                         if (entity.EntityType == "asset")
                         {
-                            var sampledReturn = SampleNormal(random, entity.ReturnRate, entity.Volatility);
+                            // Convert geometric (CAGR) to arithmetic mean for sampling
+                            var arithmeticMean = entity.ReturnRate + entity.Volatility * entity.Volatility / 2.0;
+                            var sampledReturn = SampleNormal(random, arithmeticMean, entity.Volatility);
                             value = value * (1 + sampledReturn) + contribution;
                             value = Math.Max(0, value);
                         }

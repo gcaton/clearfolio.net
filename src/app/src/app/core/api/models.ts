@@ -444,6 +444,7 @@ export interface ProjectionDefault {
 export interface HistoricalReturn {
   symbol: string;
   annualisedReturn: number;
+  arithmeticReturn: number;
   volatility: number;
   dataPoints: number;
   periodYears: number;

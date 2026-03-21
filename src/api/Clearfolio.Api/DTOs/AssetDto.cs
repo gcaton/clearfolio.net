@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Clearfolio.Api.DTOs;
 
 public record AssetDto(
@@ -23,33 +25,33 @@ public record AssetDto(
     double? ExpectedVolatility);
 
 public record CreateAssetRequest(
-    Guid AssetTypeId,
+    [Required] Guid AssetTypeId,
     Guid? OwnerMemberId,
-    string OwnershipType,
-    double JointSplit,
-    string Label,
-    string? Symbol,
-    string Currency,
-    string? Notes,
-    double? ContributionAmount,
-    string? ContributionFrequency,
-    string? ContributionEndDate,
+    [Required, StringLength(20)] string OwnershipType,
+    [Range(0, 1)] double JointSplit,
+    [Required, StringLength(200)] string Label,
+    [StringLength(20)] string? Symbol,
+    [Required, StringLength(10)] string Currency,
+    [StringLength(500)] string? Notes,
+    [Range(0, 1_000_000_000)] double? ContributionAmount,
+    [StringLength(20)] string? ContributionFrequency,
+    [StringLength(10)] string? ContributionEndDate,
     bool IsPreTaxContribution,
-    double? ExpectedReturnRate,
-    double? ExpectedVolatility);
+    [Range(-1, 1)] double? ExpectedReturnRate,
+    [Range(0, 2)] double? ExpectedVolatility);
 
 public record UpdateAssetRequest(
-    Guid AssetTypeId,
+    [Required] Guid AssetTypeId,
     Guid? OwnerMemberId,
-    string OwnershipType,
-    double JointSplit,
-    string Label,
-    string? Symbol,
-    string Currency,
-    string? Notes,
-    double? ContributionAmount,
-    string? ContributionFrequency,
-    string? ContributionEndDate,
+    [Required, StringLength(20)] string OwnershipType,
+    [Range(0, 1)] double JointSplit,
+    [Required, StringLength(200)] string Label,
+    [StringLength(20)] string? Symbol,
+    [Required, StringLength(10)] string Currency,
+    [StringLength(500)] string? Notes,
+    [Range(0, 1_000_000_000)] double? ContributionAmount,
+    [StringLength(20)] string? ContributionFrequency,
+    [StringLength(10)] string? ContributionEndDate,
     bool IsPreTaxContribution,
-    double? ExpectedReturnRate,
-    double? ExpectedVolatility);
+    [Range(-1, 1)] double? ExpectedReturnRate,
+    [Range(0, 2)] double? ExpectedVolatility);

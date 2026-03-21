@@ -1,5 +1,7 @@
 using Clearfolio.Api.Data;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +12,7 @@ public static class HouseholdEndpoints
     public static WebApplication MapHouseholdEndpoints(this WebApplication app)
     {
         app.MapGet("/api/household", GetHousehold);
-        app.MapPut("/api/household", UpdateHousehold);
+        app.MapPut("/api/household", UpdateHousehold).AddEndpointFilter<ValidationFilter<UpdateHouseholdRequest>>();
         app.MapDelete("/api/household", DeleteHousehold);
         app.MapGet("/api/export", ExportData);
         app.MapPost("/api/import", ImportData);
@@ -165,7 +167,7 @@ public static class HouseholdEndpoints
         if (member is null) return Results.Unauthorized();
         if (!member.IsPrimary) return Results.Forbid();
 
-        if (data.Version != "1") return Results.BadRequest("Unsupported export version.");
+        if (data.Version != "1") return ApiErrors.BadRequest("Unsupported export version.");
 
         var householdId = member.HouseholdId;
 
