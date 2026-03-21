@@ -17,6 +17,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GoalService } from '../../core/auth/goal.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import {
   Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest,
   AssetType, CreateAssetTypeRequest, UpdateAssetTypeRequest,
@@ -35,6 +36,7 @@ export class SettingsComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private goalService = inject(GoalService);
+  private localeService = inject(LocaleService);
   private messageService = inject(MessageService);
   private router = inject(Router);
   private confirmationService = inject(ConfirmationService);
@@ -125,6 +127,15 @@ export class SettingsComponent implements OnInit {
   protected periodOptions = [
     { label: 'Financial Year (FY)', value: 'FY' },
     { label: 'Calendar Year (CY)', value: 'CY' },
+  ];
+
+  protected localeOptions = [
+    { label: 'Australia (en-AU)', value: 'en-AU' },
+    { label: 'United States (en-US)', value: 'en-US' },
+    { label: 'United Kingdom (en-GB)', value: 'en-GB' },
+    { label: 'New Zealand (en-NZ)', value: 'en-NZ' },
+    { label: 'Canada (en-CA)', value: 'en-CA' },
+    { label: 'Ireland (en-IE)', value: 'en-IE' },
   ];
 
   ngOnInit() {
@@ -481,6 +492,7 @@ export class SettingsComponent implements OnInit {
       })
       .subscribe((updated) => {
         this.household.set(updated);
+        this.localeService.update(updated.locale, updated.baseCurrency);
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Household settings updated' });
       });
   }

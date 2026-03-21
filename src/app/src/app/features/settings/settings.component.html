@@ -10,6 +10,7 @@
     <p-tab value="2">Goals</p-tab>
     <p-tab value="3">Data</p-tab>
     <p-tab value="4">Reference Data</p-tab>
+    <p-tab value="5">Security</p-tab>
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="0">
@@ -30,21 +31,16 @@
             optionValue="value"
           />
 
-          <p-button label="Save" icon="pi pi-check" (onClick)="saveHousehold()" />
-        </div>
+          <label for="locale">Locale</label>
+          <p-select
+            id="locale"
+            [(ngModel)]="h.locale"
+            [options]="localeOptions"
+            optionLabel="label"
+            optionValue="value"
+          />
 
-        <div class="settings-form" style="margin-top: 2rem">
-          <h3>Security</h3>
-          @if (passphraseEnabled()) {
-            <p>A passphrase is currently set.</p>
-            <div class="flex gap-2">
-              <p-button label="Change Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
-              <p-button label="Remove Passphrase" icon="pi pi-lock-open" severity="danger" [outlined]="true" (onClick)="openSetPassphrase()" />
-            </div>
-          } @else {
-            <p>No passphrase is set. Anyone on your network can access Clearfolio.</p>
-            <p-button label="Set Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
-          }
+          <p-button label="Save" icon="pi pi-check" (onClick)="saveHousehold()" />
         </div>
       }
     </p-tabpanel>
@@ -110,10 +106,14 @@
       </div>
     </p-tabpanel>
     <p-tabpanel value="4">
-      <p-accordion [multiple]="true" [value]="['0', '1', '2']">
-        <p-accordionpanel value="0">
-          <p-accordionheader>Asset Types</p-accordionheader>
-          <p-accordioncontent>
+      <p-tabs value="0">
+        <p-tablist>
+          <p-tab value="0">Asset Types</p-tab>
+          <p-tab value="1">Liability Types</p-tab>
+          <p-tab value="2">Expense Categories</p-tab>
+        </p-tablist>
+        <p-tabpanels>
+          <p-tabpanel value="0">
             <div class="members-header">
               <p-button label="Add Asset Type" icon="pi pi-plus" (onClick)="openAddAssetType()" />
             </div>
@@ -142,12 +142,8 @@
                 </div>
               }
             </div>
-          </p-accordioncontent>
-        </p-accordionpanel>
-
-        <p-accordionpanel value="1">
-          <p-accordionheader>Liability Types</p-accordionheader>
-          <p-accordioncontent>
+          </p-tabpanel>
+          <p-tabpanel value="1">
             <div class="members-header">
               <p-button label="Add Liability Type" icon="pi pi-plus" (onClick)="openAddLiabilityType()" />
             </div>
@@ -172,12 +168,8 @@
                 </div>
               }
             </div>
-          </p-accordioncontent>
-        </p-accordionpanel>
-
-        <p-accordionpanel value="2">
-          <p-accordionheader>Expense Categories</p-accordionheader>
-          <p-accordioncontent>
+          </p-tabpanel>
+          <p-tabpanel value="2">
             <div class="members-header">
               <p-button label="Add Category" icon="pi pi-plus" (onClick)="openAddCategory()" />
             </div>
@@ -203,20 +195,33 @@
                 </div>
               }
             </div>
-          </p-accordioncontent>
-        </p-accordionpanel>
-      </p-accordion>
+          </p-tabpanel>
+        </p-tabpanels>
+      </p-tabs>
+    </p-tabpanel>
+    <p-tabpanel value="5">
+      <div class="settings-form">
+        @if (passphraseEnabled()) {
+          <p>A passphrase is currently set.</p>
+          <div class="passphrase-actions">
+            <p-button label="Change Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
+            <p-button label="Remove Passphrase" icon="pi pi-lock-open" severity="danger" [outlined]="true" (onClick)="openSetPassphrase()" />
+          </div>
+        } @else {
+          <p>No passphrase is set. Anyone on your network can access Clearfolio.</p>
+          <p-button label="Set Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
+        }
+      </div>
+      @if (currentMember()?.isPrimary) {
+        <div class="danger-zone">
+          <h3>Danger Zone</h3>
+          <p>Permanently delete all household data including all members, assets, liabilities, and snapshots.</p>
+          <p-button label="Delete All Data" icon="pi pi-trash" severity="danger" (onClick)="openDeleteAllDialog()" />
+        </div>
+      }
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
-
-@if (currentMember()?.isPrimary) {
-  <div class="danger-zone">
-    <h3>Danger Zone</h3>
-    <p>Permanently delete all household data including all members, assets, liabilities, and snapshots.</p>
-    <p-button label="Delete All Data" icon="pi pi-trash" severity="danger" (onClick)="openDeleteAllDialog()" />
-  </div>
-}
 
 <p-dialog header="Delete All Data" [(visible)]="deleteAllDialogVisible" [modal]="true" [style]="{ width: '450px' }">
   <p>This will <strong>permanently delete all data</strong> and cannot be undone. Type the household name to confirm:</p>
