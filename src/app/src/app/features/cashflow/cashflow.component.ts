@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { CurrencyPipe, PercentPipe } from '@angular/common';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { TableModule } from 'primeng/table';
@@ -24,6 +25,7 @@ import {
   ExpenseCategory,
   CashflowSummary,
   Member,
+  Asset,
 } from '../../core/api/models';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import * as echarts from 'echarts/core';
@@ -66,6 +68,7 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
     Toast,
     Skeleton,
     EmptyStateComponent,
+    RouterLink,
   ],
   providers: [ConfirmationService, MessageService, provideEchartsCore({ echarts })],
   templateUrl: './cashflow.component.html',
@@ -83,6 +86,7 @@ export class CashflowComponent implements OnInit {
   protected summary = signal<CashflowSummary | null>(null);
   protected members = signal<Member[]>([]);
   protected loading = signal(true);
+  protected savingsAssets = signal<Asset[]>([]);
 
   // Income dialog
   protected incomeDialogVisible = signal(false);
@@ -207,6 +211,7 @@ export class CashflowComponent implements OnInit {
   ngOnInit() {
     this.loadIncomeStreams();
     this.loadExpenses();
+    this.loadSavingsAssets();
     this.api.getExpenseCategories().subscribe((d) => this.categories.set(d));
     this.api.getMembers().subscribe((d) => this.members.set(d));
   }
@@ -359,6 +364,12 @@ export class CashflowComponent implements OnInit {
 
   private loadExpenses() {
     this.api.getExpenses().subscribe((data) => this.expenses.set(data));
+  }
+
+  private loadSavingsAssets() {
+    this.api.getAssets().subscribe((data) =>
+      this.savingsAssets.set(data.filter(a => a.contributionAmount && a.contributionAmount > 0))
+    );
   }
 
   private loadSummary(view: string) {

@@ -200,6 +200,50 @@
 </p-table>
 }
 
+<!-- Savings Section (read-only contributions from assets) -->
+<div class="section-header">
+  <h2>Savings</h2>
+</div>
+
+@if (savingsAssets().length > 0) {
+<p-table [value]="savingsAssets()" [tableStyle]="{ 'min-width': '40rem' }">
+  <ng-template #header>
+    <tr>
+      <th>Asset</th>
+      <th>Type</th>
+      <th>Owner</th>
+      <th style="text-align: right">Amount</th>
+      <th>Frequency</th>
+      <th style="text-align: right">Annualised</th>
+      <th>Pre-tax</th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-asset>
+    <tr>
+      <td>{{ asset.label }}</td>
+      <td>{{ asset.assetTypeName }}</td>
+      <td>
+        @if (asset.ownerDisplayName) {
+          <p-tag [value]="asset.ownerDisplayName" />
+        } @else {
+          <p-tag value="Joint" severity="info" />
+        }
+      </td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ asset.contributionAmount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>{{ asset.contributionFrequency }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(asset.contributionAmount, asset.contributionFrequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>
+        @if (asset.isPreTaxContribution) {
+          <p-tag value="Pre-tax" severity="warn" />
+        }
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+} @else {
+  <p class="empty-hint">No asset contributions configured. Add contributions on the <a routerLink="/assets">Assets</a> page.</p>
+}
+
 <!-- Charts Section -->
 <div class="chart-grid">
   <div class="chart-panel">

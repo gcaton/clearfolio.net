@@ -169,3 +169,18 @@
   color: var(--p-text-muted-color);
   font-size: 0.875rem;
 }
+
+.empty-hint {
+  color: var(--p-text-muted-color);
+  font-size: 0.875rem;
+  padding: 1rem 0;
+
+  a {
+    color: var(--p-primary-color);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
