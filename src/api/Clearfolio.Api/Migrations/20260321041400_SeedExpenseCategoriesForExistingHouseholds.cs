@@ -25,25 +25,30 @@ namespace Clearfolio.Api.Migrations
                 ("Other", 10)
             };
 
+            // Clean up any categories with malformed IDs from previous migration runs,
+            // then re-insert with proper lowercase GUIDs matching EF Core format
+            migrationBuilder.Sql("DELETE FROM expense_categories");
+
             var now = DateTime.UtcNow.ToString("o");
 
             foreach (var (name, sortOrder) in categories)
             {
-                // Insert for each household that doesn't already have this category
                 migrationBuilder.Sql($"""
                     INSERT INTO expense_categories (id, household_id, name, sort_order, is_default, created_at)
                     SELECT
-                        lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab', abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))),
+                        lower(
+                            hex(randomblob(4)) || '-' ||
+                            hex(randomblob(2)) || '-' ||
+                            '4' || substr(hex(randomblob(2)), 2) || '-' ||
+                            substr('89ab', 1 + (abs(random()) % 4), 1) || substr(hex(randomblob(2)), 2) || '-' ||
+                            hex(randomblob(6))
+                        ),
                         h.id,
                         '{name}',
                         {sortOrder},
                         1,
                         '{now}'
                     FROM households h
-                    WHERE NOT EXISTS (
-                        SELECT 1 FROM expense_categories ec
-                        WHERE ec.household_id = h.id AND ec.name = '{name}'
-                    )
                     """);
             }
         }
