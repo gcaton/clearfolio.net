@@ -83,6 +83,9 @@ public static class MembersEndpoints
         };
         db.HouseholdMembers.Add(member);
 
+        // Seed default expense categories
+        ExpenseCategoriesEndpoints.SeedDefaultCategories(db, household.Id);
+
         try
         {
             await db.SaveChangesAsync();
