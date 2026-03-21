@@ -597,6 +597,7 @@ export class SettingsComponent implements OnInit {
                 this.superTarget = this.goalService.goal().superTarget;
                 this.ngOnInit();
                 this.auth.loadMembers();
+                this.localeService.init();
               },
               error: () => {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Import failed' });
