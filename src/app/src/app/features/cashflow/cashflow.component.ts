@@ -259,8 +259,8 @@ export class CashflowComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Income stream created' });
         },
         error: (err) => {
-          const msg = typeof err.error === 'string' ? err.error : 'Failed to create income stream';
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 10000 });
         },
       });
     }
@@ -321,8 +321,8 @@ export class CashflowComponent implements OnInit {
           this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Expense created' });
         },
         error: (err) => {
-          const msg = typeof err.error === 'string' ? err.error : 'Failed to create expense';
-          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg });
+          const msg = typeof err.error === 'string' ? err.error : JSON.stringify(err.error);
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: msg, life: 10000 });
         },
       });
     }
