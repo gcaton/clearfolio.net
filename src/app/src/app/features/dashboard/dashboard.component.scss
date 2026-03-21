@@ -51,6 +51,65 @@ app-currency {
   font-weight: 700;
 }
 
+.cashflow-widget {
+  margin-bottom: 1.5rem;
+}
+
+.widget-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+
+  h3 {
+    margin: 0;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--p-text-color);
+  }
+}
+
+.view-link {
+  font-size: 0.8125rem;
+  color: var(--p-primary-color);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.stat-card.wide {
+  grid-column: 1 / -1;
+}
+
+.cashflow-bar {
+  display: flex;
+  height: 1rem;
+  border-radius: 0.25rem;
+  overflow: hidden;
+  margin-top: 0.5rem;
+  gap: 2px;
+}
+
+.cashflow-bar-income {
+  background: var(--p-green-500, #22c55e);
+  border-radius: 0.25rem 0 0 0.25rem;
+  min-width: 2px;
+}
+
+.cashflow-bar-expenses {
+  background: var(--p-red-500, #ef4444);
+  border-radius: 0 0.25rem 0.25rem 0;
+  min-width: 2px;
+}
+
+.stat-value {
+  &.positive { color: var(--p-green-600, #16a34a); }
+  &.amber { color: var(--p-orange-500, #f97316); }
+  &.negative { color: var(--p-red-600, #dc2626); }
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
