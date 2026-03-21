@@ -28,6 +28,7 @@ import { environment } from '../environments/environment';
         <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
         <a routerLink="/assets" routerLinkActive="active">Assets</a>
         <a routerLink="/liabilities" routerLinkActive="active">Liabilities</a>
+        <a routerLink="/cashflow" routerLinkActive="active">Cashflow</a>
         <a routerLink="/snapshots" routerLinkActive="active">Snapshots</a>
         <a routerLink="/projections" routerLinkActive="active">Projections</a>
         <a routerLink="/settings" routerLinkActive="active">Settings</a>
@@ -56,6 +57,7 @@ import { environment } from '../environments/environment';
         <a routerLink="/dashboard" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Dashboard</a>
         <a routerLink="/assets" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Assets</a>
         <a routerLink="/liabilities" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Liabilities</a>
+        <a routerLink="/cashflow" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Cashflow</a>
         <a routerLink="/snapshots" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Snapshots</a>
         <a routerLink="/projections" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Projections</a>
         <a routerLink="/settings" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Settings</a>
