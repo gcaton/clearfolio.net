@@ -50,6 +50,10 @@ export class KeyboardShortcutsService implements OnDestroy {
         e.preventDefault();
         this.router.navigate(['/projections']);
         break;
+      case 'h':
+        e.preventDefault();
+        this.router.navigate(['/help']);
+        break;
       case '?':
         e.preventDefault();
         this.showHelp();
@@ -77,6 +81,7 @@ export class KeyboardShortcutsService implements OnDestroy {
           <kbd>c</kbd><span>Cashflow</span>
           <kbd>s</kbd><span>Snapshots</span>
           <kbd>p</kbd><span>Projections</span>
+          <kbd>h</kbd><span>Help</span>
           <kbd>?</kbd><span>Toggle this help</span>
         </div>
         <p class="kb-help-hint">Press any key or click to dismiss</p>

@@ -1,0 +1,218 @@
+<h1>Help</h1>
+
+<p-tabs value="0">
+  <p-tablist>
+    <p-tab value="0">Getting Started</p-tab>
+    <p-tab value="1">Key Concepts</p-tab>
+    <p-tab value="2">Features</p-tab>
+    <p-tab value="3">Keyboard Shortcuts</p-tab>
+    <p-tab value="4">FAQ</p-tab>
+  </p-tablist>
+  <p-tabpanels>
+
+    <!-- Getting Started -->
+    <p-tabpanel value="0">
+      <div class="help-section">
+        <h2>Welcome to Clearfolio</h2>
+        <p>Clearfolio is a self-hosted household net worth tracker. It lets you record periodic snapshots of your assets and liabilities, visualise growth over time, and project your financial future.</p>
+
+        <h3>First-time setup</h3>
+        <ol>
+          <li><strong>Add your assets</strong> — bank accounts, investments, superannuation, property, and anything else of value. Go to <strong>Assets</strong> and click <em>Add Asset</em>.</li>
+          <li><strong>Add your liabilities</strong> — mortgages, loans, credit cards, HECS. Go to <strong>Liabilities</strong> and click <em>Add Liability</em>.</li>
+          <li><strong>Record your first snapshot</strong> — go to <strong>Snapshots</strong> and record current values for each asset and liability. You can also use <em>Bulk Entry</em> to backfill historical data.</li>
+          <li><strong>Set a goal</strong> — go to <strong>Settings → Goals</strong> and set a net worth target to track progress against.</li>
+          <li><strong>Set up cashflow</strong> — go to <strong>Cashflow</strong> and add your income streams and expenses to track your savings rate.</li>
+        </ol>
+
+        <h3>Ongoing use</h3>
+        <p>Come back each quarter (or however often you like) and record new snapshot values. Your dashboard will automatically update with trends, breakdowns, and goal progress.</p>
+      </div>
+    </p-tabpanel>
+
+    <!-- Key Concepts -->
+    <p-tabpanel value="1">
+      <div class="help-section">
+        <h2>Key Concepts</h2>
+
+        <div class="concept">
+          <h3>Assets &amp; Liabilities</h3>
+          <p><strong>Assets</strong> are things you own that have value — bank accounts, shares, super, property. <strong>Liabilities</strong> are debts you owe — mortgages, personal loans, credit cards, HECS. Your <strong>net worth</strong> is assets minus liabilities.</p>
+        </div>
+
+        <div class="concept">
+          <h3>Asset Categories</h3>
+          <p>Each asset type belongs to a category that determines how it appears in charts:</p>
+          <ul>
+            <li><span class="dot" style="background: #60a5fa"></span> <strong>Cash</strong> — savings accounts, offset accounts, term deposits</li>
+            <li><span class="dot" style="background: #34d399"></span> <strong>Investable</strong> — shares, ETFs, managed funds</li>
+            <li><span class="dot" style="background: #a78bfa"></span> <strong>Retirement</strong> — superannuation</li>
+            <li><span class="dot" style="background: #fbbf24"></span> <strong>Property</strong> — real estate</li>
+            <li><span class="dot" style="background: #94a3b8"></span> <strong>Other</strong> — vehicles, collectibles, etc.</li>
+          </ul>
+        </div>
+
+        <div class="concept">
+          <h3>Snapshots &amp; Periods</h3>
+          <p>A <strong>snapshot</strong> records the value of an asset or liability at a point in time. Snapshots are grouped by <strong>periods</strong> — quarterly intervals based on either the Australian Financial Year (FY) or Calendar Year (CY).</p>
+        </div>
+
+        <div class="concept">
+          <h3>Australian Financial Year</h3>
+          <p>The Australian financial year runs from 1 July to 30 June. Quarters are:</p>
+          <ul>
+            <li><strong>FY Q1</strong> — July to September</li>
+            <li><strong>FY Q2</strong> — October to December</li>
+            <li><strong>FY Q3</strong> — January to March</li>
+            <li><strong>FY Q4</strong> — April to June</li>
+          </ul>
+          <p>For example, <em>FY2026-Q3</em> means January–March 2026.</p>
+        </div>
+
+        <div class="concept">
+          <h3>Ownership</h3>
+          <p>Assets and liabilities can be <strong>sole</strong> (owned by one member) or <strong>joint</strong> (shared with a configurable split). When viewing by member, joint items are apportioned according to the split ratio.</p>
+        </div>
+
+        <div class="concept">
+          <h3>Views</h3>
+          <p>Use the view toggle in the navbar to switch between <strong>Household</strong> (everything combined) and individual member views. This filters all pages — dashboard, cashflow, projections — to show only that member's share.</p>
+        </div>
+
+        <div class="concept">
+          <h3>Scopes</h3>
+          <p>The dashboard lets you toggle between three net worth scopes:</p>
+          <ul>
+            <li><strong>Total</strong> — all assets and liabilities</li>
+            <li><strong>Financial</strong> — excludes property (useful for tracking investable wealth)</li>
+            <li><strong>Liquid</strong> — only immediately accessible assets</li>
+          </ul>
+        </div>
+      </div>
+    </p-tabpanel>
+
+    <!-- Features -->
+    <p-tabpanel value="2">
+      <div class="help-section">
+        <h2>Features</h2>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-chart-line"></i> Dashboard</h3>
+          <p>Your financial overview. Shows net worth stat cards, goal progress, cashflow summary, and charts organised into tabs — Trends (net worth over time), Composition (asset/liability breakdowns), and Comparison (member and super gap analysis).</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-wallet"></i> Assets</h3>
+          <p>Manage your assets. Each asset has a type, owner, and optional ASX symbol for live price quotes. You can set contribution amounts and expected return rates used by the projection engine.</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-credit-card"></i> Liabilities</h3>
+          <p>Track your debts. Each liability has a type, owner, optional interest rate, and repayment schedule.</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-dollar"></i> Cashflow</h3>
+          <p>Track income streams and expenses. Shows annualised totals, savings rate, debt-to-income ratio, and category breakdowns. Savings (asset contributions) are pulled automatically from your asset configuration.</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-camera"></i> Snapshots</h3>
+          <p>Record asset and liability values over time. Use single entry for quick updates or <em>Bulk Entry</em> to backfill multiple periods at once. This is the data that powers your dashboard trends.</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-bolt"></i> Projections</h3>
+          <p>Model your financial future with three methods:</p>
+          <ul>
+            <li><strong>Compound</strong> — deterministic projection using each asset's expected return rate and contributions</li>
+            <li><strong>Scenario</strong> — pessimistic, base, and optimistic bands</li>
+            <li><strong>Monte Carlo</strong> — probabilistic simulation using return rates and volatility</li>
+          </ul>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-cog"></i> Settings</h3>
+          <p>Configure household details, manage members, set net worth and super targets, manage expense categories, and import/export data.</p>
+        </div>
+
+        <div class="feature-block">
+          <h3><i class="pi pi-file-pdf"></i> PDF Export</h3>
+          <p>Export a comprehensive PDF report from the dashboard. Includes all stat cards, charts, member comparisons, and goal progress.</p>
+        </div>
+      </div>
+    </p-tabpanel>
+
+    <!-- Keyboard Shortcuts -->
+    <p-tabpanel value="3">
+      <div class="help-section">
+        <h2>Keyboard Shortcuts</h2>
+        <p>Press <kbd>?</kbd> anywhere to see the shortcuts overlay. Shortcuts are disabled when typing in form fields.</p>
+
+        <div class="shortcuts-grid">
+          <div class="shortcut-group">
+            <h3>Navigation</h3>
+            <div class="shortcut"><kbd>d</kbd><span>Dashboard</span></div>
+            <div class="shortcut"><kbd>a</kbd><span>Assets</span></div>
+            <div class="shortcut"><kbd>l</kbd><span>Liabilities</span></div>
+            <div class="shortcut"><kbd>c</kbd><span>Cashflow</span></div>
+            <div class="shortcut"><kbd>s</kbd><span>Snapshots</span></div>
+            <div class="shortcut"><kbd>p</kbd><span>Projections</span></div>
+          </div>
+          <div class="shortcut-group">
+            <h3>Other</h3>
+            <div class="shortcut"><kbd>?</kbd><span>Show shortcuts overlay</span></div>
+          </div>
+        </div>
+      </div>
+    </p-tabpanel>
+
+    <!-- FAQ -->
+    <p-tabpanel value="4">
+      <div class="help-section">
+        <h2>Frequently Asked Questions</h2>
+
+        <div class="faq">
+          <h3>How is the goal projection calculated?</h3>
+          <p>The dashboard goal projection uses the <strong>compound growth engine</strong> — the same model as the Projections page. It runs a 30-year forward projection using each asset's expected return rate, contributions, and liability repayments, then finds the year where your net worth crosses the target.</p>
+        </div>
+
+        <div class="faq">
+          <h3>What's the difference between Financial and Liquid net worth?</h3>
+          <p><strong>Financial net worth</strong> excludes property — it shows your investable and accessible wealth. <strong>Liquid net worth</strong> goes further, only counting assets you can access immediately (cash and short-term investments).</p>
+        </div>
+
+        <div class="faq">
+          <h3>How do ASX symbols work?</h3>
+          <p>When you add an ASX symbol to an asset, Clearfolio fetches live price quotes and can auto-populate expected return rates and volatility from historical data. This data feeds into projections.</p>
+        </div>
+
+        <div class="faq">
+          <h3>How often should I record snapshots?</h3>
+          <p>Quarterly is the default cadence (matching the period system), but you can record as often as you like. More data points give better trend analysis and more accurate goal projections.</p>
+        </div>
+
+        <div class="faq">
+          <h3>What does the savings rate measure?</h3>
+          <p>Savings rate = (Income − Expenses − Contributions − Repayments) ÷ Income. It shows what percentage of your income goes toward building wealth. A rate above 20% is generally considered healthy.</p>
+        </div>
+
+        <div class="faq">
+          <h3>Can multiple people use this?</h3>
+          <p>Yes. Clearfolio supports multiple household members via Cloudflare Access authentication. The primary member can add others in <strong>Settings → Members</strong>. Each member's email must be allowed in your Cloudflare Access policy.</p>
+        </div>
+
+        <div class="faq">
+          <h3>Where is my data stored?</h3>
+          <p>All data is stored locally in a SQLite database on your server (typically a Raspberry Pi). Nothing is sent to external services. You own your data completely.</p>
+        </div>
+
+        <div class="faq">
+          <h3>How do I back up my data?</h3>
+          <p>Go to <strong>Settings → Data → Export</strong> to download a JSON file containing all your household data. Store this somewhere safe. You can restore from a backup using the Import function.</p>
+        </div>
+      </div>
+    </p-tabpanel>
+
+  </p-tabpanels>
+</p-tabs>

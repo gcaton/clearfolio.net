@@ -52,6 +52,12 @@ export const routes: Routes = [
     canActivate: [requireSetupComplete],
   },
   {
+    path: 'help',
+    loadComponent: () =>
+      import('./features/help/help.component').then((m) => m.HelpComponent),
+    canActivate: [requireSetupComplete],
+  },
+  {
     path: '**',
     loadComponent: () =>
       import('./features/not-found/not-found.component').then((m) => m.NotFoundComponent),
