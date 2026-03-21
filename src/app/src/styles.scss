@@ -29,6 +29,16 @@ h1 {
   font-weight: 600;
 }
 
+// Simple page fade-in on route change
+router-outlet + * {
+  animation: pageFade 0.2s ease-out;
+}
+
+@keyframes pageFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 app-currency,
 .stat-value,
 td[style*="text-align: right"],

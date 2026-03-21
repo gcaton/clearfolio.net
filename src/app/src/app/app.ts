@@ -1,6 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, computed, signal, OnInit } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
-import { routeAnimation } from './route-animations';
 import { SelectButton } from 'primeng/selectbutton';
 import { Drawer } from 'primeng/drawer';
 import { Button } from 'primeng/button';
@@ -92,8 +91,8 @@ import { environment } from '../environments/environment';
     </p-drawer>
     }
 
-    <main class="app-content" [@routeAnimation]="outlet?.activatedRouteData">
-      <router-outlet #outlet="outlet" />
+    <main class="app-content">
+      <router-outlet />
     </main>
 
     @if (!auth.needsSetup()) {
@@ -101,7 +100,6 @@ import { environment } from '../environments/environment';
     }
   `,
   styleUrl: './app.scss',
-  animations: [routeAnimation],
 })
 export class App implements OnInit {
   protected auth = inject(AuthService);
