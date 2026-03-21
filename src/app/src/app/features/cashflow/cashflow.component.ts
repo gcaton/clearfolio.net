@@ -146,8 +146,12 @@ export class CashflowComponent implements OnInit {
     return {
       tooltip: { trigger: 'axis' as const },
       legend: { data: ['Income', 'Expenses'] },
-      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: { type: 'category' as const, data: memberNames },
+      grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: memberNames,
+        axisLabel: { margin: 10 },
+      },
       yAxis: { type: 'value' as const },
       series: [
         {
