@@ -35,6 +35,21 @@ export interface AssetType {
   defaultVolatility: number;
 }
 
+export interface CreateAssetTypeRequest {
+  name: string;
+  category: string;
+  liquidity: string;
+  growthClass: string;
+  isSuper: boolean;
+  isCgtExempt: boolean;
+  defaultReturnRate: number;
+  defaultVolatility: number;
+}
+
+export interface UpdateAssetTypeRequest extends CreateAssetTypeRequest {
+  sortOrder: number;
+}
+
 export interface LiabilityType {
   id: string;
   name: string;
@@ -43,6 +58,17 @@ export interface LiabilityType {
   isHecs: boolean;
   sortOrder: number;
   isSystem: boolean;
+}
+
+export interface CreateLiabilityTypeRequest {
+  name: string;
+  category: string;
+  debtQuality: string;
+  isHecs: boolean;
+}
+
+export interface UpdateLiabilityTypeRequest extends CreateLiabilityTypeRequest {
+  sortOrder: number;
 }
 
 export interface Asset {

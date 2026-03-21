@@ -41,6 +41,10 @@ import {
   Expense,
   CreateExpenseRequest,
   CashflowSummary,
+  CreateAssetTypeRequest,
+  UpdateAssetTypeRequest,
+  CreateLiabilityTypeRequest,
+  UpdateLiabilityTypeRequest,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -65,6 +69,32 @@ export class ApiService {
 
   getLiabilityTypes() {
     return this.http.get<LiabilityType[]>('/api/liability-types');
+  }
+
+  // Asset Type CRUD
+  createAssetType(request: CreateAssetTypeRequest) {
+    return this.http.post<AssetType>('/api/asset-types', request);
+  }
+
+  updateAssetType(id: string, request: UpdateAssetTypeRequest) {
+    return this.http.put<AssetType>(`/api/asset-types/${id}`, request);
+  }
+
+  deleteAssetType(id: string) {
+    return this.http.delete(`/api/asset-types/${id}`);
+  }
+
+  // Liability Type CRUD
+  createLiabilityType(request: CreateLiabilityTypeRequest) {
+    return this.http.post<LiabilityType>('/api/liability-types', request);
+  }
+
+  updateLiabilityType(id: string, request: UpdateLiabilityTypeRequest) {
+    return this.http.put<LiabilityType>(`/api/liability-types/${id}`, request);
+  }
+
+  deleteLiabilityType(id: string) {
+    return this.http.delete(`/api/liability-types/${id}`);
   }
 
   // Household
