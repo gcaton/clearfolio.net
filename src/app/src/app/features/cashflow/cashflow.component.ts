@@ -213,6 +213,12 @@ export class CashflowComponent implements OnInit {
     return amount * (FREQUENCY_MULTIPLIER[frequency] ?? 12);
   }
 
+  getCategorySubtotal(categoryName: string): number {
+    return this.expenses()
+      .filter(e => e.expenseCategoryName === categoryName)
+      .reduce((sum, e) => sum + this.annualise(e.amount, e.frequency), 0);
+  }
+
   // --- Income CRUD ---
 
   openNewIncome() {

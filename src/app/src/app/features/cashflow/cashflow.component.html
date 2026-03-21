@@ -135,11 +135,15 @@
     }
   </div>
 } @else {
-<p-table [value]="expenses()" [tableStyle]="{ 'min-width': '50rem' }">
+<p-table
+  [value]="expenses()"
+  [tableStyle]="{ 'min-width': '50rem' }"
+  rowGroupMode="subheader"
+  groupRowsBy="expenseCategoryName"
+>
   <ng-template #header>
     <tr>
       <th>Label</th>
-      <th>Category</th>
       <th>Owner</th>
       <th style="text-align: right">Amount</th>
       <th>Frequency</th>
@@ -147,10 +151,16 @@
       <th style="width: 8rem"></th>
     </tr>
   </ng-template>
+  <ng-template #groupheader let-expense>
+    <tr>
+      <td colspan="6" class="group-header-cell">
+        <span class="group-header-label">{{ expense.expenseCategoryName }}</span>
+      </td>
+    </tr>
+  </ng-template>
   <ng-template #body let-expense>
     <tr>
       <td>{{ expense.label }}</td>
-      <td>{{ expense.expenseCategoryName }}</td>
       <td>
         @if (expense.ownerDisplayName) {
           <p-tag [value]="expense.ownerDisplayName" />
@@ -167,9 +177,18 @@
       </td>
     </tr>
   </ng-template>
+  <ng-template #groupfooter let-expense>
+    <tr class="group-footer-row">
+      <td colspan="4" style="text-align: right; font-weight: 600;">{{ expense.expenseCategoryName }} subtotal</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">
+        {{ getCategorySubtotal(expense.expenseCategoryName) | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr
+      </td>
+      <td></td>
+    </tr>
+  </ng-template>
   <ng-template #emptymessage>
     <tr>
-      <td colspan="7">
+      <td colspan="6">
         <app-empty-state
           icon="pi-shopping-cart"
           title="No expenses yet"

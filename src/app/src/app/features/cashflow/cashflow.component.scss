@@ -112,6 +112,30 @@
   }
 }
 
+.skeleton-table {
+  margin-bottom: 0.5rem;
+}
+
+.group-header-cell {
+  background: var(--p-content-hover-background, var(--p-surface-100));
+  padding: 0.5rem 1rem;
+}
+
+.group-header-label {
+  font-weight: 700;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--p-text-muted-color);
+}
+
+.group-footer-row td {
+  background: var(--p-content-hover-background, var(--p-surface-50));
+  border-top: 1px solid var(--p-content-border-color);
+  font-size: 0.875rem;
+  color: var(--p-text-muted-color);
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
