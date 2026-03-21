@@ -18,7 +18,11 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GoalService } from '../../core/auth/goal.service';
-import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest, AssetType, CreateAssetTypeRequest, UpdateAssetTypeRequest } from '../../core/api/models';
+import {
+  Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest,
+  AssetType, CreateAssetTypeRequest, UpdateAssetTypeRequest,
+  LiabilityType, CreateLiabilityTypeRequest as CreateLiabTypeReq, UpdateLiabilityTypeRequest as UpdateLiabTypeReq,
+} from '../../core/api/models';
 
 @Component({
   selector: 'app-settings',
@@ -89,6 +93,30 @@ export class SettingsComponent implements OnInit {
     { label: 'Mixed', value: 'mixed' },
   ];
 
+  // Liability type management
+  protected liabilityTypes = signal<LiabilityType[]>([]);
+  protected editingLiabilityType = signal<LiabilityType | null>(null);
+  protected liabilityTypeDialogVisible = signal(false);
+  protected ltName = '';
+  protected ltCategory = '';
+  protected ltDebtQuality = '';
+  protected ltIsHecs = false;
+
+  protected liabilityCategoryOptions = [
+    { label: 'Mortgage', value: 'mortgage' },
+    { label: 'Personal', value: 'personal' },
+    { label: 'Credit', value: 'credit' },
+    { label: 'Student', value: 'student' },
+    { label: 'Tax', value: 'tax' },
+    { label: 'Other', value: 'other' },
+  ];
+
+  protected debtQualityOptions = [
+    { label: 'Income-producing', value: 'productive' },
+    { label: 'Non-deductible', value: 'neutral' },
+    { label: 'Consumption', value: 'bad' },
+  ];
+
   protected passphraseEnabled = signal(false);
   protected passphraseDialogVisible = signal(false);
   protected currentPassphrase = '';
@@ -105,6 +133,7 @@ export class SettingsComponent implements OnInit {
     this.api.getMembers().subscribe((m) => this.members.set(m));
     this.loadCategories();
     this.loadAssetTypes();
+    this.loadLiabilityTypes();
     this.api.getAuthStatus().subscribe(s => this.passphraseEnabled.set(s.passphraseEnabled));
   }
 
@@ -326,6 +355,118 @@ export class SettingsComponent implements OnInit {
       sortOrder: at.sortOrder,
       defaultReturnRate: at.defaultReturnRate,
       defaultVolatility: at.defaultVolatility,
+    };
+  }
+
+  loadLiabilityTypes() {
+    this.api.getLiabilityTypes().subscribe((types) => {
+      this.liabilityTypes.set([...types].sort((a, b) => a.sortOrder - b.sortOrder));
+    });
+  }
+
+  openAddLiabilityType() {
+    this.editingLiabilityType.set(null);
+    this.ltName = '';
+    this.ltCategory = 'personal';
+    this.ltDebtQuality = 'neutral';
+    this.ltIsHecs = false;
+    this.liabilityTypeDialogVisible.set(true);
+  }
+
+  openEditLiabilityType(lt: LiabilityType) {
+    this.editingLiabilityType.set(lt);
+    this.ltName = lt.name;
+    this.ltCategory = lt.category;
+    this.ltDebtQuality = lt.debtQuality;
+    this.ltIsHecs = lt.isHecs;
+    this.liabilityTypeDialogVisible.set(true);
+  }
+
+  saveLiabilityType() {
+    const editing = this.editingLiabilityType();
+    if (editing) {
+      const req: UpdateLiabTypeReq = {
+        name: this.ltName,
+        category: this.ltCategory,
+        debtQuality: this.ltDebtQuality,
+        isHecs: this.ltIsHecs,
+        sortOrder: editing.sortOrder,
+      };
+      this.api.updateLiabilityType(editing.id, req).subscribe(() => {
+        this.liabilityTypeDialogVisible.set(false);
+        this.loadLiabilityTypes();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability type updated' });
+      });
+    } else {
+      const req: CreateLiabTypeReq = {
+        name: this.ltName,
+        category: this.ltCategory,
+        debtQuality: this.ltDebtQuality,
+        isHecs: this.ltIsHecs,
+      };
+      this.api.createLiabilityType(req).subscribe(() => {
+        this.liabilityTypeDialogVisible.set(false);
+        this.loadLiabilityTypes();
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Liability type added' });
+      });
+    }
+  }
+
+  deleteLiabilityType(lt: LiabilityType) {
+    this.confirmationService.confirm({
+      message: `Delete liability type "${lt.name}"? This cannot be undone.`,
+      header: 'Delete Liability Type?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.deleteLiabilityType(lt.id).subscribe({
+          next: () => {
+            this.loadLiabilityTypes();
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Liability type "${lt.name}" deleted` });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Cannot Delete', detail: 'This type is in use. Reassign or remove referencing liabilities first.' });
+          },
+        });
+      },
+    });
+  }
+
+  moveLiabilityTypeUp(lt: LiabilityType) {
+    const types = this.liabilityTypes();
+    const idx = types.findIndex((t) => t.id === lt.id);
+    if (idx <= 0) return;
+    const prev = types[idx - 1];
+    const prevOrder = prev.sortOrder;
+    const ltOrder = lt.sortOrder;
+    this.api.updateLiabilityType(prev.id, { ...this.liabilityTypeToUpdateRequest(prev), sortOrder: ltOrder }).subscribe(() => {
+      this.api.updateLiabilityType(lt.id, { ...this.liabilityTypeToUpdateRequest(lt), sortOrder: prevOrder }).subscribe(() => {
+        this.loadLiabilityTypes();
+      });
+    });
+  }
+
+  moveLiabilityTypeDown(lt: LiabilityType) {
+    const types = this.liabilityTypes();
+    const idx = types.findIndex((t) => t.id === lt.id);
+    if (idx < 0 || idx >= types.length - 1) return;
+    const next = types[idx + 1];
+    const nextOrder = next.sortOrder;
+    const ltOrder = lt.sortOrder;
+    this.api.updateLiabilityType(next.id, { ...this.liabilityTypeToUpdateRequest(next), sortOrder: ltOrder }).subscribe(() => {
+      this.api.updateLiabilityType(lt.id, { ...this.liabilityTypeToUpdateRequest(lt), sortOrder: nextOrder }).subscribe(() => {
+        this.loadLiabilityTypes();
+      });
+    });
+  }
+
+  private liabilityTypeToUpdateRequest(lt: LiabilityType): UpdateLiabTypeReq {
+    return {
+      name: lt.name,
+      category: lt.category,
+      debtQuality: lt.debtQuality,
+      isHecs: lt.isHecs,
+      sortOrder: lt.sortOrder,
     };
   }
 

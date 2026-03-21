@@ -145,11 +145,33 @@
           </p-accordioncontent>
         </p-accordionpanel>
 
-        <!-- Liability Types panel will be added in next task -->
         <p-accordionpanel value="1">
           <p-accordionheader>Liability Types</p-accordionheader>
           <p-accordioncontent>
-            <p>Coming soon...</p>
+            <div class="members-header">
+              <p-button label="Add Liability Type" icon="pi pi-plus" (onClick)="openAddLiabilityType()" />
+            </div>
+            <div class="members-list">
+              @for (lt of liabilityTypes(); track lt.id; let i = $index) {
+                <div class="member-card">
+                  <div class="member-info">
+                    <span class="display-name">{{ lt.name }}</span>
+                    <p-tag [value]="lt.category" severity="info" />
+                    <p-tag [value]="lt.debtQuality" />
+                    @if (lt.isHecs) { <p-tag value="HECS" severity="warn" /> }
+                    @if (lt.isSystem) { <p-tag value="Default" severity="secondary" /> }
+                  </div>
+                  <div class="member-name-row">
+                    <p-button icon="pi pi-arrow-up" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === 0" (onClick)="moveLiabilityTypeUp(lt)" />
+                    <p-button icon="pi pi-arrow-down" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === liabilityTypes().length - 1" (onClick)="moveLiabilityTypeDown(lt)" />
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditLiabilityType(lt)" />
+                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="deleteLiabilityType(lt)" />
+                  </div>
+                </div>
+              }
+            </div>
           </p-accordioncontent>
         </p-accordionpanel>
 
@@ -241,6 +263,28 @@
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" (onClick)="assetTypeDialogVisible.set(false)" />
     <p-button label="Save" icon="pi pi-check" (onClick)="saveAssetType()" [disabled]="!atName" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [header]="editingLiabilityType() ? 'Edit Liability Type' : 'Add Liability Type'" [(visible)]="liabilityTypeDialogVisible" [modal]="true" [style]="{ width: '500px' }">
+  <div class="form-grid">
+    <label for="ltName">Name</label>
+    <input pInputText id="ltName" [(ngModel)]="ltName" placeholder="e.g. Student Loan" />
+
+    <label for="ltCategory">Category</label>
+    <p-select id="ltCategory" [(ngModel)]="ltCategory" [options]="liabilityCategoryOptions" optionLabel="label" optionValue="value" />
+
+    <label for="ltDebtQuality">Debt Quality</label>
+    <p-select id="ltDebtQuality" [(ngModel)]="ltDebtQuality" [options]="debtQualityOptions" optionLabel="label" optionValue="value" />
+
+    <div class="flex items-center gap-2">
+      <p-checkbox id="ltIsHecs" [(ngModel)]="ltIsHecs" [binary]="true" />
+      <label for="ltIsHecs">Student loan (HECS-style)</label>
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="liabilityTypeDialogVisible.set(false)" />
+    <p-button label="Save" icon="pi pi-check" (onClick)="saveLiabilityType()" [disabled]="!ltName" />
   </ng-template>
 </p-dialog>
 
