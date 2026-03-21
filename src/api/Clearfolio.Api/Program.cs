@@ -28,5 +28,6 @@ app.MapLiabilitiesEndpoints();
 app.MapSnapshotsEndpoints();
 app.MapDashboardEndpoints();
 app.MapQuoteEndpoints();
+app.MapProjectionEndpoints();
 
 app.Run();
