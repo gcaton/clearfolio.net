@@ -161,6 +161,10 @@
       <label>Frequency</label>
       <p-select [(ngModel)]="form.contributionFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Select..." [showClear]="true" />
     </div>
+    <div class="form-field">
+      <label>End Date</label>
+      <input type="date" [(ngModel)]="form.contributionEndDate" class="p-inputtext" />
+    </div>
   </div>
 
   <div class="form-row">

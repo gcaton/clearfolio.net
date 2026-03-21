@@ -72,7 +72,7 @@ export class ProjectionsComponent {
   protected result = signal<ProjectionResult | null>(null);
   protected defaults = signal<ProjectionDefault[]>([]);
 
-  protected horizonPresets = [1, 2, 5, 10, 20];
+  protected horizonPresets = [1, 3, 5, 10, 20];
 
   protected modeOptions = [
     { label: 'Compound', value: 'compound' as ProjectionMode },
@@ -82,8 +82,8 @@ export class ProjectionsComponent {
 
   protected scopeOptions = [
     { label: 'All', value: 'all' },
+    { label: 'Financial', value: 'financial' },
     { label: 'Liquid', value: 'liquid' },
-    { label: 'Net Worth', value: 'net-worth' },
   ];
 
   protected chartOptions = computed(() => {
@@ -182,11 +182,13 @@ export class ProjectionsComponent {
   refresh() {
     const mode = this.selectedMode();
     const view = this.viewState.view();
+    const entityId = this.selectedEntityId();
     const request = {
       horizon: this.selectedHorizon(),
       view,
       scope: this.selectedScope(),
       simulations: mode === 'monte-carlo' ? this.simulations() : undefined,
+      entityIds: entityId ? [entityId] : undefined,
     };
 
     this.loading.set(true);
@@ -236,6 +238,7 @@ export class ProjectionsComponent {
 
   selectEntity(id: string) {
     this.selectedEntityId.set(this.selectedEntityId() === id ? null : id);
+    this.refresh();
   }
 
   protected formatCurrency(value: number): string {
