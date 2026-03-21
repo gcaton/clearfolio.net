@@ -1,7 +1,4 @@
 .projections-page {
-  padding: 1.5rem;
-  max-width: 1200px;
-  margin: 0 auto;
 }
 
 .page-header {
@@ -295,10 +292,6 @@
 // ---- Responsive ----
 
 @media (max-width: 768px) {
-  .projections-page {
-    padding: 1rem;
-  }
-
   .controls-bar {
     flex-direction: column;
     align-items: stretch;
