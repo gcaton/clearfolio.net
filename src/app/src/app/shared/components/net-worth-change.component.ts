@@ -1,15 +1,16 @@
 import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
-import { CurrencyPipe, DecimalPipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
+import { AppCurrencyPipe } from '../pipes/app-currency.pipe';
 
 @Component({
   selector: 'app-net-worth-change',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CurrencyPipe, DecimalPipe],
+  imports: [AppCurrencyPipe, DecimalPipe],
   template: `
     @if (change() !== null) {
       <span class="change-badge" [class]="direction()">
         <i [class]="'pi ' + (isUp() ? 'pi-arrow-up' : 'pi-arrow-down')"></i>
-        {{ absChange() | currency: 'AUD' : 'symbol-narrow' : '1.0-0' }}
+        {{ absChange() | appCurrency:'1.0-0' }}
         @if (percent() !== null) {
           ({{ absPercent() | number: '1.1-1' }}%)
         }
