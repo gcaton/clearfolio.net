@@ -122,11 +122,15 @@ Three named scenarios applied simultaneously:
 
 | Scenario | Return Modifier | Description |
 |---|---|---|
-| Pessimistic | base rate − 3pp (floor at base×0.5 for positive rates) | Prolonged downturn |
+| Pessimistic | base rate − 3pp (floor at base×0.5 for strictly positive rates) | Prolonged downturn |
 | Base | base rate × 1.0 | Long-term averages hold |
-| Optimistic | base rate + 3pp (cap at base×1.5 for positive rates) | Sustained bull market |
+| Optimistic | base rate + 3pp (cap at base×1.5 for strictly positive rates) | Sustained bull market |
 
-For assets with negative base return rates (e.g. vehicles at -10%), the pessimistic scenario uses `base rate − 3pp` (i.e. -13%) and optimistic uses `base rate + 3pp` (i.e. -7%). This ensures pessimistic is always worse than base, and optimistic is always better.
+**Zero and negative rate handling:** For assets with a base rate of 0% or below, the additive offset is used directly without multiplicative floor/cap. Examples:
+- Crypto (0% base): pessimistic = -3%, base = 0%, optimistic = +3%
+- Vehicles (-10% base): pessimistic = -13%, base = -10%, optimistic = -7%
+
+This ensures pessimistic is always worse than base, and optimistic is always better, regardless of sign.
 
 - Liability interest rates remain constant across scenarios (conservative: debt cost doesn't decrease in downturns)
 - Contributions/repayments remain constant across scenarios
@@ -197,7 +201,7 @@ Response:
 
 **`POST /api/projections/scenario`**
 
-Same request. Response `years` entries shaped as:
+Same request. Response follows the same envelope (`mode`, `horizon`, `years`, `entities`) with `"mode": "scenario"`. Each `years` entry shaped as:
 ```json
 {
   "year": 2026,
@@ -211,7 +215,7 @@ Entity-level entries include the same three scenarios per year.
 
 **`POST /api/projections/monte-carlo`**
 
-Same request, plus optional `simulations` field (default 1000, max 10000). Response `years` entries shaped as:
+Same request, plus optional `simulations` field (default 1000, max 10000). Response follows the same envelope with `"mode": "monte-carlo"`. Each `years` entry shaped as:
 ```json
 {
   "year": 2026,
@@ -243,7 +247,9 @@ Response:
     "rateSource": "symbol",
     "contributionAmount": 500,
     "contributionFrequency": "monthly",
-    "annualContribution": 6000
+    "annualContribution": 6000,
+    "currentValue": 85000,
+    "hasCurrentValue": true
   }
 ]
 ```
@@ -273,7 +279,9 @@ Response:
   "effectiveInterestRate": 0.061,
   "repaymentAmount": 2450,
   "repaymentFrequency": "fortnightly",
-  "annualRepayment": 63700
+  "annualRepayment": 63700,
+  "currentValue": 450000,
+  "hasCurrentValue": true
 }
 ```
 
@@ -417,7 +425,7 @@ For assets with a `symbol`, the backend fetches historical price data to calcula
 The historical return calculation:
 1. Fetch 5 years of adjusted close prices
 2. Calculate weekly returns (weekly reduces noise vs daily)
-3. Annualise: mean weekly return × 52
+3. Annualise geometrically: `(1 + mean_weekly_return)^52 - 1`
 4. Volatility: standard deviation of weekly returns × √52
 
 Results are cached server-side (in-memory or distributed cache). Cache duration: 24 hours. If the external API is unavailable, fall back to type defaults gracefully.
