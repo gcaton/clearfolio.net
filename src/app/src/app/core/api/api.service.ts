@@ -27,6 +27,14 @@ import {
   ProjectionDefault,
   HistoricalReturn,
   AssetPerformance,
+  ExpenseCategory,
+  CreateExpenseCategoryRequest,
+  UpdateExpenseCategoryRequest,
+  IncomeStream,
+  CreateIncomeStreamRequest,
+  Expense,
+  CreateExpenseRequest,
+  CashflowSummary,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -203,5 +211,61 @@ export class ApiService {
 
   getHistoricalReturns(symbol: string) {
     return this.http.get<HistoricalReturn>(`/api/historical-returns/${encodeURIComponent(symbol)}`);
+  }
+
+  // Cashflow — Expense Categories
+  getExpenseCategories() {
+    return this.http.get<ExpenseCategory[]>('/api/expense-categories');
+  }
+
+  createExpenseCategory(request: CreateExpenseCategoryRequest) {
+    return this.http.post<ExpenseCategory>('/api/expense-categories', request);
+  }
+
+  updateExpenseCategory(id: string, request: UpdateExpenseCategoryRequest) {
+    return this.http.put<ExpenseCategory>(`/api/expense-categories/${id}`, request);
+  }
+
+  deleteExpenseCategory(id: string) {
+    return this.http.delete(`/api/expense-categories/${id}`);
+  }
+
+  // Cashflow — Income Streams
+  getIncomeStreams() {
+    return this.http.get<IncomeStream[]>('/api/income-streams');
+  }
+
+  createIncomeStream(request: CreateIncomeStreamRequest) {
+    return this.http.post<IncomeStream>('/api/income-streams', request);
+  }
+
+  updateIncomeStream(id: string, request: CreateIncomeStreamRequest) {
+    return this.http.put<IncomeStream>(`/api/income-streams/${id}`, request);
+  }
+
+  deleteIncomeStream(id: string) {
+    return this.http.delete(`/api/income-streams/${id}`);
+  }
+
+  // Cashflow — Expenses
+  getExpenses() {
+    return this.http.get<Expense[]>('/api/expenses');
+  }
+
+  createExpense(request: CreateExpenseRequest) {
+    return this.http.post<Expense>('/api/expenses', request);
+  }
+
+  updateExpense(id: string, request: CreateExpenseRequest) {
+    return this.http.put<Expense>(`/api/expenses/${id}`, request);
+  }
+
+  deleteExpense(id: string) {
+    return this.http.delete(`/api/expenses/${id}`);
+  }
+
+  // Cashflow — Summary
+  getCashflowSummary(params?: { view?: string }) {
+    return this.http.get<CashflowSummary>('/api/cashflow/summary', { params: params as Record<string, string> });
   }
 }

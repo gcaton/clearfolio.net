@@ -245,6 +245,87 @@ export interface GoalProjection {
   rSquared: number;
 }
 
+// --- Cashflow ---
+
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  sortOrder: number;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface CreateExpenseCategoryRequest {
+  name: string;
+}
+
+export interface UpdateExpenseCategoryRequest {
+  name: string;
+  sortOrder: number;
+}
+
+export interface IncomeStream {
+  id: string;
+  ownerMemberId: string;
+  ownerDisplayName: string | null;
+  label: string;
+  incomeType: string;
+  amount: number;
+  frequency: string;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateIncomeStreamRequest {
+  ownerMemberId: string;
+  label: string;
+  incomeType: string;
+  amount: number;
+  frequency: string;
+  isActive: boolean;
+  notes: string | null;
+}
+
+export interface Expense {
+  id: string;
+  ownerMemberId: string | null;
+  ownerDisplayName: string | null;
+  expenseCategoryId: string;
+  expenseCategoryName: string;
+  label: string;
+  amount: number;
+  frequency: string;
+  isActive: boolean;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateExpenseRequest {
+  ownerMemberId: string | null;
+  expenseCategoryId: string;
+  label: string;
+  amount: number;
+  frequency: string;
+  isActive: boolean;
+  notes: string | null;
+}
+
+export interface CashflowSummary {
+  totalAnnualIncome: number;
+  totalAnnualExpenses: number;
+  totalAnnualContributions: number;
+  totalAnnualRepayments: number;
+  disposableIncome: number;
+  netCashflow: number;
+  savingsRate: number;
+  debtToIncomeRatio: number;
+  incomeByMember: { memberTag: string; displayName: string; annualIncome: number }[];
+  expensesByCategory: { categoryName: string; annualAmount: number }[];
+}
+
 // --- Projections ---
 
 export interface ProjectionRequest {
