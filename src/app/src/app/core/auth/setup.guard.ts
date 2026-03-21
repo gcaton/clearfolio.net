@@ -18,7 +18,9 @@ export const requireSetupComplete: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   await waitForAuth(auth);
-  if (auth.needsSetup()) return router.createUrlTree(['/setup']);
+  if (!auth.setupComplete()) {
+    return router.createUrlTree(['/setup']);
+  }
   return true;
 };
 
@@ -26,6 +28,18 @@ export const requireSetupNeeded: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   await waitForAuth(auth);
-  if (!auth.needsSetup()) return router.createUrlTree(['/dashboard']);
+  if (auth.setupComplete()) {
+    return router.createUrlTree(['/dashboard']);
+  }
+  return true;
+};
+
+export const requireAuthenticated: CanActivateFn = async () => {
+  const auth = inject(AuthService);
+  const router = inject(Router);
+  await waitForAuth(auth);
+  if (auth.passphraseEnabled() && !auth.authenticated()) {
+    return router.createUrlTree(['/login']);
+  }
   return true;
 };
