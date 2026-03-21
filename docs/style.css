@@ -1,0 +1,141 @@
+/* Reset & base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: #1a1a1a;
+  background: #fafafa;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout */
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  padding: 80px 0 48px;
+}
+
+.header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+}
+
+.header .tagline {
+  font-size: 1.1rem;
+  color: #666;
+}
+
+/* Sections */
+section {
+  margin-bottom: 48px;
+}
+
+section h2 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #999;
+  margin-bottom: 16px;
+}
+
+section p {
+  color: #444;
+}
+
+/* Code block */
+.code-block {
+  background: #1a1a1a;
+  color: #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.after-code {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.after-code a {
+  color: #444;
+}
+
+/* Features list */
+.features ul {
+  list-style: none;
+  padding: 0;
+}
+
+.features li {
+  padding: 6px 0;
+  color: #444;
+  position: relative;
+  padding-left: 20px;
+}
+
+.features li::before {
+  content: "\00b7";
+  position: absolute;
+  left: 4px;
+  color: #999;
+  font-weight: bold;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  padding: 32px 0 64px;
+  border-top: 1px solid #e5e5e5;
+  font-size: 0.9rem;
+  color: #999;
+}
+
+.footer a {
+  color: #666;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .header {
+    padding: 48px 0 32px;
+  }
+
+  .header h1 {
+    font-size: 1.6rem;
+  }
+
+  section {
+    margin-bottom: 36px;
+  }
+
+  .code-block {
+    font-size: 0.75rem;
+    padding: 16px;
+  }
+}
