@@ -65,6 +65,7 @@ public static class MembersEndpoints
             Name = request.HouseholdName ?? "My Household",
             BaseCurrency = request.Currency ?? "AUD",
             PreferredPeriodType = request.PeriodType ?? "FY",
+            Locale = request.Locale ?? "en-AU",
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
         db.Households.Add(household);

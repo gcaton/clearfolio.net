@@ -24,7 +24,7 @@ public static class HouseholdEndpoints
         var member = GetMemberOrNull(context);
         if (member is null) return Results.Unauthorized();
         var h = member.Household;
-        return Results.Ok(new HouseholdDto(h.Id, h.Name, h.BaseCurrency, h.PreferredPeriodType, h.CreatedAt));
+        return Results.Ok(new HouseholdDto(h.Id, h.Name, h.BaseCurrency, h.PreferredPeriodType, h.Locale, h.CreatedAt));
     }
 
     private static async Task<IResult> UpdateHousehold(HttpContext context, UpdateHouseholdRequest request, ClearfolioDbContext db)
@@ -34,13 +34,18 @@ public static class HouseholdEndpoints
         var household = await db.Households.FindAsync(member.HouseholdId);
         if (household is null) return Results.NotFound();
 
+        string[] allowedLocales = ["en-AU", "en-US", "en-GB", "en-NZ", "en-CA", "en-IE"];
+        if (!allowedLocales.Contains(request.Locale))
+            return ApiErrors.BadRequest("Invalid locale. Allowed values: en-AU, en-US, en-GB, en-NZ, en-CA, en-IE.");
+
         household.Name = request.Name;
         household.BaseCurrency = request.BaseCurrency;
         household.PreferredPeriodType = request.PreferredPeriodType;
+        household.Locale = request.Locale;
 
         await db.SaveChangesAsync();
 
-        return Results.Ok(new HouseholdDto(household.Id, household.Name, household.BaseCurrency, household.PreferredPeriodType, household.CreatedAt));
+        return Results.Ok(new HouseholdDto(household.Id, household.Name, household.BaseCurrency, household.PreferredPeriodType, household.Locale, household.CreatedAt));
     }
 
     private static async Task<IResult> DeleteHousehold(HttpContext context, ClearfolioDbContext db)
@@ -124,7 +129,7 @@ public static class HouseholdEndpoints
         var export = new ExportDto(
             Version: "1",
             ExportedAt: DateTime.UtcNow.ToString("o"),
-            Household: new ExportHouseholdDto(household.Name, household.BaseCurrency, household.PreferredPeriodType),
+            Household: new ExportHouseholdDto(household.Name, household.BaseCurrency, household.PreferredPeriodType, household.Locale),
             Members: members.Select(m => new ExportMemberDto(m.Email, m.DisplayName, m.MemberTag, m.IsPrimary)).ToList(),
             Assets: assets.Select(a => new ExportAssetDto(
                 a.AssetTypeId,
@@ -188,6 +193,7 @@ public static class HouseholdEndpoints
         household.Name = data.Household.Name;
         household.BaseCurrency = data.Household.BaseCurrency;
         household.PreferredPeriodType = data.Household.PreferredPeriodType;
+        household.Locale = data.Household.Locale ?? "en-AU";
 
         // Import members — map tag to new ID
         var memberTagToId = new Dictionary<string, Guid>();
