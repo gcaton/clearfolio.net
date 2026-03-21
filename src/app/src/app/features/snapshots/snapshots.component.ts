@@ -178,32 +178,6 @@ export class SnapshotsComponent implements OnInit {
     return this.targets().find((t) => t.id === entityId)?.label ?? entityId;
   }
 
-  exportCsv() {
-    const data = this.snapshots();
-    if (data.length === 0) return;
-
-    const headers = ['Entity', 'Type', 'Period', 'Value', 'Currency', 'Recorded By', 'Recorded At'];
-    const rows = data.map((s) => [
-      this.getTargetLabel(s.entityId),
-      s.entityType,
-      s.period,
-      s.value,
-      s.currency,
-      s.recordedByName,
-      s.recordedAt,
-    ]);
-
-    const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const period = this.selectedPeriod();
-    a.download = `snapshots-${period === 'ALL' ? 'all' : period}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   protected bulkDirty = computed(() => this.bulkGrid().some(c => c.value !== null && c.value > 0));
 
   closeBulk() {

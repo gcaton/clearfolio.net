@@ -4,8 +4,6 @@
     <app-period-selector #periodSelector (periodChange)="onPeriodChange($event)" />
     <p-button label="Record Value" icon="pi pi-plus" (onClick)="openNew()" />
     <p-button label="Bulk Entry" icon="pi pi-table" severity="secondary" (onClick)="openBulk()" />
-    <p-button label="Export CSV" icon="pi pi-download" severity="secondary"
-      [disabled]="snapshots().length === 0" (onClick)="exportCsv()" />
   </div>
 </div>
 
