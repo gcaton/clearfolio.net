@@ -14,7 +14,16 @@ Asset types and liability types are seeded as read-only system data. Users canno
 - Classification enums (category, liquidity, growthClass, debtQuality) remain hardcoded constants — not user-editable
 - Seed data still populates on first DB creation; `isSystem` flag is informational only
 
+## Assumptions
+
+- This is a single-household self-hosted app. Global reference data is appropriate; per-household types are unnecessary complexity.
+- Any authenticated user can create/update/delete types. No admin role is needed.
+
 ## API Changes
+
+### Authentication
+
+All mutating endpoints (POST/PUT/DELETE) require authentication via the existing `HouseholdMember` context pattern (`context.Items["HouseholdMember"]`). GET endpoints remain unauthenticated (unchanged). Return 401 if not authenticated.
 
 ### New Endpoints
 
@@ -77,10 +86,12 @@ public record UpdateLiabilityTypeRequest(
 
 ### Validation
 
-- `Name`: required, max 100 characters, trimmed
+- `Name`: required, max 100 characters, trimmed, must be unique within asset types (or within liability types respectively) — return 400 on duplicate
 - `Category`, `Liquidity`, `GrowthClass`, `DebtQuality`: validated against known value sets
 - `DefaultReturnRate`, `DefaultVolatility`: no specific range constraints (negative rates are valid, e.g. vehicles at -10%)
-- Delete: rejected with 400 if any assets/liabilities reference the type
+- Delete: rejected with 400 if any assets/liabilities reference the type. Error message includes a generic message ("Cannot delete — this type is in use. Reassign or remove referencing items first.") — no count needed.
+- On create, `SortOrder` is automatically set to `max(existing SortOrder) + 1`
+- User-created types always have `IsSystem = false`
 
 ### Allowed Values
 
@@ -129,7 +140,7 @@ Replace the current flat expense-category list with three collapsible sections (
 ### Delete Behaviour
 
 - Confirmation dialog before delete
-- If the type has assets/liabilities referencing it, the API returns 400 and the UI shows an error toast ("Cannot delete — X assets use this type. Reassign them first.")
+- If the type has assets/liabilities referencing it, the API returns 400 and the UI shows an error toast ("Cannot delete — this type is in use.")
 - System types show a "Default" tag but can be edited and deleted like any other
 
 ## What Does Not Change
