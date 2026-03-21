@@ -9,7 +9,6 @@ import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
-import { Accordion, AccordionContent, AccordionHeader, AccordionPanel } from 'primeng/accordion';
 import { Checkbox } from 'primeng/checkbox';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
@@ -27,7 +26,7 @@ import {
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Accordion, AccordionContent, AccordionHeader, AccordionPanel, Checkbox, Tag, Toast, Password],
+  imports: [FormsModule, DecimalPipe, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Checkbox, Tag, Toast, Password],
   providers: [MessageService, ConfirmationService],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -478,6 +477,7 @@ export class SettingsComponent implements OnInit {
         name: h.name,
         baseCurrency: h.baseCurrency,
         preferredPeriodType: h.preferredPeriodType,
+        locale: h.locale,
       })
       .subscribe((updated) => {
         this.household.set(updated);
@@ -549,7 +549,8 @@ export class SettingsComponent implements OnInit {
   }
 
   exportData() {
-    this.api.exportData().subscribe((data) => {
+    this.api.exportData().subscribe((data: Record<string, unknown>) => {
+      data['goals'] = this.goalService.goal();
       const json = JSON.stringify(data, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -574,9 +575,14 @@ export class SettingsComponent implements OnInit {
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result as string);
+            if (data.goals) {
+              this.goalService.setGoal(data.goals);
+            }
             this.api.importData(data).subscribe({
               next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Imported', detail: 'Data imported successfully' });
+                this.netWorthTarget = this.goalService.goal().netWorthTarget;
+                this.superTarget = this.goalService.goal().superTarget;
                 this.ngOnInit();
                 this.auth.loadMembers();
               },

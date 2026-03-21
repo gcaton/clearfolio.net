@@ -3,6 +3,7 @@ export interface Household {
   name: string;
   baseCurrency: string;
   preferredPeriodType: string;
+  locale: string;
   createdAt: string;
 }
 
@@ -10,6 +11,7 @@ export interface UpdateHouseholdRequest {
   name: string;
   baseCurrency: string;
   preferredPeriodType: string;
+  locale: string;
 }
 
 export interface Member {
