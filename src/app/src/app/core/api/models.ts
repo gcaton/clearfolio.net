@@ -14,7 +14,7 @@ export interface UpdateHouseholdRequest {
 
 export interface Member {
   id: string;
-  email: string;
+  email: string | null;
   displayName: string;
   memberTag: string;
   isPrimary: boolean;
