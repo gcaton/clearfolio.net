@@ -37,13 +37,12 @@ export class CurrencyDisplayComponent {
     const start = this.displayValue();
     const diff = target - start;
 
-    // Skip animation for first load (from 0) or tiny changes
-    if (start === 0 || Math.abs(diff) < 1) {
+    if (Math.abs(diff) < 1) {
       this.displayValue.set(target);
       return;
     }
 
-    const duration = 400;
+    const duration = 600;
     const startTime = performance.now();
 
     const step = (now: number) => {
