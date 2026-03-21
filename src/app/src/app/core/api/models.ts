@@ -253,6 +253,7 @@ export interface ProjectionRequest {
   scope: string;
   entityIds?: string[];
   simulations?: number;
+  inflationRate?: number;
 }
 
 export interface CompoundYearData {

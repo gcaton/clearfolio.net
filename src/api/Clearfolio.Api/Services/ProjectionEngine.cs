@@ -38,7 +38,7 @@ public static class ProjectionEngine
         List<CompoundYearData> Years,
         List<EntityProjection> Entities);
 
-    public static CompoundResult RunCompound(List<EntityInput> entities, int horizon)
+    public static CompoundResult RunCompound(List<EntityInput> entities, int horizon, double inflationRate = 0)
     {
         var startYear = DateTime.UtcNow.Year;
         var entityResults = new List<EntityProjection>();
@@ -80,8 +80,12 @@ public static class ProjectionEngine
         {
             var year = startYear + y;
             var (assets, liabilities) = yearlyTotals[year];
-            return new CompoundYearData(year, Math.Round(assets, 2), Math.Round(liabilities, 2), Math.Round(assets - liabilities, 2));
+            var d = InflationDiscount(inflationRate, y);
+            return new CompoundYearData(year, Math.Round(assets * d, 2), Math.Round(liabilities * d, 2), Math.Round((assets - liabilities) * d, 2));
         }).ToList();
+
+        if (inflationRate > 0)
+            entityResults = entityResults.Select(e => e with { Years = e.Years.Select((yv, i) => yv with { Value = Math.Round(yv.Value * InflationDiscount(inflationRate, i), 2) }).ToList() }).ToList();
 
         return new CompoundResult(horizon, compoundYears, entityResults);
     }
@@ -100,7 +104,7 @@ public static class ProjectionEngine
         List<ScenarioYearData> Years,
         List<ScenarioEntityProjection> Entities);
 
-    public static ScenarioResult RunScenario(List<EntityInput> entities, int horizon)
+    public static ScenarioResult RunScenario(List<EntityInput> entities, int horizon, double inflationRate = 0)
     {
         var startYear = DateTime.UtcNow.Year;
         var entityResults = new List<ScenarioEntityProjection>();
@@ -162,11 +166,19 @@ public static class ProjectionEngine
         {
             var year = startYear + y;
             var t = yearlyTotals[year];
+            var d = InflationDiscount(inflationRate, y);
             return new ScenarioYearData(year,
-                new ScenarioValues(Math.Round(t.pess.Assets, 2), Math.Round(t.pess.Liabilities, 2), Math.Round(t.pess.Assets - t.pess.Liabilities, 2)),
-                new ScenarioValues(Math.Round(t.bas.Assets, 2), Math.Round(t.bas.Liabilities, 2), Math.Round(t.bas.Assets - t.bas.Liabilities, 2)),
-                new ScenarioValues(Math.Round(t.opt.Assets, 2), Math.Round(t.opt.Liabilities, 2), Math.Round(t.opt.Assets - t.opt.Liabilities, 2)));
+                new ScenarioValues(Math.Round(t.pess.Assets * d, 2), Math.Round(t.pess.Liabilities * d, 2), Math.Round((t.pess.Assets - t.pess.Liabilities) * d, 2)),
+                new ScenarioValues(Math.Round(t.bas.Assets * d, 2), Math.Round(t.bas.Liabilities * d, 2), Math.Round((t.bas.Assets - t.bas.Liabilities) * d, 2)),
+                new ScenarioValues(Math.Round(t.opt.Assets * d, 2), Math.Round(t.opt.Liabilities * d, 2), Math.Round((t.opt.Assets - t.opt.Liabilities) * d, 2)));
         }).ToList();
+
+        if (inflationRate > 0)
+            entityResults = entityResults.Select(e => e with { Years = e.Years.Select((yv, i) => yv with {
+                Pessimistic = Math.Round(yv.Pessimistic * InflationDiscount(inflationRate, i), 2),
+                Base = Math.Round(yv.Base * InflationDiscount(inflationRate, i), 2),
+                Optimistic = Math.Round(yv.Optimistic * InflationDiscount(inflationRate, i), 2),
+            }).ToList() }).ToList();
 
         return new ScenarioResult(horizon, scenarioYears, entityResults);
     }
@@ -204,7 +216,7 @@ public static class ProjectionEngine
         List<MonteCarloYearData> Years,
         List<MonteCarloEntityProjection> Entities);
 
-    public static MonteCarloResult RunMonteCarlo(List<EntityInput> entities, int horizon, int simulations = 1000)
+    public static MonteCarloResult RunMonteCarlo(List<EntityInput> entities, int horizon, int simulations = 1000, double inflationRate = 0)
     {
         simulations = Math.Clamp(simulations, 100, 10000);
         var startYear = DateTime.UtcNow.Year;
@@ -258,13 +270,14 @@ public static class ProjectionEngine
         var years = Enumerable.Range(0, horizon + 1).Select(y =>
         {
             var sorted = netWorthByYear[y].OrderBy(v => v).ToArray();
+            var d = InflationDiscount(inflationRate, y);
             return new MonteCarloYearData(
                 startYear + y,
-                Math.Round(Percentile(sorted, 0.10), 2),
-                Math.Round(Percentile(sorted, 0.25), 2),
-                Math.Round(Percentile(sorted, 0.50), 2),
-                Math.Round(Percentile(sorted, 0.75), 2),
-                Math.Round(Percentile(sorted, 0.90), 2));
+                Math.Round(Percentile(sorted, 0.10) * d, 2),
+                Math.Round(Percentile(sorted, 0.25) * d, 2),
+                Math.Round(Percentile(sorted, 0.50) * d, 2),
+                Math.Round(Percentile(sorted, 0.75) * d, 2),
+                Math.Round(Percentile(sorted, 0.90) * d, 2));
         }).ToList();
 
         var entityProjections = entities.Select((entity, e) =>
@@ -272,13 +285,14 @@ public static class ProjectionEngine
             var eYears = Enumerable.Range(0, horizon + 1).Select(y =>
             {
                 var sorted = entityValuesByYear[e][y].OrderBy(v => v).ToArray();
+                var d = InflationDiscount(inflationRate, y);
                 return new MonteCarloEntityYear(
                     startYear + y,
-                    Math.Round(Percentile(sorted, 0.10), 2),
-                    Math.Round(Percentile(sorted, 0.25), 2),
-                    Math.Round(Percentile(sorted, 0.50), 2),
-                    Math.Round(Percentile(sorted, 0.75), 2),
-                    Math.Round(Percentile(sorted, 0.90), 2));
+                    Math.Round(Percentile(sorted, 0.10) * d, 2),
+                    Math.Round(Percentile(sorted, 0.25) * d, 2),
+                    Math.Round(Percentile(sorted, 0.50) * d, 2),
+                    Math.Round(Percentile(sorted, 0.75) * d, 2),
+                    Math.Round(Percentile(sorted, 0.90) * d, 2));
             }).ToList();
             return new MonteCarloEntityProjection(entity.Id, entity.Label, entity.Category, entity.EntityType, eYears);
         }).ToList();
@@ -287,6 +301,9 @@ public static class ProjectionEngine
     }
 
     // --- Helpers ---
+
+    private static double InflationDiscount(double inflationRate, int years)
+        => inflationRate > 0 ? 1.0 / Math.Pow(1 + inflationRate, years) : 1.0;
 
     private static double GetContribution(EntityInput entity, int year)
     {

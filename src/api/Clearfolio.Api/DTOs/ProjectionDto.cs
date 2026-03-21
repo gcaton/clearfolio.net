@@ -5,7 +5,8 @@ public record ProjectionRequest(
     string View,
     string Scope,
     List<Guid>? EntityIds,
-    int? Simulations);
+    int? Simulations,
+    double? InflationRate);
 
 public record ProjectionDefaultDto(
     Guid EntityId,

@@ -67,6 +67,8 @@ export class ProjectionsComponent {
   protected selectedScope = signal('all');
   protected simulations = signal(1000);
   protected customHorizon = signal(false);
+  protected inflationAdjusted = signal(false);
+  protected inflationRate = signal(2.5);
   protected loading = signal(false);
   protected selectedEntityId = signal<string | null>(null);
   protected result = signal<ProjectionResult | null>(null);
@@ -99,9 +101,10 @@ export class ProjectionsComponent {
     }
   });
 
-  protected summaryLabel = computed(() =>
-    this.selectedScope() === 'liquid' ? 'Projected Asset Value' : 'Projected Net Worth'
-  );
+  protected summaryLabel = computed(() => {
+    const base = this.selectedScope() === 'liquid' ? 'Projected Asset Value' : 'Projected Net Worth';
+    return this.inflationAdjusted() ? `${base} (today's dollars)` : base;
+  });
 
   protected entityCards = computed<EntityCard[]>(() => {
     const r = this.result();
@@ -189,6 +192,7 @@ export class ProjectionsComponent {
       scope: this.selectedScope(),
       simulations: mode === 'monte-carlo' ? this.simulations() : undefined,
       entityIds: entityId ? [entityId] : undefined,
+      inflationRate: this.inflationAdjusted() ? this.inflationRate() / 100 : undefined,
     };
 
     this.loading.set(true);
@@ -234,6 +238,16 @@ export class ProjectionsComponent {
   onSimulationsChange(sims: number) {
     this.simulations.set(sims);
     this.refresh();
+  }
+
+  toggleInflation() {
+    this.inflationAdjusted.set(!this.inflationAdjusted());
+    this.refresh();
+  }
+
+  onInflationRateChange(rate: number) {
+    this.inflationRate.set(rate);
+    if (this.inflationAdjusted()) this.refresh();
   }
 
   selectEntity(id: string) {

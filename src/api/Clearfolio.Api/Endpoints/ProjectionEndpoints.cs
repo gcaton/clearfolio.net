@@ -28,9 +28,10 @@ public static class ProjectionEndpoints
         if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
 
         var inputs = await BuildEntityInputs(db, member, request);
-        var result = ProjectionEngine.RunCompound(inputs, request.Horizon);
+        var inflation = request.InflationRate ?? 0;
+        var result = ProjectionEngine.RunCompound(inputs, request.Horizon, inflation);
 
-        return Results.Ok(new { mode = "compound", result.Horizon, result.Years, result.Entities });
+        return Results.Ok(new { mode = "compound", result.Horizon, inflationAdjusted = inflation > 0, result.Years, result.Entities });
     }
 
     private static async Task<IResult> RunScenarioProjection(ProjectionRequest request, HttpContext context, ClearfolioDbContext db)
@@ -40,9 +41,10 @@ public static class ProjectionEndpoints
         if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
 
         var inputs = await BuildEntityInputs(db, member, request);
-        var result = ProjectionEngine.RunScenario(inputs, request.Horizon);
+        var inflation = request.InflationRate ?? 0;
+        var result = ProjectionEngine.RunScenario(inputs, request.Horizon, inflation);
 
-        return Results.Ok(new { mode = "scenario", result.Horizon, result.Years, result.Entities });
+        return Results.Ok(new { mode = "scenario", result.Horizon, inflationAdjusted = inflation > 0, result.Years, result.Entities });
     }
 
     private static async Task<IResult> RunMonteCarloProjection(ProjectionRequest request, HttpContext context, ClearfolioDbContext db)
@@ -52,10 +54,11 @@ public static class ProjectionEndpoints
         if (request.Horizon < 1 || request.Horizon > 50) return Results.BadRequest("Horizon must be 1-50 years");
 
         var sims = Math.Clamp(request.Simulations ?? 1000, 100, 10000);
+        var inflation = request.InflationRate ?? 0;
         var inputs = await BuildEntityInputs(db, member, request);
-        var result = ProjectionEngine.RunMonteCarlo(inputs, request.Horizon, sims);
+        var result = ProjectionEngine.RunMonteCarlo(inputs, request.Horizon, sims, inflation);
 
-        return Results.Ok(new { mode = "monte-carlo", result.Horizon, result.Simulations, result.Years, result.Entities });
+        return Results.Ok(new { mode = "monte-carlo", result.Horizon, result.Simulations, inflationAdjusted = inflation > 0, result.Years, result.Entities });
     }
 
     private static async Task<IResult> GetDefaults(HttpContext context, ClearfolioDbContext db)
