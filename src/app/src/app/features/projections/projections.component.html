@@ -1,0 +1,195 @@
+<div class="projections-page">
+  <div class="page-header">
+    <h1>Projections</h1>
+  </div>
+
+  <!-- Controls Bar -->
+  <div class="controls-bar">
+    <!-- Method -->
+    <div class="control-group">
+      <label class="control-label">Method</label>
+      <p-select
+        [options]="modeOptions"
+        [ngModel]="selectedMode()"
+        (ngModelChange)="onModeChange($event)"
+        optionLabel="label"
+        optionValue="value"
+        styleClass="method-select"
+      />
+    </div>
+
+    <!-- Horizon -->
+    <div class="control-group">
+      <label class="control-label">Horizon</label>
+      <div class="btn-group">
+        @for (y of horizonPresets; track y) {
+          <button
+            type="button"
+            class="horizon-btn"
+            [class.active]="!customHorizon() && selectedHorizon() === y"
+            (click)="selectHorizon(y)"
+          >{{ y }}y</button>
+        }
+        <button
+          type="button"
+          class="horizon-btn"
+          [class.active]="customHorizon()"
+          (click)="customHorizon.set(true)"
+        >Custom</button>
+      </div>
+      @if (customHorizon()) {
+        <p-inputnumber
+          [ngModel]="selectedHorizon()"
+          (ngModelChange)="selectHorizon($event)"
+          [min]="1"
+          [max]="50"
+          suffix=" yrs"
+          styleClass="horizon-input"
+        />
+      }
+    </div>
+
+    <!-- Scope -->
+    <div class="control-group">
+      <label class="control-label">Scope</label>
+      <div class="btn-group">
+        @for (opt of scopeOptions; track opt.value) {
+          <button
+            type="button"
+            class="scope-btn"
+            [class.active]="selectedScope() === opt.value"
+            (click)="onScopeChange(opt.value)"
+          >{{ opt.label }}</button>
+        }
+      </div>
+    </div>
+
+    <!-- Simulations (Monte Carlo only) -->
+    @if (selectedMode() === 'monte-carlo') {
+      <div class="control-group">
+        <label class="control-label">Simulations</label>
+        <p-inputnumber
+          [ngModel]="simulations()"
+          (ngModelChange)="onSimulationsChange($event)"
+          [min]="100"
+          [max]="10000"
+          [step]="100"
+          styleClass="sim-input"
+        />
+      </div>
+    }
+  </div>
+
+  <!-- Chart -->
+  <div class="chart-container">
+    @if (loading()) {
+      <p-skeleton width="100%" height="400px" />
+    } @else if (result()) {
+      <div
+        echarts
+        [options]="chartOptions()"
+        class="projection-chart"
+      ></div>
+    } @else {
+      <div class="chart-empty">
+        <span>Run a projection to see results</span>
+      </div>
+    }
+  </div>
+
+  <!-- Summary Stats -->
+  @if (result(); as r) {
+    <div class="summary-stats">
+      @switch (r.mode) {
+
+        @case ('compound') {
+          @if (getFinalCompound(); as final) {
+            <div class="stat-card">
+              <span class="stat-label">{{ summaryLabel() }}</span>
+              <span class="stat-value">{{ formatCurrency(final.netWorth) }}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Projected Assets</span>
+              <span class="stat-value positive">{{ formatCurrency(final.assets) }}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Projected Liabilities</span>
+              <span class="stat-value negative">{{ formatCurrency(final.liabilities) }}</span>
+            </div>
+            @if (getGrowthPercent(); as pct) {
+              <div class="stat-card">
+                <span class="stat-label">Total Growth</span>
+                <span class="stat-value" [class.positive]="pct >= 0" [class.negative]="pct < 0">
+                  {{ pct | number:'1.1-1' }}%
+                </span>
+              </div>
+            }
+          }
+        }
+
+        @case ('scenario') {
+          @if (getFinalScenario(); as final) {
+            <div class="stat-card negative-card">
+              <span class="stat-label">Pessimistic</span>
+              <span class="stat-value negative">{{ formatCurrency(final.pessimistic.netWorth) }}</span>
+            </div>
+            <div class="stat-card highlight">
+              <span class="stat-label">Base Case</span>
+              <span class="stat-value">{{ formatCurrency(final.base.netWorth) }}</span>
+            </div>
+            <div class="stat-card positive-card">
+              <span class="stat-label">Optimistic</span>
+              <span class="stat-value positive">{{ formatCurrency(final.optimistic.netWorth) }}</span>
+            </div>
+          }
+        }
+
+        @case ('monte-carlo') {
+          @if (getFinalMonteCarlo(); as final) {
+            <div class="stat-card">
+              <span class="stat-label">P10 (Worst Decile)</span>
+              <span class="stat-value negative">{{ formatCurrency(final.p10) }}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">P25–P75 Range</span>
+              <span class="stat-value range">{{ formatCurrency(final.p25) }} – {{ formatCurrency(final.p75) }}</span>
+            </div>
+            <div class="stat-card highlight">
+              <span class="stat-label">P50 Median</span>
+              <span class="stat-value">{{ formatCurrency(final.p50) }}</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">P90 (Best Decile)</span>
+              <span class="stat-value positive">{{ formatCurrency(final.p90) }}</span>
+            </div>
+          }
+        }
+
+      }
+    </div>
+
+    <!-- Entity Cards -->
+    @if (entityCards().length > 0) {
+      <div class="section-header">
+        <h2>Entity Breakdown</h2>
+        <span class="section-sub">Projected {{ selectedHorizon() }}-year values ({{ r.mode === 'scenario' ? 'base case' : r.mode === 'monte-carlo' ? 'P50 median' : 'compound' }})</span>
+      </div>
+      <div class="entity-cards">
+        @for (card of entityCards(); track card.id) {
+          <div
+            class="entity-card"
+            [class.selected]="selectedEntityId() === card.id"
+            (click)="selectEntity(card.id)"
+          >
+            <div class="entity-type-badge">{{ card.entityType === 'asset' ? 'Asset' : 'Liability' }}</div>
+            <div class="entity-label">{{ card.label }}</div>
+            <div class="entity-category">{{ card.category }}</div>
+            <div class="entity-value" [class.positive]="card.entityType === 'asset'" [class.negative]="card.entityType === 'liability'">
+              {{ formatCurrency(card.finalValue) }}
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

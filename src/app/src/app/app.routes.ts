@@ -34,6 +34,12 @@ export const routes: Routes = [
     canActivate: [requireSetupComplete],
   },
   {
+    path: 'projections',
+    loadComponent: () =>
+      import('./features/projections/projections.component').then((m) => m.ProjectionsComponent),
+    canActivate: [requireSetupComplete],
+  },
+  {
     path: 'settings',
     loadComponent: () =>
       import('./features/settings/settings.component').then((m) => m.SettingsComponent),

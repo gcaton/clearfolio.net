@@ -28,6 +28,7 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
         <a routerLink="/assets" routerLinkActive="active">Assets</a>
         <a routerLink="/liabilities" routerLinkActive="active">Liabilities</a>
         <a routerLink="/snapshots" routerLinkActive="active">Snapshots</a>
+        <a routerLink="/projections" routerLinkActive="active">Projections</a>
         <a routerLink="/settings" routerLinkActive="active">Settings</a>
       </div>
       <div class="nav-right">
@@ -55,6 +56,7 @@ import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.co
         <a routerLink="/assets" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Assets</a>
         <a routerLink="/liabilities" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Liabilities</a>
         <a routerLink="/snapshots" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Snapshots</a>
+        <a routerLink="/projections" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Projections</a>
         <a routerLink="/settings" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Settings</a>
       </nav>
       @if (viewOptions().length > 1) {
