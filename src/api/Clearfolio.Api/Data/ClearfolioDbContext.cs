@@ -15,6 +15,7 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
     public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
     public DbSet<IncomeStream> IncomeStreams => Set<IncomeStream>();
     public DbSet<Expense> Expenses => Set<Expense>();
+    public DbSet<AppSetting> AppSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -37,13 +38,12 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.HasKey(m => m.Id);
             e.Property(m => m.Id).HasColumnName("id");
             e.Property(m => m.HouseholdId).HasColumnName("household_id");
-            e.Property(m => m.Email).HasColumnName("email").IsRequired();
+            e.Property(m => m.Email).HasColumnName("email");
             e.Property(m => m.DisplayName).HasColumnName("display_name").IsRequired();
             e.Property(m => m.MemberTag).HasColumnName("member_tag").IsRequired();
             e.Property(m => m.IsPrimary).HasColumnName("is_primary");
             e.Property(m => m.CreatedAt).HasColumnName("created_at").IsRequired();
 
-            e.HasIndex(m => m.Email).IsUnique();
             e.HasOne(m => m.Household).WithMany(h => h.Members).HasForeignKey(m => m.HouseholdId);
         });
 
@@ -220,6 +220,15 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.HasOne(x => x.Household).WithMany(h => h.Expenses).HasForeignKey(x => x.HouseholdId);
             e.HasOne(x => x.OwnerMember).WithMany().HasForeignKey(x => x.OwnerMemberId);
             e.HasOne(x => x.ExpenseCategory).WithMany().HasForeignKey(x => x.ExpenseCategoryId);
+        });
+
+        // AppSetting
+        modelBuilder.Entity<AppSetting>(entity =>
+        {
+            entity.ToTable("app_settings");
+            entity.HasKey(e => e.Key);
+            entity.Property(e => e.Key).HasColumnName("key");
+            entity.Property(e => e.Value).HasColumnName("value");
         });
 
         SeedData(modelBuilder);

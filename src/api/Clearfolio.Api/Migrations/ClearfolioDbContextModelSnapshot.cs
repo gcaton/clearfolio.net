@@ -17,6 +17,22 @@ namespace Clearfolio.Api.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
 
+            modelBuilder.Entity("Clearfolio.Api.Models.AppSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("value");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("app_settings", (string)null);
+                });
+
             modelBuilder.Entity("Clearfolio.Api.Models.Asset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -551,7 +567,6 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnName("display_name");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
 
@@ -569,9 +584,6 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnName("member_tag");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("HouseholdId");
 
