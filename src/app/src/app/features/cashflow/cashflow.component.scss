@@ -118,15 +118,13 @@
 
 .group-header-cell {
   background: var(--p-content-hover-background, var(--p-surface-100));
-  padding: 0.5rem 1rem;
+  padding: 0.625rem 1rem;
 }
 
 .group-header-label {
   font-weight: 700;
-  font-size: 0.875rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--p-text-muted-color);
+  font-size: 0.9375rem;
+  color: var(--p-text-color);
 }
 
 .group-footer-row td {

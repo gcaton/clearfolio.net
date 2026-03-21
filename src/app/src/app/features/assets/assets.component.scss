@@ -84,6 +84,19 @@
   color: var(--p-text-muted-color);
 }
 
+.type-with-dot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 @media (max-width: 768px) {
   .page-header {
     flex-direction: column;

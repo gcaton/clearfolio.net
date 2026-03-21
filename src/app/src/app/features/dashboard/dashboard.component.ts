@@ -34,18 +34,20 @@ import {
   CompositionPoint,
   MemberComparison,
   SuperGap,
-  GoalProjection,
   AssetPerformance,
   CashflowSummary,
+  CompoundResult,
+  DashboardGoalProjection,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
+import { FadeInDirective } from '../../shared/directives/fade-in.directive';
 
 echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer]);
 
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent],
+  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent, FadeInDirective],
   providers: [provideEchartsCore({ echarts }), MessageService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -90,7 +92,7 @@ export class DashboardComponent {
   });
 
   protected netWorthGoal = computed(() => this.goalService.goal().netWorthTarget);
-  protected projection = signal<GoalProjection | null>(null);
+  protected projection = signal<DashboardGoalProjection | null>(null);
 
   private milestoneChecked = false;
 
@@ -148,7 +150,9 @@ export class DashboardComponent {
 
     const goal = this.goalService.goal().netWorthTarget;
     if (goal && goal > 0) {
-      this.api.getGoalProjection(goal, view, scope).subscribe((d) => this.projection.set(d));
+      this.api.runCompoundProjection({ horizon: 30, view, scope }).subscribe((result) => {
+        this.buildGoalProjection(result, goal);
+      });
     } else {
       this.projection.set(null);
     }
@@ -202,37 +206,38 @@ export class DashboardComponent {
     }
   }
 
-  protected timeToGoal = computed(() => {
-    const p = this.projection();
-    if (!p?.projectedPeriod) return null;
+  private buildGoalProjection(result: CompoundResult, target: number) {
+    const current = result.years[0]?.netWorth ?? 0;
+    const progressPercent = target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0;
 
-    const match = p.projectedPeriod.match(/^(CY|FY)(\d{4})(?:-(Q[1-4]))?$/);
-    if (!match) return null;
-
-    const convention = match[1];
-    const year = parseInt(match[2]);
-    const quarter = match[3] ? parseInt(match[3][1]) : 1;
-
-    // Convert to approximate month
-    let targetMonth: number;
-    if (convention === 'FY') {
-      // FY Q1=Jul, Q2=Oct, Q3=Jan+1, Q4=Apr+1
-      const baseYear = quarter <= 2 ? year - 1 : year;
-      const monthMap = [7, 10, 1, 4];
-      targetMonth = (baseYear * 12) + monthMap[quarter - 1];
-    } else {
-      const monthMap = [1, 4, 7, 10];
-      targetMonth = (year * 12) + monthMap[quarter - 1];
+    if (current >= target) {
+      this.projection.set({ target, current, progressPercent: 100, projectedYear: null, goalReached: true });
+      return;
     }
 
+    const goalYear = result.years.find(y => y.netWorth >= target);
+    this.projection.set({
+      target,
+      current,
+      progressPercent,
+      projectedYear: goalYear?.year ?? null,
+      goalReached: false,
+    });
+  }
+
+  protected timeToGoal = computed(() => {
+    const p = this.projection();
+    if (!p?.projectedYear) return null;
+
     const now = new Date();
-    const currentMonth = (now.getFullYear() * 12) + (now.getMonth() + 1);
-    const diff = targetMonth - currentMonth;
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    const targetMonths = (p.projectedYear - currentYear) * 12 - currentMonth;
 
-    if (diff <= 0) return null;
+    if (targetMonths <= 0) return null;
 
-    const years = Math.floor(diff / 12);
-    const months = diff % 12;
+    const years = Math.floor(targetMonths / 12);
+    const months = targetMonths % 12;
 
     if (years === 0) return `${months} month${months !== 1 ? 's' : ''}`;
     if (months === 0) return `${years} year${years !== 1 ? 's' : ''}`;

@@ -28,6 +28,7 @@ import {
   Asset,
 } from '../../core/api/models';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
+import { FadeInDirective } from '../../shared/directives/fade-in.directive';
 import * as echarts from 'echarts/core';
 import { BarChart, PieChart } from 'echarts/charts';
 import {
@@ -69,6 +70,7 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
     Skeleton,
     EmptyStateComponent,
     RouterLink,
+    FadeInDirective,
   ],
   providers: [ConfirmationService, MessageService, provideEchartsCore({ echarts })],
   templateUrl: './cashflow.component.html',

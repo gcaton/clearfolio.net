@@ -19,6 +19,7 @@ import { RecordValueDialogComponent } from '../../shared/components/record-value
 import { Tooltip } from 'primeng/tooltip';
 import { DecimalPipe } from '@angular/common';
 import { Divider } from 'primeng/divider';
+import { CATEGORY_COLORS } from '../dashboard/chart-options';
 
 @Component({
   selector: 'app-liabilities',
@@ -144,6 +145,11 @@ export class LiabilitiesComponent implements OnInit {
       const map = new Map(snapshots.filter(s => s.entityType === 'liability').map(s => [s.entityId, s]));
       this.latestValues.set(map);
     });
+  }
+
+  getLiabilityCategoryColor(liability: Liability): string {
+    const type = this.liabilityTypes().find(t => t.id === liability.liabilityTypeId);
+    return CATEGORY_COLORS[type?.category ?? ''] ?? '#94a3b8';
   }
 
   private emptyForm(): CreateLiabilityRequest {

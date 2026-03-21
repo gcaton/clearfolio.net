@@ -1,7 +1,7 @@
 import type { EChartsOption } from 'echarts';
 import { DashboardSummary, TrendPoint, MemberComparison, SuperGap } from '../../core/api/models';
 
-const CATEGORY_COLORS: Record<string, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   cash: '#60a5fa',
   investable: '#34d399',
   retirement: '#a78bfa',

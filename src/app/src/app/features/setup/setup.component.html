@@ -2,7 +2,22 @@
   <div class="setup-card">
     <img src="logo.svg" alt="" class="setup-logo" />
     <h1>Welcome to clearfolio</h1>
-    <p class="setup-subtitle">Let's get you set up.</p>
+    <p class="setup-subtitle">Your private household net worth tracker.</p>
+
+    <div class="features">
+      <div class="feature">
+        <i class="pi pi-chart-line"></i>
+        <span>Track assets &amp; liabilities</span>
+      </div>
+      <div class="feature">
+        <i class="pi pi-chart-bar"></i>
+        <span>Visualise your growth</span>
+      </div>
+      <div class="feature">
+        <i class="pi pi-bolt"></i>
+        <span>Project your future</span>
+      </div>
+    </div>
 
     <div class="setup-form">
       <label for="email">Email</label>
@@ -11,8 +26,8 @@
       <label for="displayName">Display Name</label>
       <input pInputText id="displayName" [(ngModel)]="displayName" placeholder="e.g. Sarah" (keydown.enter)="submit()" />
 
-      <p-button label="Get Started" icon="pi pi-arrow-right" (onClick)="submit()"
-        [disabled]="!displayName().trim() || saving()" [loading]="saving()" />
+      <p-button label="Get Started" icon="pi pi-arrow-right" iconPos="right" (onClick)="submit()"
+        [disabled]="!displayName().trim() || saving()" [loading]="saving()" styleClass="setup-btn" />
     </div>
   </div>
 </div>

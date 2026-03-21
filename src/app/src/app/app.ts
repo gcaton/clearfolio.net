@@ -5,6 +5,7 @@ import { Drawer } from 'primeng/drawer';
 import { Button } from 'primeng/button';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from './core/auth/auth.service';
+import { KeyboardShortcutsService } from './core/keyboard-shortcuts.service';
 import { ViewStateService, ViewState } from './core/auth/view-state.service';
 import { DarkModeToggleComponent } from './shared/components/dark-mode-toggle.component';
 import { environment } from '../environments/environment';
@@ -48,6 +49,14 @@ import { environment } from '../environments/environment';
           routerLink="/snapshots"
           class="desktop-only quick-record-btn"
         />
+        <p-button
+          icon="pi pi-question-circle"
+          [rounded]="true"
+          [text]="true"
+          size="small"
+          routerLink="/help"
+          [style]="{ color: 'var(--p-surface-300)' }"
+        />
         <app-dark-mode-toggle />
         @if (viewOptions().length > 1) {
           <p-selectbutton
@@ -75,6 +84,7 @@ import { environment } from '../environments/environment';
         <a routerLink="/snapshots" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Snapshots</a>
         <a routerLink="/projections" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Projections</a>
         <a routerLink="/settings" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Settings</a>
+        <a routerLink="/help" routerLinkActive="active" (click)="mobileMenuVisible.set(false)">Help</a>
       </nav>
       @if (viewOptions().length > 1) {
         <div class="mobile-view-toggle">
@@ -103,6 +113,7 @@ import { environment } from '../environments/environment';
 export class App implements OnInit {
   protected auth = inject(AuthService);
   protected viewState = inject(ViewStateService);
+  private keyboardShortcuts = inject(KeyboardShortcutsService);
   protected mobileMenuVisible = signal(false);
   protected version = environment.version;
 
@@ -134,5 +145,6 @@ export class App implements OnInit {
 
   ngOnInit() {
     this.auth.init();
+    this.keyboardShortcuts.init();
   }
 }
