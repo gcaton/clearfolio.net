@@ -3,6 +3,7 @@ using System;
 using Clearfolio.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clearfolio.Api.Migrations
 {
     [DbContext(typeof(ClearfolioDbContext))]
-    partial class ClearfolioDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260321035647_AddCashflowEntities")]
+    partial class AddCashflowEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
