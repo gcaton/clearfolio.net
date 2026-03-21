@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Skeleton } from 'primeng/skeleton';
 import { ProgressBar } from 'primeng/progressbar';
@@ -9,6 +10,7 @@ import { GoalService } from '../../core/auth/goal.service';
 import { CurrencyDisplayComponent } from '../../shared/components/currency-display.component';
 import { NetWorthChangeComponent } from '../../shared/components/net-worth-change.component';
 import { PeriodLabelPipe } from '../../shared/pipes/period-label.pipe';
+import { DecimalPipe } from '@angular/common';
 import * as echarts from 'echarts/core';
 import { LineChart, BarChart, PieChart } from 'echarts/charts';
 import {
@@ -29,6 +31,7 @@ import {
   SuperGap,
   GoalProjection,
   AssetPerformance,
+  CashflowSummary,
 } from '../../core/api/models';
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
 
@@ -37,7 +40,7 @@ echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, Leg
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button],
+  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -60,6 +63,7 @@ export class DashboardComponent {
   protected members = signal<MemberComparison[]>([]);
   protected superGap = signal<SuperGap[]>([]);
   protected assetPerformance = signal<AssetPerformance[]>([]);
+  protected cashflowSummary = signal<CashflowSummary | null>(null);
 
   protected trendOptions = computed(() => buildTrendOptions(this.trend()));
   protected compositionOptions = computed(() => buildCompositionOptions(this.summary()));
@@ -68,6 +72,15 @@ export class DashboardComponent {
   protected debtQualityOptions = computed(() => buildDebtQualityOptions(this.summary()));
   protected memberOptions = computed(() => buildMemberOptions(this.members()));
   protected superGapOptions = computed(() => buildSuperGapOptions(this.superGap()));
+
+  protected savingsRateClass = computed(() => {
+    const cf = this.cashflowSummary();
+    if (!cf) return '';
+    const rate = cf.savingsRate * 100;
+    if (rate >= 20) return 'positive';
+    if (rate >= 10) return 'amber';
+    return 'negative';
+  });
 
   protected netWorthGoal = computed(() => this.goalService.goal().netWorthTarget);
   protected projection = signal<GoalProjection | null>(null);
@@ -89,6 +102,7 @@ export class DashboardComponent {
     const summaryParams: Record<string, string> = { view, scope };
 
     this.api.getDashboardSummary(summaryParams).subscribe((d) => this.summary.set(d));
+    this.api.getCashflowSummary({ view }).subscribe((d) => this.cashflowSummary.set(d));
     this.api.getDashboardTrend({ view, scope }).subscribe((d) => this.trend.set(d));
     this.api.getDashboardComposition({ scope }).subscribe((d) => this.composition.set(d));
     this.api.getDashboardMembers({ scope }).subscribe((d) => this.members.set(d));

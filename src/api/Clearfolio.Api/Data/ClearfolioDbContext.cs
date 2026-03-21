@@ -12,6 +12,9 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Liability> Liabilities => Set<Liability>();
     public DbSet<Snapshot> Snapshots => Set<Snapshot>();
+    public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+    public DbSet<IncomeStream> IncomeStreams => Set<IncomeStream>();
+    public DbSet<Expense> Expenses => Set<Expense>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -154,6 +157,68 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.HasIndex(s => new { s.EntityId, s.Period });
             e.HasOne(s => s.Household).WithMany(h => h.Snapshots).HasForeignKey(s => s.HouseholdId);
             e.HasOne(s => s.RecordedByMember).WithMany().HasForeignKey(s => s.RecordedBy);
+        });
+
+        // ExpenseCategory
+        modelBuilder.Entity<ExpenseCategory>(e =>
+        {
+            e.ToTable("expense_categories");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("id");
+            e.Property(c => c.HouseholdId).HasColumnName("household_id");
+            e.Property(c => c.Name).HasColumnName("name").IsRequired().HasMaxLength(100);
+            e.Property(c => c.SortOrder).HasColumnName("sort_order");
+            e.Property(c => c.IsDefault).HasColumnName("is_default");
+            e.Property(c => c.CreatedAt).HasColumnName("created_at").IsRequired();
+
+            e.HasIndex(c => c.HouseholdId);
+            e.HasOne(c => c.Household).WithMany(h => h.ExpenseCategories).HasForeignKey(c => c.HouseholdId);
+        });
+
+        // IncomeStream
+        modelBuilder.Entity<IncomeStream>(e =>
+        {
+            e.ToTable("income_streams");
+            e.HasKey(i => i.Id);
+            e.Property(i => i.Id).HasColumnName("id");
+            e.Property(i => i.HouseholdId).HasColumnName("household_id");
+            e.Property(i => i.OwnerMemberId).HasColumnName("owner_member_id");
+            e.Property(i => i.Label).HasColumnName("label").IsRequired().HasMaxLength(200);
+            e.Property(i => i.IncomeType).HasColumnName("income_type").IsRequired();
+            e.Property(i => i.Amount).HasColumnName("amount");
+            e.Property(i => i.Frequency).HasColumnName("frequency").IsRequired();
+            e.Property(i => i.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(i => i.Notes).HasColumnName("notes").HasMaxLength(1000);
+            e.Property(i => i.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.Property(i => i.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            e.HasIndex(i => new { i.HouseholdId, i.IsActive });
+            e.HasOne(i => i.Household).WithMany(h => h.IncomeStreams).HasForeignKey(i => i.HouseholdId);
+            e.HasOne(i => i.OwnerMember).WithMany().HasForeignKey(i => i.OwnerMemberId);
+        });
+
+        // Expense
+        modelBuilder.Entity<Expense>(e =>
+        {
+            e.ToTable("expenses");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.HouseholdId).HasColumnName("household_id");
+            e.Property(x => x.OwnerMemberId).HasColumnName("owner_member_id");
+            e.Property(x => x.ExpenseCategoryId).HasColumnName("expense_category_id");
+            e.Property(x => x.Label).HasColumnName("label").IsRequired().HasMaxLength(200);
+            e.Property(x => x.Amount).HasColumnName("amount");
+            e.Property(x => x.Frequency).HasColumnName("frequency").IsRequired();
+            e.Property(x => x.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+            e.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(1000);
+            e.Property(x => x.CreatedAt).HasColumnName("created_at").IsRequired();
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            e.HasIndex(x => new { x.HouseholdId, x.IsActive });
+            e.HasIndex(x => x.ExpenseCategoryId);
+            e.HasOne(x => x.Household).WithMany(h => h.Expenses).HasForeignKey(x => x.HouseholdId);
+            e.HasOne(x => x.OwnerMember).WithMany().HasForeignKey(x => x.OwnerMemberId);
+            e.HasOne(x => x.ExpenseCategory).WithMany().HasForeignKey(x => x.ExpenseCategoryId);
         });
 
         SeedData(modelBuilder);

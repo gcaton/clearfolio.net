@@ -9,6 +9,7 @@
     <p-tab value="1">Members</p-tab>
     <p-tab value="2">Goals</p-tab>
     <p-tab value="3">Data</p-tab>
+    <p-tab value="4">Reference Data</p-tab>
   </p-tablist>
   <p-tabpanels>
     <p-tabpanel value="0">
@@ -94,6 +95,33 @@
         <p-button label="Import Data" icon="pi pi-upload" severity="warn" (onClick)="fileInput.click()" />
       </div>
     </p-tabpanel>
+    <p-tabpanel value="4">
+      <div class="members-header">
+        <p-button label="Add Category" icon="pi pi-plus" (onClick)="openAddCategory()" />
+      </div>
+      <div class="members-list">
+        @for (cat of categories(); track cat.id; let i = $index) {
+          <div class="member-card">
+            <div class="member-info">
+              <span class="display-name">{{ cat.name }}</span>
+              <span class="member-email">Order: {{ cat.sortOrder }}</span>
+              @if (cat.isDefault) {
+                <p-tag value="Default" severity="success" />
+              }
+            </div>
+            <div class="member-name-row">
+              <p-button icon="pi pi-arrow-up" [rounded]="true" [text]="true" severity="secondary"
+                [disabled]="i === 0" (onClick)="moveCategoryUp(cat)" />
+              <p-button icon="pi pi-arrow-down" [rounded]="true" [text]="true" severity="secondary"
+                [disabled]="i === categories().length - 1" (onClick)="moveCategoryDown(cat)" />
+              <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditCategory(cat)" />
+              <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                [disabled]="cat.isDefault" (onClick)="deleteCategory(cat)" />
+            </div>
+          </div>
+        }
+      </div>
+    </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
 
@@ -113,6 +141,17 @@
     <p-button label="Cancel" [text]="true" (onClick)="deleteAllDialogVisible.set(false)" />
     <p-button label="Delete Everything" icon="pi pi-trash" severity="danger" (onClick)="confirmDeleteAll()"
       [disabled]="deleteAllConfirmName !== household()?.name" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [header]="editingCategory() ? 'Edit Category' : 'Add Category'" [(visible)]="categoryDialogVisible" [modal]="true" [style]="{ width: '400px' }">
+  <div class="form-grid">
+    <label for="catName">Category Name</label>
+    <input pInputText id="catName" [(ngModel)]="categoryName" placeholder="e.g. Groceries" />
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="categoryDialogVisible.set(false)" />
+    <p-button label="Save" icon="pi pi-check" (onClick)="saveCategory()" [disabled]="!categoryName" />
   </ng-template>
 </p-dialog>
 

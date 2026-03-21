@@ -1,0 +1,342 @@
+<p-toast />
+
+<div class="page-header">
+  <h1>Cashflow</h1>
+</div>
+
+<!-- Metrics Panel -->
+@if (!summary()) {
+  <div class="stat-cards">
+    @for (i of [1,2,3,4,5,6]; track i) {
+      <div class="stat-card">
+        <p-skeleton width="5rem" height="0.875rem" />
+        <p-skeleton width="8rem" height="1.75rem" />
+      </div>
+    }
+  </div>
+}
+
+@if (summary(); as s) {
+  <div class="stat-cards">
+    <div class="stat-card">
+      <span class="stat-label">Total Income (Annual)</span>
+      <span class="stat-value">{{ s.totalAnnualIncome | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Total Expenses (Annual)</span>
+      <span class="stat-value">{{ s.totalAnnualExpenses | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Disposable Income</span>
+      <span class="stat-value">{{ s.disposableIncome | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+    </div>
+    <div class="stat-card highlight">
+      <span class="stat-label">Net Cashflow</span>
+      <span class="stat-value">{{ s.netCashflow | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Savings Rate</span>
+      <span class="stat-value">
+        <span class="rate-badge" [class]="savingsRateClass()">{{ s.savingsRate | percent: '1.1-1' }}</span>
+      </span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Debt-to-Income</span>
+      <span class="stat-value">
+        <span class="rate-badge" [class]="debtToIncomeClass()">{{ s.debtToIncomeRatio | percent: '1.1-1' }}</span>
+      </span>
+    </div>
+  </div>
+
+  @if (s.totalAnnualContributions > 0 || s.totalAnnualRepayments > 0) {
+    <div class="info-lines">
+      @if (s.totalAnnualContributions > 0) {
+        <span class="info-line"><i class="pi pi-arrow-up"></i> Contributions: {{ s.totalAnnualContributions | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</span>
+      }
+      @if (s.totalAnnualRepayments > 0) {
+        <span class="info-line"><i class="pi pi-arrow-down"></i> Repayments: {{ s.totalAnnualRepayments | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</span>
+      }
+    </div>
+  }
+}
+
+<!-- Income Section -->
+<div class="section-header">
+  <h2>Income</h2>
+  <p-button label="Add Income" icon="pi pi-plus" (onClick)="openNewIncome()" />
+</div>
+
+@if (loading()) {
+  <div class="skeleton-table">
+    @for (i of [1,2,3]; track i) {
+      <p-skeleton height="2.5rem" styleClass="mb-2" />
+    }
+  </div>
+} @else {
+<p-table [value]="incomeStreams()" [tableStyle]="{ 'min-width': '50rem' }">
+  <ng-template #header>
+    <tr>
+      <th>Label</th>
+      <th>Owner</th>
+      <th>Type</th>
+      <th style="text-align: right">Amount</th>
+      <th>Frequency</th>
+      <th style="text-align: right">Annualised</th>
+      <th style="width: 8rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template #body let-income>
+    <tr>
+      <td>{{ income.label }}</td>
+      <td>
+        @if (income.ownerDisplayName) {
+          <p-tag [value]="income.ownerDisplayName" />
+        }
+      </td>
+      <td>
+        <p-tag
+          [value]="income.incomeType"
+          [severity]="income.incomeType === 'primary' ? 'success' : 'info'"
+        />
+      </td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ income.amount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>{{ income.frequency }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(income.amount, income.frequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>
+        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditIncome(income)" />
+        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDeleteIncome(income)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="7">
+        <app-empty-state
+          icon="pi-dollar"
+          title="No income streams yet"
+          message="Add your first income stream to start tracking your cashflow."
+        />
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+}
+
+<!-- Expenses Section -->
+<div class="section-header">
+  <h2>Expenses</h2>
+  <p-button label="Add Expense" icon="pi pi-plus" (onClick)="openNewExpense()" />
+</div>
+
+@if (loading()) {
+  <div class="skeleton-table">
+    @for (i of [1,2,3]; track i) {
+      <p-skeleton height="2.5rem" styleClass="mb-2" />
+    }
+  </div>
+} @else {
+<p-table
+  [value]="expenses()"
+  [tableStyle]="{ 'min-width': '50rem' }"
+  rowGroupMode="subheader"
+  groupRowsBy="expenseCategoryName"
+>
+  <ng-template #header>
+    <tr>
+      <th>Label</th>
+      <th>Owner</th>
+      <th style="text-align: right">Amount</th>
+      <th>Frequency</th>
+      <th style="text-align: right">Annualised</th>
+      <th style="width: 8rem"></th>
+    </tr>
+  </ng-template>
+  <ng-template #groupheader let-expense>
+    <tr>
+      <td colspan="6" class="group-header-cell">
+        <span class="group-header-label">{{ expense.expenseCategoryName }}</span>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #body let-expense>
+    <tr>
+      <td>{{ expense.label }}</td>
+      <td>
+        @if (expense.ownerDisplayName) {
+          <p-tag [value]="expense.ownerDisplayName" />
+        } @else {
+          <p-tag value="Household" severity="info" />
+        }
+      </td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ expense.amount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>{{ expense.frequency }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(expense.amount, expense.frequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td>
+        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditExpense(expense)" />
+        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDeleteExpense(expense)" />
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template #groupfooter let-expense>
+    <tr class="group-footer-row">
+      <td colspan="4" style="text-align: right; font-weight: 600;">{{ expense.expenseCategoryName }} subtotal</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">
+        {{ getCategorySubtotal(expense.expenseCategoryName) | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr
+      </td>
+      <td></td>
+    </tr>
+  </ng-template>
+  <ng-template #emptymessage>
+    <tr>
+      <td colspan="6">
+        <app-empty-state
+          icon="pi-shopping-cart"
+          title="No expenses yet"
+          message="Add your first expense to start tracking your spending."
+        />
+      </td>
+    </tr>
+  </ng-template>
+</p-table>
+}
+
+<!-- Charts Section -->
+<div class="chart-grid">
+  <div class="chart-panel">
+    <h3>Income vs Expenses</h3>
+    @if (incomeVsExpenseOptions(); as opts) {
+      <div echarts [options]="opts" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No income data yet</div>
+    }
+  </div>
+
+  <div class="chart-panel">
+    <h3>Expenses by Category</h3>
+    @if (expensesByCategoryOptions(); as opts) {
+      <div echarts [options]="opts" class="chart"></div>
+    } @else {
+      <div class="chart-empty">No expense data yet</div>
+    }
+  </div>
+</div>
+
+<!-- Income Dialog -->
+<p-dialog
+  [header]="editingIncome() ? 'Edit Income Stream' : 'New Income Stream'"
+  [(visible)]="incomeDialogVisible"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="form-grid">
+    <label for="incomeLabel">Label</label>
+    <input pInputText id="incomeLabel" [(ngModel)]="incomeForm.label" placeholder="e.g. Salary" />
+
+    <label for="incomeOwner">Owner</label>
+    <p-select
+      id="incomeOwner"
+      [(ngModel)]="incomeForm.ownerMemberId"
+      [options]="members()"
+      optionLabel="displayName"
+      optionValue="id"
+      placeholder="Select owner"
+    />
+
+    <label for="incomeType">Income Type</label>
+    <p-select
+      id="incomeType"
+      [(ngModel)]="incomeForm.incomeType"
+      [options]="incomeTypeOptions"
+      optionLabel="label"
+      optionValue="value"
+    />
+
+    <label for="incomeAmount">Amount</label>
+    <p-inputNumber
+      id="incomeAmount"
+      [(ngModel)]="incomeForm.amount"
+      mode="currency"
+      currency="AUD"
+      [minFractionDigits]="0"
+      placeholder="0"
+    />
+
+    <label for="incomeFrequency">Frequency</label>
+    <p-select
+      id="incomeFrequency"
+      [(ngModel)]="incomeForm.frequency"
+      [options]="frequencyOptions"
+      optionLabel="label"
+      optionValue="value"
+    />
+
+    <label for="incomeNotes">Notes</label>
+    <textarea pTextarea id="incomeNotes" [(ngModel)]="incomeForm.notes" [rows]="3"></textarea>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="incomeDialogVisible.set(false)" />
+    <p-button label="Save" (onClick)="saveIncome()" [disabled]="!incomeForm.label || !incomeForm.ownerMemberId" />
+  </ng-template>
+</p-dialog>
+
+<!-- Expense Dialog -->
+<p-dialog
+  [header]="editingExpense() ? 'Edit Expense' : 'New Expense'"
+  [(visible)]="expenseDialogVisible"
+  [modal]="true"
+  [style]="{ width: '450px' }"
+>
+  <div class="form-grid">
+    <label for="expenseLabel">Label</label>
+    <input pInputText id="expenseLabel" [(ngModel)]="expenseForm.label" placeholder="e.g. Rent" />
+
+    <label for="expenseCategory">Category</label>
+    <p-select
+      id="expenseCategory"
+      [(ngModel)]="expenseForm.expenseCategoryId"
+      [options]="categories()"
+      optionLabel="name"
+      optionValue="id"
+      placeholder="Select category"
+    />
+
+    <label for="expenseOwner">Owner</label>
+    <p-select
+      id="expenseOwner"
+      [(ngModel)]="expenseForm.ownerMemberId"
+      [options]="ownerOptionsForExpense()"
+      optionLabel="label"
+      optionValue="value"
+    />
+
+    <label for="expenseAmount">Amount</label>
+    <p-inputNumber
+      id="expenseAmount"
+      [(ngModel)]="expenseForm.amount"
+      mode="currency"
+      currency="AUD"
+      [minFractionDigits]="0"
+      placeholder="0"
+    />
+
+    <label for="expenseFrequency">Frequency</label>
+    <p-select
+      id="expenseFrequency"
+      [(ngModel)]="expenseForm.frequency"
+      [options]="frequencyOptions"
+      optionLabel="label"
+      optionValue="value"
+    />
+
+    <label for="expenseNotes">Notes</label>
+    <textarea pTextarea id="expenseNotes" [(ngModel)]="expenseForm.notes" [rows]="3"></textarea>
+  </div>
+
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="expenseDialogVisible.set(false)" />
+    <p-button label="Save" (onClick)="saveExpense()" [disabled]="!expenseForm.label || !expenseForm.expenseCategoryId" />
+  </ng-template>
+</p-dialog>
+
+<p-confirmdialog />

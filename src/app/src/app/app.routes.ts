@@ -28,6 +28,12 @@ export const routes: Routes = [
     canActivate: [requireSetupComplete],
   },
   {
+    path: 'cashflow',
+    loadComponent: () =>
+      import('./features/cashflow/cashflow.component').then((m) => m.CashflowComponent),
+    canActivate: [requireSetupComplete],
+  },
+  {
     path: 'snapshots',
     loadComponent: () =>
       import('./features/snapshots/snapshots.component').then((m) => m.SnapshotsComponent),

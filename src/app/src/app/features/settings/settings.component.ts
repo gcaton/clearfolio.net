@@ -14,7 +14,7 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GoalService } from '../../core/auth/goal.service';
-import { Household, Member } from '../../core/api/models';
+import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest } from '../../core/api/models';
 
 @Component({
   selector: 'app-settings',
@@ -46,6 +46,11 @@ export class SettingsComponent implements OnInit {
   protected netWorthTarget: number | null = this.goalService.goal().netWorthTarget;
   protected superTarget: number | null = this.goalService.goal().superTarget;
 
+  protected categories = signal<ExpenseCategory[]>([]);
+  protected editingCategory = signal<ExpenseCategory | null>(null);
+  protected categoryDialogVisible = signal(false);
+  protected categoryName = '';
+
   protected periodOptions = [
     { label: 'Financial Year (FY)', value: 'FY' },
     { label: 'Calendar Year (CY)', value: 'CY' },
@@ -54,6 +59,96 @@ export class SettingsComponent implements OnInit {
   ngOnInit() {
     this.api.getHousehold().subscribe((h) => this.household.set(h));
     this.api.getMembers().subscribe((m) => this.members.set(m));
+    this.loadCategories();
+  }
+
+  loadCategories() {
+    this.api.getExpenseCategories().subscribe((cats) => {
+      this.categories.set([...cats].sort((a, b) => a.sortOrder - b.sortOrder));
+    });
+  }
+
+  openAddCategory() {
+    this.editingCategory.set(null);
+    this.categoryName = '';
+    this.categoryDialogVisible.set(true);
+  }
+
+  openEditCategory(cat: ExpenseCategory) {
+    this.editingCategory.set(cat);
+    this.categoryName = cat.name;
+    this.categoryDialogVisible.set(true);
+  }
+
+  saveCategory() {
+    const editing = this.editingCategory();
+    if (editing) {
+      const req: UpdateExpenseCategoryRequest = { name: this.categoryName, sortOrder: editing.sortOrder };
+      this.api.updateExpenseCategory(editing.id, req).subscribe(() => {
+        this.categoryDialogVisible.set(false);
+        this.loadCategories();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Category updated' });
+      });
+    } else {
+      const req: CreateExpenseCategoryRequest = { name: this.categoryName };
+      this.api.createExpenseCategory(req).subscribe(() => {
+        this.categoryDialogVisible.set(false);
+        this.loadCategories();
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Category added' });
+      });
+    }
+  }
+
+  deleteCategory(cat: ExpenseCategory) {
+    if (cat.isDefault) {
+      this.messageService.add({ severity: 'warn', summary: 'Cannot Delete', detail: 'Default categories cannot be deleted' });
+      return;
+    }
+    this.confirmationService.confirm({
+      message: `Delete category "${cat.name}"? This cannot be undone.`,
+      header: 'Delete Category?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.deleteExpenseCategory(cat.id).subscribe({
+          next: () => {
+            this.loadCategories();
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Category "${cat.name}" deleted` });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Cannot Delete', detail: 'This category has existing expenses and cannot be deleted' });
+          },
+        });
+      },
+    });
+  }
+
+  moveCategoryUp(cat: ExpenseCategory) {
+    const cats = this.categories();
+    const idx = cats.findIndex((c) => c.id === cat.id);
+    if (idx <= 0) return;
+    const prev = cats[idx - 1];
+    const prevOrder = prev.sortOrder;
+    const catOrder = cat.sortOrder;
+    this.api.updateExpenseCategory(prev.id, { name: prev.name, sortOrder: catOrder }).subscribe(() => {
+      this.api.updateExpenseCategory(cat.id, { name: cat.name, sortOrder: prevOrder }).subscribe(() => {
+        this.loadCategories();
+      });
+    });
+  }
+
+  moveCategoryDown(cat: ExpenseCategory) {
+    const cats = this.categories();
+    const idx = cats.findIndex((c) => c.id === cat.id);
+    if (idx < 0 || idx >= cats.length - 1) return;
+    const next = cats[idx + 1];
+    const nextOrder = next.sortOrder;
+    const catOrder = cat.sortOrder;
+    this.api.updateExpenseCategory(next.id, { name: next.name, sortOrder: catOrder }).subscribe(() => {
+      this.api.updateExpenseCategory(cat.id, { name: cat.name, sortOrder: nextOrder }).subscribe(() => {
+        this.loadCategories();
+      });
+    });
   }
 
   saveHousehold() {

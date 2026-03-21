@@ -12,4 +12,7 @@ public class Household
     public List<Asset> Assets { get; set; } = [];
     public List<Liability> Liabilities { get; set; } = [];
     public List<Snapshot> Snapshots { get; set; } = [];
+    public List<ExpenseCategory> ExpenseCategories { get; set; } = [];
+    public List<IncomeStream> IncomeStreams { get; set; } = [];
+    public List<Expense> Expenses { get; set; } = [];
 }

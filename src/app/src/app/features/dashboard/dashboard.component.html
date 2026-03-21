@@ -94,6 +94,42 @@
   </div>
 }
 
+@if (cashflowSummary(); as cf) {
+  <div class="cashflow-widget">
+    <div class="widget-header">
+      <h3>Cashflow</h3>
+      <a routerLink="/cashflow" class="view-link">View details →</a>
+    </div>
+    <div class="stat-cards">
+      <div class="stat-card">
+        <span class="stat-label">Savings Rate</span>
+        <span class="stat-value" [class]="savingsRateClass()">{{ (cf.savingsRate * 100) | number:'1.1-1' }}%</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Net Cashflow</span>
+        <app-currency [value]="cf.netCashflow" [colorize]="true" />
+      </div>
+      <div class="stat-card wide">
+        <span class="stat-label">Income vs Expenses</span>
+        <div class="cashflow-bar">
+          @if (cf.totalAnnualIncome > 0) {
+            <div
+              class="cashflow-bar-income"
+              [style.flex]="cf.totalAnnualIncome"
+              title="Income: {{ cf.totalAnnualIncome | number:'1.0-0' }}"
+            ></div>
+            <div
+              class="cashflow-bar-expenses"
+              [style.flex]="cf.totalAnnualExpenses"
+              title="Expenses: {{ cf.totalAnnualExpenses | number:'1.0-0' }}"
+            ></div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 <div class="chart-grid">
   <div class="chart-panel wide">
     <h3>Net Worth Trend</h3>

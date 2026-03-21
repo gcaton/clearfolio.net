@@ -32,5 +32,9 @@ app.MapSnapshotsEndpoints();
 app.MapDashboardEndpoints();
 app.MapQuoteEndpoints();
 app.MapProjectionEndpoints();
+app.MapExpenseCategoriesEndpoints();
+app.MapIncomeStreamsEndpoints();
+app.MapExpensesEndpoints();
+app.MapCashflowEndpoints();
 
 app.Run();
