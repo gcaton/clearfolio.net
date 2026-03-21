@@ -2,11 +2,16 @@ import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } 
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
+import { Toast } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
 import { Skeleton } from 'primeng/skeleton';
 import { ProgressBar } from 'primeng/progressbar';
 import { SelectButton } from 'primeng/selectbutton';
 import { Button } from 'primeng/button';
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
 import { GoalService } from '../../core/auth/goal.service';
+import { OnboardingService } from '../../core/onboarding.service';
+import { OnboardingChecklistComponent } from '../../shared/components/onboarding-checklist.component';
 import { CurrencyDisplayComponent } from '../../shared/components/currency-display.component';
 import { NetWorthChangeComponent } from '../../shared/components/net-worth-change.component';
 import { PeriodLabelPipe } from '../../shared/pipes/period-label.pipe';
@@ -40,8 +45,8 @@ echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, Leg
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button],
-  providers: [provideEchartsCore({ echarts })],
+  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent],
+  providers: [provideEchartsCore({ echarts }), MessageService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -50,6 +55,8 @@ export class DashboardComponent {
   private viewState = inject(ViewStateService);
   private goalService = inject(GoalService);
   private pdfReport = inject(PdfReportService);
+  private messageService = inject(MessageService);
+  private onboarding = inject(OnboardingService);
 
   protected selectedScope = signal('all');
   protected scopeOptions = [
@@ -85,10 +92,39 @@ export class DashboardComponent {
   protected netWorthGoal = computed(() => this.goalService.goal().netWorthTarget);
   protected projection = signal<GoalProjection | null>(null);
 
+  private milestoneChecked = false;
+
+  protected sparklinePoints = computed(() => {
+    const data = this.trend();
+    if (data.length < 2) return '';
+    const values = data.map(d => d.netWorth);
+    const max = Math.max(...values);
+    const min = Math.min(...values);
+    const range = max - min || 1;
+    const width = 80;
+    const height = 24;
+    const padding = 2;
+    return values.map((v, i) => {
+      const x = (i / (values.length - 1)) * width;
+      const y = padding + ((max - v) / range) * (height - 2 * padding);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+  });
+
   constructor() {
     effect(() => {
       const view = this.viewState.view();
       this.loadData(view);
+    });
+    this.onboarding.check();
+
+    effect(() => {
+      const s = this.summary();
+      const t = this.trend();
+      if (s && t.length > 0 && !this.milestoneChecked) {
+        this.milestoneChecked = true;
+        this.checkMilestones(s, t);
+      }
     });
   }
 
@@ -98,6 +134,7 @@ export class DashboardComponent {
   }
 
   private loadData(view: string) {
+    this.milestoneChecked = false;
     const scope = this.selectedScope();
     const summaryParams: Record<string, string> = { view, scope };
 
@@ -129,6 +166,40 @@ export class DashboardComponent {
       projection: this.projection(),
       scope: this.selectedScope(),
     });
+  }
+
+  private checkMilestones(summary: DashboardSummary, trend: TrendPoint[]) {
+    if (trend.length < 2) return;
+
+    const current = summary.netWorth;
+    const previous = summary.previousNetWorth;
+    if (previous === null || current <= previous) return;
+
+    // Check all-time high
+    const allTimeHigh = trend.every(t => current >= t.netWorth);
+
+    // Check round number milestones
+    const milestones = [50000, 100000, 250000, 500000, 750000, 1000000, 1500000, 2000000, 5000000, 10000000];
+    const crossedMilestone = milestones.find(m => current >= m && previous < m);
+
+    if (crossedMilestone) {
+      const formatted = crossedMilestone >= 1000000
+        ? `$${(crossedMilestone / 1000000).toFixed(crossedMilestone % 1000000 === 0 ? 0 : 1)}M`
+        : `$${(crossedMilestone / 1000).toFixed(0)}K`;
+      this.messageService.add({
+        severity: 'success',
+        summary: `Milestone reached!`,
+        detail: `Your net worth has crossed ${formatted}`,
+        life: 6000,
+      });
+    } else if (allTimeHigh) {
+      this.messageService.add({
+        severity: 'success',
+        summary: 'New all-time high!',
+        detail: 'Your net worth is at its highest recorded value',
+        life: 5000,
+      });
+    }
   }
 
   protected timeToGoal = computed(() => {

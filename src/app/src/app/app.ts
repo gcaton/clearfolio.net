@@ -15,6 +15,11 @@ import { environment } from '../environments/environment';
   imports: [RouterOutlet, RouterLink, RouterLinkActive, SelectButton, Drawer, Button, FormsModule, DarkModeToggleComponent],
   template: `
     @if (!auth.needsSetup()) {
+    @if (viewAccentColor() !== 'transparent') {
+      <div class="view-context-bar" [style.background]="viewAccentColor()">
+        Viewing: {{ viewLabel() }}
+      </div>
+    }
     <nav class="app-nav">
       <div class="nav-brand">
         <p-button icon="pi pi-bars" [text]="true" class="mobile-menu-btn"
@@ -34,6 +39,15 @@ import { environment } from '../environments/environment';
         <a routerLink="/settings" routerLinkActive="active">Settings</a>
       </div>
       <div class="nav-right">
+        <p-button
+          icon="pi pi-camera"
+          label="Record"
+          severity="success"
+          size="small"
+          [outlined]="true"
+          routerLink="/snapshots"
+          class="desktop-only quick-record-btn"
+        />
         <app-dark-mode-toggle />
         @if (viewOptions().length > 1) {
           <p-selectbutton
@@ -91,6 +105,21 @@ export class App implements OnInit {
   protected viewState = inject(ViewStateService);
   protected mobileMenuVisible = signal(false);
   protected version = environment.version;
+
+  protected viewAccentColor = computed(() => {
+    const view = this.viewState.view();
+    if (view === 'household') return 'transparent';
+    if (view === 'p1') return 'var(--p-primary-400)';
+    if (view === 'p2') return '#60a5fa';
+    return '#a78bfa';
+  });
+
+  protected viewLabel = computed(() => {
+    const view = this.viewState.view();
+    if (view === 'household') return null;
+    const option = this.viewOptions().find(o => o.value === view);
+    return option?.label ?? null;
+  });
 
   protected viewOptions = computed(() => {
     const members = this.auth.members();

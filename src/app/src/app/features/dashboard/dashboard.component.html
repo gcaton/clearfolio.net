@@ -1,3 +1,4 @@
+<p-toast />
 <div class="dashboard-header">
   <h1>Dashboard</h1>
   <div class="header-controls">
@@ -22,6 +23,8 @@
   </div>
 </div>
 
+<app-onboarding-checklist />
+
 @if (!summary()) {
   <div class="stat-cards">
     @for (i of [1,2,3,4]; track i) {
@@ -45,12 +48,19 @@
     </div>
     <div class="stat-card highlight">
       <span class="stat-label">Net Worth</span>
-      <app-currency [value]="s.netWorth" [colorize]="true" />
+      <div class="stat-with-spark">
+        <app-currency [value]="s.netWorth" [colorize]="true" />
+        @if (trend().length >= 2) {
+          <svg class="sparkline" viewBox="0 0 80 24" preserveAspectRatio="none">
+            <polyline [attr.points]="sparklinePoints()" fill="none" stroke="var(--p-primary-400)" stroke-width="1.5" />
+          </svg>
+        }
+      </div>
       <app-net-worth-change [change]="s.netWorthChange" [percent]="s.netWorthChangePercent" />
     </div>
     <div class="stat-card">
       <span class="stat-label">Period</span>
-      <span class="stat-value period">{{ s.period | periodLabel }}</span>
+      <span class="stat-value period">{{ s.period | periodLabel:true }}</span>
     </div>
   </div>
 }
@@ -130,67 +140,84 @@
   </div>
 }
 
-<div class="chart-grid">
-  <div class="chart-panel wide">
-    <h3>Net Worth Trend</h3>
-    @if (trend().length > 0) {
-      <div echarts [options]="trendOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No trend data yet</div>
-    }
-  </div>
+<p-tabs value="0">
+  <p-tablist>
+    <p-tab value="0">Trends</p-tab>
+    <p-tab value="1">Composition</p-tab>
+    <p-tab value="2">Comparison</p-tab>
+  </p-tablist>
+  <p-tabpanels>
+    <p-tabpanel value="0">
+      <div class="chart-panel wide">
+        <h3>Net Worth Trend</h3>
+        @if (trend().length > 0) {
+          <div echarts [options]="trendOptions()" class="chart"></div>
+        } @else {
+          <div class="chart-empty">No trend data yet</div>
+        }
+      </div>
+    </p-tabpanel>
 
-  <div class="chart-panel">
-    <h3>Asset Composition</h3>
-    @if (summary()?.assetsByCategory?.length) {
-      <div echarts [options]="compositionOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No asset data yet</div>
-    }
-  </div>
+    <p-tabpanel value="1">
+      <div class="chart-grid">
+        <div class="chart-panel">
+          <h3>Asset Composition</h3>
+          @if (summary()?.assetsByCategory?.length) {
+            <div echarts [options]="compositionOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No asset data yet</div>
+          }
+        </div>
 
-  <div class="chart-panel">
-    <h3>Liquidity Breakdown</h3>
-    @if (summary()?.liquidityBreakdown?.length) {
-      <div echarts [options]="liquidityOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No asset data yet</div>
-    }
-  </div>
+        <div class="chart-panel">
+          <h3>Liquidity Breakdown</h3>
+          @if (summary()?.liquidityBreakdown?.length) {
+            <div echarts [options]="liquidityOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No asset data yet</div>
+          }
+        </div>
 
-  <div class="chart-panel">
-    <h3>Growth vs Defensive</h3>
-    @if (summary()?.growthBreakdown?.length) {
-      <div echarts [options]="growthOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No asset data yet</div>
-    }
-  </div>
+        <div class="chart-panel">
+          <h3>Growth vs Defensive</h3>
+          @if (summary()?.growthBreakdown?.length) {
+            <div echarts [options]="growthOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No asset data yet</div>
+          }
+        </div>
 
-  <div class="chart-panel">
-    <h3>Debt Quality</h3>
-    @if (summary()?.debtQualityBreakdown?.length) {
-      <div echarts [options]="debtQualityOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No liability data yet</div>
-    }
-  </div>
+        <div class="chart-panel">
+          <h3>Debt Quality</h3>
+          @if (summary()?.debtQualityBreakdown?.length) {
+            <div echarts [options]="debtQualityOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No liability data yet</div>
+          }
+        </div>
+      </div>
+    </p-tabpanel>
 
-  <div class="chart-panel">
-    <h3>Member Comparison</h3>
-    @if (members().length > 0) {
-      <div echarts [options]="memberOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No member data yet</div>
-    }
-  </div>
+    <p-tabpanel value="2">
+      <div class="chart-grid">
+        <div class="chart-panel">
+          <h3>Member Comparison</h3>
+          @if (members().length > 0) {
+            <div echarts [options]="memberOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No member data yet</div>
+          }
+        </div>
 
-  <div class="chart-panel">
-    <h3>Super Gap</h3>
-    @if (superGap().length > 0) {
-      <div echarts [options]="superGapOptions()" class="chart"></div>
-    } @else {
-      <div class="chart-empty">No super data yet</div>
-    }
-  </div>
-</div>
+        <div class="chart-panel">
+          <h3>Super Gap</h3>
+          @if (superGap().length > 0) {
+            <div echarts [options]="superGapOptions()" class="chart"></div>
+          } @else {
+            <div class="chart-empty">No super data yet</div>
+          }
+        </div>
+      </div>
+    </p-tabpanel>
+  </p-tabpanels>
+</p-tabs>

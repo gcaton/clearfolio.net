@@ -110,6 +110,18 @@ app-currency {
   &.negative { color: var(--p-red-600, #dc2626); }
 }
 
+.stat-with-spark {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sparkline {
+  width: 5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -201,4 +213,16 @@ app-currency {
   justify-content: center;
   color: var(--p-text-muted-color);
   font-size: 0.875rem;
+}
+
+:host ::ng-deep {
+  .p-tabs {
+    margin-top: 1.5rem;
+  }
+  .p-tablist {
+    border-bottom: 1px solid var(--p-content-border-color);
+  }
+  .p-tabpanels {
+    padding: 1rem 0 0;
+  }
 }

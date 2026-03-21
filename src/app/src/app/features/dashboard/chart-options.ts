@@ -55,6 +55,32 @@ function currencyAbbr(value: number): string {
 const tooltipStyle = {
   trigger: 'axis' as const,
   axisPointer: { type: 'shadow' as const },
+  backgroundColor: 'var(--p-content-background, #ffffff)',
+  borderColor: 'var(--p-content-border-color, #e2e8f0)',
+  borderWidth: 1,
+  borderRadius: 8,
+  padding: [8, 12],
+  textStyle: {
+    color: 'var(--p-text-color, #1e293b)',
+    fontSize: 13,
+    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
+};
+
+const itemTooltipStyle = {
+  trigger: 'item' as const,
+  backgroundColor: 'var(--p-content-background, #ffffff)',
+  borderColor: 'var(--p-content-border-color, #e2e8f0)',
+  borderWidth: 1,
+  borderRadius: 8,
+  padding: [8, 12],
+  textStyle: {
+    color: 'var(--p-text-color, #1e293b)',
+    fontSize: 13,
+    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
 };
 
 export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
@@ -70,13 +96,15 @@ export function buildTrendOptions(data: TrendPoint[]): EChartsOption {
       { name: 'Liabilities', type: 'line', data: data.map((d) => d.liabilities), smooth: true, itemStyle: { color: '#f87171' } },
       { name: 'Net Worth', type: 'line', data: data.map((d) => d.netWorth), smooth: true, lineStyle: { type: 'dashed' }, itemStyle: { color: '#60a5fa' } },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
 export function buildCompositionOptions(summary: DashboardSummary | null): EChartsOption {
   if (!summary) return {};
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: { ...itemTooltipStyle, formatter: '{b}: {c} ({d}%)' },
     legend: { orient: 'vertical', left: 'left' },
     series: [
       {
@@ -91,6 +119,8 @@ export function buildCompositionOptions(summary: DashboardSummary | null): EChar
         })),
       },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
@@ -108,13 +138,15 @@ export function buildLiquidityOptions(summary: DashboardSummary | null): ECharts
         data: items.map((i) => ({ value: Math.round(i.value), itemStyle: { color: '#60a5fa' } })),
       },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
 export function buildGrowthOptions(summary: DashboardSummary | null): EChartsOption {
   if (!summary) return {};
   return {
-    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
+    tooltip: { ...itemTooltipStyle, formatter: '{b}: {c} ({d}%)' },
     series: [
       {
         type: 'pie',
@@ -128,6 +160,8 @@ export function buildGrowthOptions(summary: DashboardSummary | null): EChartsOpt
         })),
       },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
@@ -150,6 +184,8 @@ export function buildDebtQualityOptions(summary: DashboardSummary | null): EChar
         })),
       },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
@@ -166,6 +202,8 @@ export function buildMemberOptions(data: MemberComparison[]): EChartsOption {
       { name: 'Liabilities', type: 'bar', data: data.map((d) => d.liabilities), itemStyle: { color: '#f87171' } },
       { name: 'Net Worth', type: 'bar', data: data.map((d) => d.netWorth), itemStyle: { color: '#60a5fa' } },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
 
@@ -182,5 +220,7 @@ export function buildSuperGapOptions(data: SuperGap[]): EChartsOption {
         data: data.map((d) => ({ value: d.superBalance, itemStyle: { color: '#a78bfa' } })),
       },
     ],
+    animationDuration: 600,
+    animationEasing: 'cubicOut',
   };
 }
