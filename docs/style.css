@@ -59,6 +59,15 @@ body {
   letter-spacing: -0.5px;
   margin-bottom: 8px;
   color: #34d399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 1.6em;
+  height: 1.6em;
 }
 
 .header .tagline {
