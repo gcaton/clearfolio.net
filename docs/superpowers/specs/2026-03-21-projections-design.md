@@ -34,6 +34,7 @@ Add a top-level "Projections" page to Clearfolio that lets users forecast asset 
 | `contributionFrequency` | string | yes | `weekly` / `fortnightly` / `monthly` / `quarterly` / `yearly` |
 | `contributionEndDate` | date | yes | When contributions stop (null = indefinite) |
 | `expectedReturnRate` | decimal | yes | Annual return rate override (e.g. 0.07 = 7%) |
+| `expectedVolatility` | decimal | yes | Annual volatility override (e.g. 0.15 = 15%), for Monte Carlo |
 
 ### Liability Entity — New Fields
 
@@ -50,6 +51,8 @@ Add a top-level "Projections" page to Clearfolio that lets users forecast asset 
 |---|---|---|---|
 | `defaultReturnRate` | decimal | no | Long-term historical average annual return |
 | `defaultVolatility` | decimal | no | Standard deviation of annual returns |
+
+**Migration strategy:** Add columns with `HasDefaultValue(0)` so existing rows pass the not-null constraint. Then update the `SeedData` section in `ClearfolioDbContext` to populate the seeded defaults from the table below. A data migration step applies the seeded values to existing rows. Follow the existing `snake_case` column naming convention for all new columns (e.g. `default_return_rate`, `default_volatility`, `contribution_amount`, `repayment_frequency`, etc.).
 
 ### Seeded Defaults for Asset Types
 
@@ -81,6 +84,8 @@ For each asset, the effective return rate is resolved in priority order:
 2. **Symbol-derived** — For assets with a `symbol`, fetch 5-year historical price data to calculate annualised return and volatility
 3. **Type default** — `defaultReturnRate` and `defaultVolatility` from the asset type
 
+The same resolution applies to volatility: `expectedVolatility` on asset > symbol-derived > type `defaultVolatility`.
+
 The projections page shows which source is active for each entity (badge: "Custom", "From VAS.AX history", or "Type default").
 
 ---
@@ -106,8 +111,8 @@ All three engines run server-side in C#. They share a common input contract and 
 
 Standard compound interest applied yearly:
 
-- **Assets:** `value = (previousValue + annualContribution) × (1 + returnRate)`
-- **Liabilities:** `value = (previousValue - annualRepayment) × (1 + interestRate)`, floored at 0
+- **Assets:** `value = previousValue × (1 + returnRate) + annualContribution` (contributions modelled as lump sum at end of year)
+- **Liabilities:** `value = previousValue × (1 + interestRate) - annualRepayment`, floored at 0 (interest applied first, then repayment)
 - Contributions stop after `contributionEndDate` if set
 - Produces a single projection line per entity
 
@@ -117,9 +122,11 @@ Three named scenarios applied simultaneously:
 
 | Scenario | Return Modifier | Description |
 |---|---|---|
-| Pessimistic | base rate × 0.5 | Prolonged downturn |
+| Pessimistic | base rate − 3pp (floor at base×0.5 for positive rates) | Prolonged downturn |
 | Base | base rate × 1.0 | Long-term averages hold |
-| Optimistic | base rate × 1.5 | Sustained bull market |
+| Optimistic | base rate + 3pp (cap at base×1.5 for positive rates) | Sustained bull market |
+
+For assets with negative base return rates (e.g. vehicles at -10%), the pessimistic scenario uses `base rate − 3pp` (i.e. -13%) and optimistic uses `base rate + 3pp` (i.e. -7%). This ensures pessimistic is always worse than base, and optimistic is always better.
 
 - Liability interest rates remain constant across scenarios (conservative: debt cost doesn't decrease in downturns)
 - Contributions/repayments remain constant across scenarios
@@ -127,7 +134,7 @@ Three named scenarios applied simultaneously:
 
 ### Engine 3: Monte Carlo
 
-- Runs N simulations (default 1,000, configurable) per year of horizon
+- Runs N simulations (default 1,000, configurable, max 10,000) per year of horizon
 - Each year, each asset's return is sampled from a normal distribution: `N(returnRate, volatility)`
 - Liability interest rates are deterministic (no randomness)
 - Contributions/repayments applied deterministically each year
@@ -160,7 +167,7 @@ Request:
   "horizon": 5,
   "view": "household",
   "scope": "all",
-  "entityIds": ["guid1", "guid2"]
+  "entityIds": ["guid1", "guid2"]  // optional — omit or empty for all active entities matching scope
 }
 ```
 
@@ -204,7 +211,7 @@ Entity-level entries include the same three scenarios per year.
 
 **`POST /api/projections/monte-carlo`**
 
-Same request, plus optional `simulations` field (default 1000). Response `years` entries shaped as:
+Same request, plus optional `simulations` field (default 1000, max 10000). Response `years` entries shaped as:
 ```json
 {
   "year": 2026,
@@ -256,9 +263,23 @@ Response:
 }
 ```
 
+**`/api/projections/defaults` — Liability Example**
+
+```json
+{
+  "entityId": "guid2",
+  "entityType": "liability",
+  "label": "Home Loan (ANZ)",
+  "effectiveInterestRate": 0.061,
+  "repaymentAmount": 2450,
+  "repaymentFrequency": "fortnightly",
+  "annualRepayment": 63700
+}
+```
+
 ### Modified Existing Endpoints
 
-- `POST /api/assets` and `PUT /api/assets/{id}` — Extended to accept `contributionAmount`, `contributionFrequency`, `contributionEndDate`, `expectedReturnRate`
+- `POST /api/assets` and `PUT /api/assets/{id}` — Extended to accept `contributionAmount`, `contributionFrequency`, `contributionEndDate`, `expectedReturnRate`, `expectedVolatility`
 - `POST /api/liabilities` and `PUT /api/liabilities/{id}` — Extended to accept `repaymentAmount`, `repaymentFrequency`, `repaymentEndDate`, `interestRate`
 - `GET /api/asset-types` — Response now includes `defaultReturnRate` and `defaultVolatility`
 
@@ -330,24 +351,6 @@ All fields optional. Source badges indicate "Custom", "From {SYMBOL} history", o
 
 ---
 
-## Historical Returns Data Source
-
-For assets with a `symbol`, the backend fetches historical price data to calculate annualised return and volatility. The data source should provide at least 5 years of daily or weekly price history.
-
-Implementation options (to be resolved during implementation):
-- Yahoo Finance API (free, widely used, covers ASX via `.AX` suffix)
-- Alpha Vantage (free tier available)
-
-The historical return calculation:
-1. Fetch 5 years of adjusted close prices
-2. Calculate daily/weekly returns
-3. Annualise: mean return × 252 (trading days) or × 52 (weeks)
-4. Volatility: standard deviation of returns × √252 or √52
-
-Results are cached to avoid repeated API calls. Cache duration: 24 hours.
-
----
-
 ## View & Scope Filtering
 
 Projections reuse the same filtering logic as the dashboard:
@@ -359,4 +362,68 @@ Projections reuse the same filtering logic as the dashboard:
 **Scope filtering:**
 - `all` — All assets and liabilities
 - `financial` — Cash + investable + retirement assets; personal/credit/student/tax/other liabilities
-- `liquid` — Cash + investable assets only; no liabilities
+- `liquid` — Cash + investable assets only; no liabilities. In this scope, the chart label changes to "Projected Asset Value" since liabilities are excluded.
+
+---
+
+## Validation Rules
+
+### Asset Projection Fields
+
+| Field | Constraint |
+|---|---|
+| `contributionAmount` | ≥ 0 (no negative contributions — withdrawals are not modelled) |
+| `contributionFrequency` | Must be one of: `weekly`, `fortnightly`, `monthly`, `quarterly`, `yearly`. Required if `contributionAmount` is set. |
+| `contributionEndDate` | Must be in the future if set |
+| `expectedReturnRate` | -1.0 to 1.0 (-100% to 100%) |
+| `expectedVolatility` | 0.0 to 1.0 (0% to 100%) |
+
+### Liability Projection Fields
+
+| Field | Constraint |
+|---|---|
+| `repaymentAmount` | ≥ 0 |
+| `repaymentFrequency` | Same enum as contribution frequency. Required if `repaymentAmount` is set. |
+| `repaymentEndDate` | Must be in the future if set |
+| `interestRate` | 0.0 to 1.0 (0% to 100%) |
+
+### Projection Request Fields
+
+| Field | Constraint |
+|---|---|
+| `horizon` | 1 to 50 years |
+| `simulations` (Monte Carlo) | 100 to 10,000 |
+| `view` | `household` or a valid member tag |
+| `scope` | `all`, `financial`, or `liquid` |
+| `entityIds` | Optional. If provided, must be valid GUIDs of active entities. |
+
+---
+
+## Edge Cases
+
+- **Entity with no snapshots:** Excluded from projections. The `/defaults` endpoint includes a `hasCurrentValue: boolean` field so the UI can indicate which entities lack a starting value.
+- **Entity with no contributions:** Projects based on return rate / interest rate only (growth or decay with no additions).
+- **Entity with no return rate override and no symbol:** Falls back to type default.
+- **Liability fully repaid mid-horizon:** Value floors at 0, repayments stop. The entity shows as fully repaid in the drill-down.
+- **All entities filtered out by scope:** API returns empty `years` and `entities` arrays. UI shows an empty state message.
+- **Symbol lookup fails or no historical data available:** Fall back to type default rates. The `/historical-returns/{symbol}` endpoint returns a 404, and the UI shows "Type default" badge.
+
+---
+
+## Historical Returns Data Source
+
+For assets with a `symbol`, the backend fetches historical price data to calculate annualised return and volatility. Use Yahoo Finance (via `yfinance`-style HTTP calls to the unofficial chart API) as the primary source — it supports ASX symbols via the `.AX` suffix, which aligns with the existing quote endpoint.
+
+The historical return calculation:
+1. Fetch 5 years of adjusted close prices
+2. Calculate weekly returns (weekly reduces noise vs daily)
+3. Annualise: mean weekly return × 52
+4. Volatility: standard deviation of weekly returns × √52
+
+Results are cached server-side (in-memory or distributed cache). Cache duration: 24 hours. If the external API is unavailable, fall back to type defaults gracefully.
+
+---
+
+## Relationship to Existing Goal Projection
+
+The existing `/api/dashboard/goal-projection` endpoint (linear regression on net worth) remains unchanged. It serves a different purpose: tracking progress toward a user-defined net worth target based on historical trend. The new projections feature is forward-looking with configurable assumptions and does not replace or depend on the goal projection.
