@@ -110,31 +110,80 @@
       </div>
     </p-tabpanel>
     <p-tabpanel value="4">
-      <div class="members-header">
-        <p-button label="Add Category" icon="pi pi-plus" (onClick)="openAddCategory()" />
-      </div>
-      <div class="members-list">
-        @for (cat of categories(); track cat.id; let i = $index) {
-          <div class="member-card">
-            <div class="member-info">
-              <span class="display-name">{{ cat.name }}</span>
-              <span class="member-email">Order: {{ cat.sortOrder }}</span>
-              @if (cat.isDefault) {
-                <p-tag value="Default" severity="success" />
+      <p-accordion [multiple]="true" [value]="['0', '1', '2']">
+        <p-accordionpanel value="0">
+          <p-accordionheader>Asset Types</p-accordionheader>
+          <p-accordioncontent>
+            <div class="members-header">
+              <p-button label="Add Asset Type" icon="pi pi-plus" (onClick)="openAddAssetType()" />
+            </div>
+            <div class="members-list">
+              @for (at of assetTypes(); track at.id; let i = $index) {
+                <div class="member-card">
+                  <div class="member-info">
+                    <span class="display-name">{{ at.name }}</span>
+                    <p-tag [value]="at.category" severity="info" />
+                    @if (at.isSuper) { <p-tag value="Super" severity="warn" /> }
+                    @if (at.isCgtExempt) { <p-tag value="CGT Exempt" severity="success" /> }
+                    @if (at.isSystem) { <p-tag value="Default" severity="secondary" /> }
+                  </div>
+                  <div class="member-info">
+                    <span class="member-email">Return: {{ at.defaultReturnRate * 100 | number:'1.1-1' }}%</span>
+                    <span class="member-email">Volatility: {{ at.defaultVolatility * 100 | number:'1.1-1' }}%</span>
+                  </div>
+                  <div class="member-name-row">
+                    <p-button icon="pi pi-arrow-up" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === 0" (onClick)="moveAssetTypeUp(at)" />
+                    <p-button icon="pi pi-arrow-down" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === assetTypes().length - 1" (onClick)="moveAssetTypeDown(at)" />
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditAssetType(at)" />
+                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="deleteAssetType(at)" />
+                  </div>
+                </div>
               }
             </div>
-            <div class="member-name-row">
-              <p-button icon="pi pi-arrow-up" [rounded]="true" [text]="true" severity="secondary"
-                [disabled]="i === 0" (onClick)="moveCategoryUp(cat)" />
-              <p-button icon="pi pi-arrow-down" [rounded]="true" [text]="true" severity="secondary"
-                [disabled]="i === categories().length - 1" (onClick)="moveCategoryDown(cat)" />
-              <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditCategory(cat)" />
-              <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
-                [disabled]="cat.isDefault" (onClick)="deleteCategory(cat)" />
+          </p-accordioncontent>
+        </p-accordionpanel>
+
+        <!-- Liability Types panel will be added in next task -->
+        <p-accordionpanel value="1">
+          <p-accordionheader>Liability Types</p-accordionheader>
+          <p-accordioncontent>
+            <p>Coming soon...</p>
+          </p-accordioncontent>
+        </p-accordionpanel>
+
+        <p-accordionpanel value="2">
+          <p-accordionheader>Expense Categories</p-accordionheader>
+          <p-accordioncontent>
+            <div class="members-header">
+              <p-button label="Add Category" icon="pi pi-plus" (onClick)="openAddCategory()" />
             </div>
-          </div>
-        }
-      </div>
+            <div class="members-list">
+              @for (cat of categories(); track cat.id; let i = $index) {
+                <div class="member-card">
+                  <div class="member-info">
+                    <span class="display-name">{{ cat.name }}</span>
+                    <span class="member-email">Order: {{ cat.sortOrder }}</span>
+                    @if (cat.isDefault) {
+                      <p-tag value="Default" severity="success" />
+                    }
+                  </div>
+                  <div class="member-name-row">
+                    <p-button icon="pi pi-arrow-up" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === 0" (onClick)="moveCategoryUp(cat)" />
+                    <p-button icon="pi pi-arrow-down" [rounded]="true" [text]="true" severity="secondary"
+                      [disabled]="i === categories().length - 1" (onClick)="moveCategoryDown(cat)" />
+                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditCategory(cat)" />
+                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                      [disabled]="cat.isDefault" (onClick)="deleteCategory(cat)" />
+                  </div>
+                </div>
+              }
+            </div>
+          </p-accordioncontent>
+        </p-accordionpanel>
+      </p-accordion>
     </p-tabpanel>
   </p-tabpanels>
 </p-tabs>
@@ -155,6 +204,43 @@
     <p-button label="Cancel" [text]="true" (onClick)="deleteAllDialogVisible.set(false)" />
     <p-button label="Delete Everything" icon="pi pi-trash" severity="danger" (onClick)="confirmDeleteAll()"
       [disabled]="deleteAllConfirmName !== household()?.name" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog [header]="editingAssetType() ? 'Edit Asset Type' : 'Add Asset Type'" [(visible)]="assetTypeDialogVisible" [modal]="true" [style]="{ width: '500px' }">
+  <div class="form-grid">
+    <label for="atName">Name</label>
+    <input pInputText id="atName" [(ngModel)]="atName" placeholder="e.g. Retirement Account" />
+
+    <label for="atCategory">Category</label>
+    <p-select id="atCategory" [(ngModel)]="atCategory" [options]="assetCategoryOptions" optionLabel="label" optionValue="value" />
+
+    <label for="atLiquidity">Liquidity</label>
+    <p-select id="atLiquidity" [(ngModel)]="atLiquidity" [options]="liquidityOptions" optionLabel="label" optionValue="value" />
+
+    <label for="atGrowthClass">Growth Class</label>
+    <p-select id="atGrowthClass" [(ngModel)]="atGrowthClass" [options]="growthClassOptions" optionLabel="label" optionValue="value" />
+
+    <label for="atReturnRate">Default Return Rate (%)</label>
+    <p-inputnumber id="atReturnRate" [(ngModel)]="atDefaultReturnRate" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" />
+
+    <label for="atVolatility">Default Volatility (%)</label>
+    <p-inputnumber id="atVolatility" [(ngModel)]="atDefaultVolatility" [minFractionDigits]="1" [maxFractionDigits]="2" suffix="%" />
+
+    <div class="flex gap-4">
+      <div class="flex items-center gap-2">
+        <p-checkbox id="atIsSuper" [(ngModel)]="atIsSuper" [binary]="true" />
+        <label for="atIsSuper">Retirement / Super</label>
+      </div>
+      <div class="flex items-center gap-2">
+        <p-checkbox id="atIsCgtExempt" [(ngModel)]="atIsCgtExempt" [binary]="true" />
+        <label for="atIsCgtExempt">CGT Exempt</label>
+      </div>
+    </div>
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="assetTypeDialogVisible.set(false)" />
+    <p-button label="Save" icon="pi pi-check" (onClick)="saveAssetType()" [disabled]="!atName" />
   </ng-template>
 </p-dialog>
 

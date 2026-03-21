@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { InputText } from 'primeng/inputtext';
@@ -8,6 +9,8 @@ import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
+import { Accordion, AccordionContent, AccordionHeader, AccordionPanel } from 'primeng/accordion';
+import { Checkbox } from 'primeng/checkbox';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
 import { Password } from 'primeng/password';
@@ -15,12 +18,12 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GoalService } from '../../core/auth/goal.service';
-import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest } from '../../core/api/models';
+import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest, AssetType, CreateAssetTypeRequest, UpdateAssetTypeRequest } from '../../core/api/models';
 
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast, Password],
+  imports: [FormsModule, DecimalPipe, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Accordion, AccordionContent, AccordionHeader, AccordionPanel, Checkbox, Tag, Toast, Password],
   providers: [MessageService, ConfirmationService],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -52,6 +55,40 @@ export class SettingsComponent implements OnInit {
   protected categoryDialogVisible = signal(false);
   protected categoryName = '';
 
+  // Asset type management
+  protected assetTypes = signal<AssetType[]>([]);
+  protected editingAssetType = signal<AssetType | null>(null);
+  protected assetTypeDialogVisible = signal(false);
+  protected atName = '';
+  protected atCategory = '';
+  protected atLiquidity = '';
+  protected atGrowthClass = '';
+  protected atIsSuper = false;
+  protected atIsCgtExempt = false;
+  protected atDefaultReturnRate: number | null = 0;
+  protected atDefaultVolatility: number | null = 0;
+
+  protected assetCategoryOptions = [
+    { label: 'Cash', value: 'cash' },
+    { label: 'Investable', value: 'investable' },
+    { label: 'Property', value: 'property' },
+    { label: 'Retirement', value: 'retirement' },
+    { label: 'Other', value: 'other' },
+  ];
+
+  protected liquidityOptions = [
+    { label: 'Immediate', value: 'immediate' },
+    { label: 'Short Term', value: 'short_term' },
+    { label: 'Long Term', value: 'long_term' },
+    { label: 'Restricted', value: 'restricted' },
+  ];
+
+  protected growthClassOptions = [
+    { label: 'Defensive', value: 'defensive' },
+    { label: 'Growth', value: 'growth' },
+    { label: 'Mixed', value: 'mixed' },
+  ];
+
   protected passphraseEnabled = signal(false);
   protected passphraseDialogVisible = signal(false);
   protected currentPassphrase = '';
@@ -67,6 +104,7 @@ export class SettingsComponent implements OnInit {
     this.api.getHousehold().subscribe((h) => this.household.set(h));
     this.api.getMembers().subscribe((m) => this.members.set(m));
     this.loadCategories();
+    this.loadAssetTypes();
     this.api.getAuthStatus().subscribe(s => this.passphraseEnabled.set(s.passphraseEnabled));
   }
 
@@ -157,6 +195,138 @@ export class SettingsComponent implements OnInit {
         this.loadCategories();
       });
     });
+  }
+
+  loadAssetTypes() {
+    this.api.getAssetTypes().subscribe((types) => {
+      this.assetTypes.set([...types].sort((a, b) => a.sortOrder - b.sortOrder));
+    });
+  }
+
+  openAddAssetType() {
+    this.editingAssetType.set(null);
+    this.atName = '';
+    this.atCategory = 'cash';
+    this.atLiquidity = 'immediate';
+    this.atGrowthClass = 'defensive';
+    this.atIsSuper = false;
+    this.atIsCgtExempt = false;
+    this.atDefaultReturnRate = 0;
+    this.atDefaultVolatility = 0;
+    this.assetTypeDialogVisible.set(true);
+  }
+
+  openEditAssetType(at: AssetType) {
+    this.editingAssetType.set(at);
+    this.atName = at.name;
+    this.atCategory = at.category;
+    this.atLiquidity = at.liquidity;
+    this.atGrowthClass = at.growthClass;
+    this.atIsSuper = at.isSuper;
+    this.atIsCgtExempt = at.isCgtExempt;
+    this.atDefaultReturnRate = at.defaultReturnRate * 100;
+    this.atDefaultVolatility = at.defaultVolatility * 100;
+    this.assetTypeDialogVisible.set(true);
+  }
+
+  saveAssetType() {
+    const editing = this.editingAssetType();
+    if (editing) {
+      const req: UpdateAssetTypeRequest = {
+        name: this.atName,
+        category: this.atCategory,
+        liquidity: this.atLiquidity,
+        growthClass: this.atGrowthClass,
+        isSuper: this.atIsSuper,
+        isCgtExempt: this.atIsCgtExempt,
+        sortOrder: editing.sortOrder,
+        defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
+        defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
+      };
+      this.api.updateAssetType(editing.id, req).subscribe(() => {
+        this.assetTypeDialogVisible.set(false);
+        this.loadAssetTypes();
+        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset type updated' });
+      });
+    } else {
+      const req: CreateAssetTypeRequest = {
+        name: this.atName,
+        category: this.atCategory,
+        liquidity: this.atLiquidity,
+        growthClass: this.atGrowthClass,
+        isSuper: this.atIsSuper,
+        isCgtExempt: this.atIsCgtExempt,
+        defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
+        defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
+      };
+      this.api.createAssetType(req).subscribe(() => {
+        this.assetTypeDialogVisible.set(false);
+        this.loadAssetTypes();
+        this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Asset type added' });
+      });
+    }
+  }
+
+  deleteAssetType(at: AssetType) {
+    this.confirmationService.confirm({
+      message: `Delete asset type "${at.name}"? This cannot be undone.`,
+      header: 'Delete Asset Type?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.deleteAssetType(at.id).subscribe({
+          next: () => {
+            this.loadAssetTypes();
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Asset type "${at.name}" deleted` });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Cannot Delete', detail: 'This type is in use. Reassign or remove referencing assets first.' });
+          },
+        });
+      },
+    });
+  }
+
+  moveAssetTypeUp(at: AssetType) {
+    const types = this.assetTypes();
+    const idx = types.findIndex((t) => t.id === at.id);
+    if (idx <= 0) return;
+    const prev = types[idx - 1];
+    const prevOrder = prev.sortOrder;
+    const atOrder = at.sortOrder;
+    this.api.updateAssetType(prev.id, { ...this.assetTypeToUpdateRequest(prev), sortOrder: atOrder }).subscribe(() => {
+      this.api.updateAssetType(at.id, { ...this.assetTypeToUpdateRequest(at), sortOrder: prevOrder }).subscribe(() => {
+        this.loadAssetTypes();
+      });
+    });
+  }
+
+  moveAssetTypeDown(at: AssetType) {
+    const types = this.assetTypes();
+    const idx = types.findIndex((t) => t.id === at.id);
+    if (idx < 0 || idx >= types.length - 1) return;
+    const next = types[idx + 1];
+    const nextOrder = next.sortOrder;
+    const atOrder = at.sortOrder;
+    this.api.updateAssetType(next.id, { ...this.assetTypeToUpdateRequest(next), sortOrder: atOrder }).subscribe(() => {
+      this.api.updateAssetType(at.id, { ...this.assetTypeToUpdateRequest(at), sortOrder: nextOrder }).subscribe(() => {
+        this.loadAssetTypes();
+      });
+    });
+  }
+
+  private assetTypeToUpdateRequest(at: AssetType): UpdateAssetTypeRequest {
+    return {
+      name: at.name,
+      category: at.category,
+      liquidity: at.liquidity,
+      growthClass: at.growthClass,
+      isSuper: at.isSuper,
+      isCgtExempt: at.isCgtExempt,
+      sortOrder: at.sortOrder,
+      defaultReturnRate: at.defaultReturnRate,
+      defaultVolatility: at.defaultVolatility,
+    };
   }
 
   saveHousehold() {
