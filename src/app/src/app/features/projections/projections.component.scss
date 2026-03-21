@@ -36,9 +36,8 @@
 
 .controls-right {
   display: flex;
-  gap: 1.25rem;
+  gap: 1rem;
   align-items: flex-end;
-  margin-left: auto;
 }
 
 .control-label {
@@ -81,8 +80,12 @@
   width: 7rem;
 }
 
-.sim-input {
-  width: 6rem;
+::ng-deep .sim-input {
+  width: 5.5rem !important;
+
+  input {
+    width: 100% !important;
+  }
 }
 
 .inflation-controls {
@@ -114,8 +117,12 @@
   }
 }
 
-.inflation-input {
-  width: 5rem;
+::ng-deep .inflation-input {
+  width: 4.5rem !important;
+
+  input {
+    width: 100% !important;
+  }
 }
 
 // ---- Chart ----
