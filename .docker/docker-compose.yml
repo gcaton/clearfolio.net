@@ -1,24 +1,15 @@
 services:
-  api:
+  clearfolio:
     build:
-      context: ../src/api
+      context: ..
       dockerfile: Dockerfile
     ports:
-      - "5000:8080"
+      - "4200:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - DB_PATH=/data/clearfolio.db
     volumes:
       - clearfolio-data:/data
-
-  app:
-    build:
-      context: ../src/app
-      dockerfile: Dockerfile
-    ports:
-      - "4200:80"
-    depends_on:
-      - api
 
 volumes:
   clearfolio-data:

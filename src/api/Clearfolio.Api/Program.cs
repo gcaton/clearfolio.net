@@ -21,8 +21,24 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
-app.UseMiddleware<CloudflareJwtMiddleware>();
+// Passphrase reset escape hatch
+if (Environment.GetEnvironmentVariable("CLEARFOLIO_RESET_PASSPHRASE") == "true")
+{
+    using var resetScope = app.Services.CreateScope();
+    var resetDb = resetScope.ServiceProvider.GetRequiredService<ClearfolioDbContext>();
+    var toRemove = await resetDb.AppSettings
+        .Where(s => s.Key == "passphrase" || s.Key.StartsWith("session:"))
+        .ToListAsync();
+    if (toRemove.Count > 0)
+    {
+        resetDb.AppSettings.RemoveRange(toRemove);
+        await resetDb.SaveChangesAsync();
+    }
+}
 
+app.UseMiddleware<LocalAuthMiddleware>();
+
+app.MapAuthEndpoints();
 app.MapReferenceEndpoints();
 app.MapHouseholdEndpoints();
 app.MapMembersEndpoints();

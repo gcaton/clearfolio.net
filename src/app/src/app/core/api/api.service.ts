@@ -1,5 +1,11 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+
+export interface AuthStatus {
+  passphraseEnabled: boolean;
+  authenticated: boolean;
+  setupComplete: boolean;
+}
 import {
   Household,
   UpdateHouseholdRequest,
@@ -40,6 +46,17 @@ import {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
+
+  // Auth
+  getAuthStatus() { return this.http.get<AuthStatus>('/api/auth/status'); }
+  login(passphrase: string) { return this.http.post('/api/auth/login', { passphrase }); }
+  logout() { return this.http.post('/api/auth/logout', {}); }
+  setPassphrase(currentPassphrase: string | null, newPassphrase: string) {
+    return this.http.put('/api/auth/passphrase', { currentPassphrase, newPassphrase });
+  }
+  removePassphrase(currentPassphrase: string) {
+    return this.http.delete('/api/auth/passphrase', { body: { currentPassphrase } });
+  }
 
   // Reference
   getAssetTypes() {
@@ -82,7 +99,7 @@ export class ApiService {
     return this.http.get<Member>('/api/members/me');
   }
 
-  createMember(email: string, displayName: string) {
+  createMember(displayName: string, email?: string) {
     return this.http.post<Member>('/api/members', { email, displayName });
   }
 
@@ -90,8 +107,8 @@ export class ApiService {
     return this.http.put<Member>(`/api/members/${id}`, { displayName, email });
   }
 
-  setup(displayName: string) {
-    return this.http.post<Member>('/api/members/setup', { displayName });
+  setup(displayName: string, householdName?: string, currency?: string, periodType?: string) {
+    return this.http.post<Member>('/api/members/setup', { displayName, householdName, currency, periodType });
   }
 
   deleteMember(id: string) {

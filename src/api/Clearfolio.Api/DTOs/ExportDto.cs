@@ -18,7 +18,7 @@ public record ExportHouseholdDto(
     string PreferredPeriodType);
 
 public record ExportMemberDto(
-    string Email,
+    string? Email,
     string DisplayName,
     string MemberTag,
     bool IsPrimary);

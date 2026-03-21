@@ -11,14 +11,30 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Clearfolio.Api.Migrations
 {
     [DbContext(typeof(ClearfolioDbContext))]
-    [Migration("20260315075613_AddAssetSymbol")]
-    partial class AddAssetSymbol
+    [Migration("20260321101909_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.5");
+
+            modelBuilder.Entity("Clearfolio.Api.Models.AppSetting", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("value");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("app_settings", (string)null);
+                });
 
             modelBuilder.Entity("Clearfolio.Api.Models.Asset", b =>
                 {
@@ -30,6 +46,18 @@ namespace Clearfolio.Api.Migrations
                     b.Property<Guid>("AssetTypeId")
                         .HasColumnType("TEXT")
                         .HasColumnName("asset_type_id");
+
+                    b.Property<double?>("ContributionAmount")
+                        .HasColumnType("REAL")
+                        .HasColumnName("contribution_amount");
+
+                    b.Property<string>("ContributionEndDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("contribution_end_date");
+
+                    b.Property<string>("ContributionFrequency")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("contribution_frequency");
 
                     b.Property<string>("CreatedAt")
                         .IsRequired()
@@ -43,6 +71,14 @@ namespace Clearfolio.Api.Migrations
                         .HasDefaultValue("AUD")
                         .HasColumnName("currency");
 
+                    b.Property<double?>("ExpectedReturnRate")
+                        .HasColumnType("REAL")
+                        .HasColumnName("expected_return_rate");
+
+                    b.Property<double?>("ExpectedVolatility")
+                        .HasColumnType("REAL")
+                        .HasColumnName("expected_volatility");
+
                     b.Property<Guid>("HouseholdId")
                         .HasColumnType("TEXT")
                         .HasColumnName("household_id");
@@ -52,6 +88,12 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnType("INTEGER")
                         .HasDefaultValue(true)
                         .HasColumnName("is_active");
+
+                    b.Property<bool>("IsPreTaxContribution")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_pre_tax_contribution");
 
                     b.Property<double>("JointSplit")
                         .ValueGeneratedOnAdd()
@@ -111,6 +153,18 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnType("TEXT")
                         .HasColumnName("category");
 
+                    b.Property<double>("DefaultReturnRate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("default_return_rate");
+
+                    b.Property<double>("DefaultVolatility")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("REAL")
+                        .HasDefaultValue(0.0)
+                        .HasColumnName("default_volatility");
+
                     b.Property<string>("GrowthClass")
                         .IsRequired()
                         .HasColumnType("TEXT")
@@ -151,6 +205,8 @@ namespace Clearfolio.Api.Migrations
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000001"),
                             Category = "cash",
+                            DefaultReturnRate = 0.040000000000000001,
+                            DefaultVolatility = 0.01,
                             GrowthClass = "defensive",
                             IsCgtExempt = false,
                             IsSuper = false,
@@ -163,6 +219,8 @@ namespace Clearfolio.Api.Migrations
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000002"),
                             Category = "cash",
+                            DefaultReturnRate = 0.040000000000000001,
+                            DefaultVolatility = 0.01,
                             GrowthClass = "defensive",
                             IsCgtExempt = false,
                             IsSuper = false,
@@ -175,6 +233,8 @@ namespace Clearfolio.Api.Migrations
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000003"),
                             Category = "cash",
+                            DefaultReturnRate = 0.044999999999999998,
+                            DefaultVolatility = 0.01,
                             GrowthClass = "defensive",
                             IsCgtExempt = false,
                             IsSuper = false,
@@ -187,6 +247,8 @@ namespace Clearfolio.Api.Migrations
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000004"),
                             Category = "investable",
+                            DefaultReturnRate = 0.070000000000000007,
+                            DefaultVolatility = 0.14999999999999999,
                             GrowthClass = "growth",
                             IsCgtExempt = false,
                             IsSuper = false,
@@ -199,6 +261,8 @@ namespace Clearfolio.Api.Migrations
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000005"),
                             Category = "investable",
+                            DefaultReturnRate = 0.080000000000000002,
+                            DefaultVolatility = 0.17000000000000001,
                             GrowthClass = "growth",
                             IsCgtExempt = false,
                             IsSuper = false,
@@ -209,100 +273,247 @@ namespace Clearfolio.Api.Migrations
                         },
                         new
                         {
+                            Id = new Guid("a0000000-0000-0000-0000-00000000000f"),
+                            Category = "investable",
+                            DefaultReturnRate = 0.059999999999999998,
+                            DefaultVolatility = 0.12,
+                            GrowthClass = "growth",
+                            IsCgtExempt = false,
+                            IsSuper = false,
+                            IsSystem = true,
+                            Liquidity = "short_term",
+                            Name = "Managed fund",
+                            SortOrder = 6
+                        },
+                        new
+                        {
                             Id = new Guid("a0000000-0000-0000-0000-000000000006"),
                             Category = "investable",
+                            DefaultReturnRate = 0.040000000000000001,
+                            DefaultVolatility = 0.050000000000000003,
                             GrowthClass = "defensive",
                             IsCgtExempt = false,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "short_term",
                             Name = "Bonds / fixed income",
-                            SortOrder = 6
+                            SortOrder = 7
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000007"),
                             Category = "investable",
+                            DefaultReturnRate = 0.0,
+                            DefaultVolatility = 0.5,
                             GrowthClass = "growth",
                             IsCgtExempt = false,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "immediate",
                             Name = "Cryptocurrency",
-                            SortOrder = 7
+                            SortOrder = 8
+                        },
+                        new
+                        {
+                            Id = new Guid("a0000000-0000-0000-0000-00000000000e"),
+                            Category = "investable",
+                            DefaultReturnRate = 0.050000000000000003,
+                            DefaultVolatility = 0.080000000000000002,
+                            GrowthClass = "growth",
+                            IsCgtExempt = false,
+                            IsSuper = false,
+                            IsSystem = true,
+                            Liquidity = "short_term",
+                            Name = "Investment bond",
+                            SortOrder = 9
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000008"),
                             Category = "retirement",
+                            DefaultReturnRate = 0.070000000000000007,
+                            DefaultVolatility = 0.12,
                             GrowthClass = "mixed",
                             IsCgtExempt = false,
                             IsSuper = true,
                             IsSystem = true,
                             Liquidity = "restricted",
                             Name = "Superannuation — Accumulation",
-                            SortOrder = 8
+                            SortOrder = 10
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-000000000009"),
                             Category = "retirement",
+                            DefaultReturnRate = 0.059999999999999998,
+                            DefaultVolatility = 0.10000000000000001,
                             GrowthClass = "mixed",
                             IsCgtExempt = false,
                             IsSuper = true,
                             IsSystem = true,
                             Liquidity = "long_term",
                             Name = "Superannuation — Pension phase",
-                            SortOrder = 9
+                            SortOrder = 11
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-00000000000a"),
                             Category = "property",
+                            DefaultReturnRate = 0.050000000000000003,
+                            DefaultVolatility = 0.10000000000000001,
                             GrowthClass = "growth",
                             IsCgtExempt = true,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "long_term",
                             Name = "Primary residence (PPOR)",
-                            SortOrder = 10
+                            SortOrder = 12
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-00000000000b"),
                             Category = "property",
+                            DefaultReturnRate = 0.050000000000000003,
+                            DefaultVolatility = 0.10000000000000001,
                             GrowthClass = "growth",
                             IsCgtExempt = false,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "long_term",
                             Name = "Investment property",
-                            SortOrder = 11
+                            SortOrder = 13
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-00000000000c"),
                             Category = "other",
+                            DefaultReturnRate = -0.10000000000000001,
+                            DefaultVolatility = 0.050000000000000003,
                             GrowthClass = "defensive",
                             IsCgtExempt = false,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "long_term",
                             Name = "Vehicle",
-                            SortOrder = 12
+                            SortOrder = 14
                         },
                         new
                         {
                             Id = new Guid("a0000000-0000-0000-0000-00000000000d"),
                             Category = "other",
+                            DefaultReturnRate = 0.0,
+                            DefaultVolatility = 0.10000000000000001,
                             GrowthClass = "mixed",
                             IsCgtExempt = false,
                             IsSuper = false,
                             IsSystem = true,
                             Liquidity = "long_term",
                             Name = "Other physical asset",
-                            SortOrder = 13
+                            SortOrder = 15
                         });
+                });
+
+            modelBuilder.Entity("Clearfolio.Api.Models.Expense", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("REAL")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("ExpenseCategoryId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("expense_category_id");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("frequency");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid?>("OwnerMemberId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("owner_member_id");
+
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseCategoryId");
+
+                    b.HasIndex("OwnerMemberId");
+
+                    b.HasIndex("HouseholdId", "IsActive");
+
+                    b.ToTable("expenses", (string)null);
+                });
+
+            modelBuilder.Entity("Clearfolio.Api.Models.ExpenseCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("is_default");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("name");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER")
+                        .HasColumnName("sort_order");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("HouseholdId");
+
+                    b.ToTable("expense_categories", (string)null);
                 });
 
             modelBuilder.Entity("Clearfolio.Api.Models.Household", b =>
@@ -359,7 +570,6 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnName("display_name");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("TEXT")
                         .HasColumnName("email");
 
@@ -378,12 +588,74 @@ namespace Clearfolio.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
                     b.HasIndex("HouseholdId");
 
                     b.ToTable("household_members", (string)null);
+                });
+
+            modelBuilder.Entity("Clearfolio.Api.Models.IncomeStream", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("id");
+
+                    b.Property<double>("Amount")
+                        .HasColumnType("REAL")
+                        .HasColumnName("amount");
+
+                    b.Property<string>("CreatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("frequency");
+
+                    b.Property<Guid>("HouseholdId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("household_id");
+
+                    b.Property<string>("IncomeType")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("income_type");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("label");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT")
+                        .HasColumnName("notes");
+
+                    b.Property<Guid>("OwnerMemberId")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("owner_member_id");
+
+                    b.Property<string>("UpdatedAt")
+                        .IsRequired()
+                        .HasColumnType("TEXT")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerMemberId");
+
+                    b.HasIndex("HouseholdId", "IsActive");
+
+                    b.ToTable("income_streams", (string)null);
                 });
 
             modelBuilder.Entity("Clearfolio.Api.Models.Liability", b =>
@@ -408,6 +680,10 @@ namespace Clearfolio.Api.Migrations
                     b.Property<Guid>("HouseholdId")
                         .HasColumnType("TEXT")
                         .HasColumnName("household_id");
+
+                    b.Property<double?>("InterestRate")
+                        .HasColumnType("REAL")
+                        .HasColumnName("interest_rate");
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -444,6 +720,18 @@ namespace Clearfolio.Api.Migrations
                         .HasColumnType("TEXT")
                         .HasDefaultValue("sole")
                         .HasColumnName("ownership_type");
+
+                    b.Property<double?>("RepaymentAmount")
+                        .HasColumnType("REAL")
+                        .HasColumnName("repayment_amount");
+
+                    b.Property<string>("RepaymentEndDate")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("repayment_end_date");
+
+                    b.Property<string>("RepaymentFrequency")
+                        .HasColumnType("TEXT")
+                        .HasColumnName("repayment_frequency");
 
                     b.Property<string>("UpdatedAt")
                         .IsRequired()
@@ -677,6 +965,42 @@ namespace Clearfolio.Api.Migrations
                     b.Navigation("OwnerMember");
                 });
 
+            modelBuilder.Entity("Clearfolio.Api.Models.Expense", b =>
+                {
+                    b.HasOne("Clearfolio.Api.Models.ExpenseCategory", "ExpenseCategory")
+                        .WithMany()
+                        .HasForeignKey("ExpenseCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Clearfolio.Api.Models.Household", "Household")
+                        .WithMany("Expenses")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Clearfolio.Api.Models.HouseholdMember", "OwnerMember")
+                        .WithMany()
+                        .HasForeignKey("OwnerMemberId");
+
+                    b.Navigation("ExpenseCategory");
+
+                    b.Navigation("Household");
+
+                    b.Navigation("OwnerMember");
+                });
+
+            modelBuilder.Entity("Clearfolio.Api.Models.ExpenseCategory", b =>
+                {
+                    b.HasOne("Clearfolio.Api.Models.Household", "Household")
+                        .WithMany("ExpenseCategories")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Household");
+                });
+
             modelBuilder.Entity("Clearfolio.Api.Models.HouseholdMember", b =>
                 {
                     b.HasOne("Clearfolio.Api.Models.Household", "Household")
@@ -686,6 +1010,25 @@ namespace Clearfolio.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Household");
+                });
+
+            modelBuilder.Entity("Clearfolio.Api.Models.IncomeStream", b =>
+                {
+                    b.HasOne("Clearfolio.Api.Models.Household", "Household")
+                        .WithMany("IncomeStreams")
+                        .HasForeignKey("HouseholdId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Clearfolio.Api.Models.HouseholdMember", "OwnerMember")
+                        .WithMany()
+                        .HasForeignKey("OwnerMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Household");
+
+                    b.Navigation("OwnerMember");
                 });
 
             modelBuilder.Entity("Clearfolio.Api.Models.Liability", b =>
@@ -740,6 +1083,12 @@ namespace Clearfolio.Api.Migrations
             modelBuilder.Entity("Clearfolio.Api.Models.Household", b =>
                 {
                     b.Navigation("Assets");
+
+                    b.Navigation("ExpenseCategories");
+
+                    b.Navigation("Expenses");
+
+                    b.Navigation("IncomeStreams");
 
                     b.Navigation("Liabilities");
 

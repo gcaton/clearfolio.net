@@ -32,6 +32,20 @@
 
           <p-button label="Save" icon="pi pi-check" (onClick)="saveHousehold()" />
         </div>
+
+        <div class="settings-form" style="margin-top: 2rem">
+          <h3>Security</h3>
+          @if (passphraseEnabled()) {
+            <p>A passphrase is currently set.</p>
+            <div class="flex gap-2">
+              <p-button label="Change Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
+              <p-button label="Remove Passphrase" icon="pi pi-lock-open" severity="danger" [outlined]="true" (onClick)="openSetPassphrase()" />
+            </div>
+          } @else {
+            <p>No passphrase is set. Anyone on your network can access Clearfolio.</p>
+            <p-button label="Set Passphrase" icon="pi pi-lock" (onClick)="openSetPassphrase()" />
+          }
+        </div>
       }
     </p-tabpanel>
     <p-tabpanel value="1">
@@ -157,7 +171,7 @@
 
 <p-dialog header="Add Member" [(visible)]="addMemberVisible" [modal]="true" [style]="{ width: '400px' }">
   <div class="form-grid">
-    <label for="newEmail">Email</label>
+    <label for="newEmail">Email (optional)</label>
     <input pInputText id="newEmail" [(ngModel)]="newMemberEmail" placeholder="partner@gmail.com" />
 
     <label for="newName">Display Name</label>
@@ -166,6 +180,31 @@
 
   <ng-template #footer>
     <p-button label="Cancel" [text]="true" (onClick)="addMemberVisible.set(false)" />
-    <p-button label="Add" icon="pi pi-check" (onClick)="addMember()" [disabled]="!newMemberEmail || !newMemberName" />
+    <p-button label="Add" icon="pi pi-check" (onClick)="addMember()" [disabled]="!newMemberName" />
+  </ng-template>
+</p-dialog>
+
+<p-dialog header="Passphrase" [(visible)]="passphraseDialogVisible" [modal]="true" [style]="{ width: '400px' }">
+  <div class="form-grid">
+    @if (passphraseEnabled()) {
+      <label for="curPass">Current Passphrase</label>
+      <p-password id="curPass" [(ngModel)]="currentPassphrase" [feedback]="false" [toggleMask]="true"
+        styleClass="w-full" [inputStyleClass]="'w-full'" />
+    }
+
+    <label for="newPass">New Passphrase</label>
+    <p-password id="newPass" [(ngModel)]="newPassphrase" [feedback]="false" [toggleMask]="true"
+      styleClass="w-full" [inputStyleClass]="'w-full'" />
+
+    <label for="confPass">Confirm Passphrase</label>
+    <p-password id="confPass" [(ngModel)]="confirmPassphrase" [feedback]="false" [toggleMask]="true"
+      styleClass="w-full" [inputStyleClass]="'w-full'" />
+  </div>
+  <ng-template #footer>
+    <p-button label="Cancel" [text]="true" (onClick)="passphraseDialogVisible.set(false)" />
+    @if (passphraseEnabled()) {
+      <p-button label="Remove" severity="danger" (onClick)="removePassphrase()" [disabled]="!currentPassphrase" />
+    }
+    <p-button label="Save" icon="pi pi-check" (onClick)="savePassphrase()" [disabled]="!newPassphrase || !confirmPassphrase" />
   </ng-template>
 </p-dialog>

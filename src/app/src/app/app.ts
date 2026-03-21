@@ -15,7 +15,7 @@ import { environment } from '../environments/environment';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, SelectButton, Drawer, Button, FormsModule, DarkModeToggleComponent],
   template: `
-    @if (!auth.needsSetup()) {
+    @if (auth.setupComplete() && auth.authenticated()) {
     @if (viewAccentColor() !== 'transparent') {
       <div class="view-context-bar" [style.background]="viewAccentColor()">
         Viewing: {{ viewLabel() }}
@@ -104,7 +104,7 @@ import { environment } from '../environments/environment';
       <router-outlet />
     </main>
 
-    @if (!auth.needsSetup()) {
+    @if (auth.setupComplete() && auth.authenticated()) {
       <footer class="app-footer">v{{ version }}</footer>
     }
   `,
