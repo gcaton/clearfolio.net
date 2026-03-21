@@ -38,6 +38,7 @@ if (Environment.GetEnvironmentVariable("CLEARFOLIO_RESET_PASSPHRASE") == "true")
 
 app.UseMiddleware<LocalAuthMiddleware>();
 
+app.MapAuthEndpoints();
 app.MapReferenceEndpoints();
 app.MapHouseholdEndpoints();
 app.MapMembersEndpoints();
