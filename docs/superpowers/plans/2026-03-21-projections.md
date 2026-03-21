@@ -174,17 +174,41 @@ new AssetType { Id = Guid.Parse("a0000000-0000-0000-0000-000000000001"), Name = 
 Run: `dotnet ef migrations add AddProjectionFields --project src/api/Clearfolio.Api/`
 Expected: Migration created successfully
 
-- [ ] **Step 6: Apply migration and verify**
+- [ ] **Step 6: Add data migration for existing AssetType rows**
+
+In the generated migration's `Up()` method, add SQL after the `AddColumn` calls to update existing rows with correct values. EF Core `HasData` only inserts missing rows — it does not update existing ones:
+
+```csharp
+migrationBuilder.Sql(@"
+    UPDATE asset_types SET default_return_rate = 0.04, default_volatility = 0.01 WHERE id = 'a0000000-0000-0000-0000-000000000001';
+    UPDATE asset_types SET default_return_rate = 0.04, default_volatility = 0.01 WHERE id = 'a0000000-0000-0000-0000-000000000002';
+    UPDATE asset_types SET default_return_rate = 0.045, default_volatility = 0.01 WHERE id = 'a0000000-0000-0000-0000-000000000003';
+    UPDATE asset_types SET default_return_rate = 0.07, default_volatility = 0.15 WHERE id = 'a0000000-0000-0000-0000-000000000004';
+    UPDATE asset_types SET default_return_rate = 0.08, default_volatility = 0.17 WHERE id = 'a0000000-0000-0000-0000-000000000005';
+    UPDATE asset_types SET default_return_rate = 0.06, default_volatility = 0.12 WHERE id = 'a0000000-0000-0000-0000-00000000000f';
+    UPDATE asset_types SET default_return_rate = 0.04, default_volatility = 0.05 WHERE id = 'a0000000-0000-0000-0000-000000000006';
+    UPDATE asset_types SET default_return_rate = 0.0, default_volatility = 0.50 WHERE id = 'a0000000-0000-0000-0000-000000000007';
+    UPDATE asset_types SET default_return_rate = 0.05, default_volatility = 0.08 WHERE id = 'a0000000-0000-0000-0000-00000000000e';
+    UPDATE asset_types SET default_return_rate = 0.07, default_volatility = 0.12 WHERE id = 'a0000000-0000-0000-0000-000000000008';
+    UPDATE asset_types SET default_return_rate = 0.06, default_volatility = 0.10 WHERE id = 'a0000000-0000-0000-0000-000000000009';
+    UPDATE asset_types SET default_return_rate = 0.05, default_volatility = 0.10 WHERE id = 'a0000000-0000-0000-0000-00000000000a';
+    UPDATE asset_types SET default_return_rate = 0.05, default_volatility = 0.10 WHERE id = 'a0000000-0000-0000-0000-00000000000b';
+    UPDATE asset_types SET default_return_rate = -0.10, default_volatility = 0.05 WHERE id = 'a0000000-0000-0000-0000-00000000000c';
+    UPDATE asset_types SET default_return_rate = 0.0, default_volatility = 0.10 WHERE id = 'a0000000-0000-0000-0000-00000000000d';
+");
+```
+
+- [ ] **Step 7: Apply migration and verify**
 
 Run: `dotnet ef database update --project src/api/Clearfolio.Api/`
 Expected: Database updated successfully
 
-- [ ] **Step 7: Verify the API project builds and starts**
+- [ ] **Step 8: Verify the API project builds and starts**
 
 Run: `dotnet build src/api/Clearfolio.Api/`
 Expected: Build succeeded
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add src/api/Clearfolio.Api/Data/ src/api/Clearfolio.Api/Migrations/
@@ -709,7 +733,7 @@ public static class ProjectionEngine
     {
         if (entity.ContributionEndDate is not null &&
             DateOnly.TryParse(entity.ContributionEndDate, out var endDate) &&
-            year >= endDate.Year)
+            year > endDate.Year)
             return 0;
         return entity.AnnualContribution;
     }
@@ -926,6 +950,7 @@ public static class ProjectionEndpoints
 
     private static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
     private static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
+    private static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
 
     private static async Task<List<EntityInput>> BuildEntityInputs(
         ClearfolioDbContext db, HouseholdMember member, ProjectionRequest request)
@@ -948,8 +973,12 @@ public static class ProjectionEndpoints
             _ => assets,
         };
 
-        if (request.Scope == "liquid")
-            liabilities = [];
+        liabilities = request.Scope switch
+        {
+            "financial" => liabilities.Where(l => FinancialLiabilityCategories.Contains(l.LiabilityType.Category)).ToList(),
+            "liquid" => [],
+            _ => liabilities,
+        };
 
         // Apply entity filter
         if (request.EntityIds is { Count: > 0 })
@@ -1307,7 +1336,7 @@ In `assets.component.html`, add a "Projections" section inside the edit dialog, 
 <div class="form-row">
   <div class="form-field">
     <label>Contribution Amount</label>
-    <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" currency="AUD" [minFractionDigits]="0" placeholder="0" />
+    <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" [currency]="household()?.baseCurrency ?? 'AUD'" [minFractionDigits]="0" placeholder="0" />
   </div>
   <div class="form-field">
     <label>Frequency</label>
@@ -1357,7 +1386,7 @@ In `liabilities.component.html`, add after existing fields:
 <div class="form-row">
   <div class="form-field">
     <label>Repayment Amount</label>
-    <p-inputNumber [(ngModel)]="form.repaymentAmount" mode="currency" currency="AUD" [minFractionDigits]="0" placeholder="0" />
+    <p-inputNumber [(ngModel)]="form.repaymentAmount" mode="currency" [currency]="household()?.baseCurrency ?? 'AUD'" [minFractionDigits]="0" placeholder="0" />
   </div>
   <div class="form-field">
     <label>Frequency</label>
@@ -1524,7 +1553,7 @@ import { LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
-import { ViewStateService } from '../../core/view-state.service';
+import { ViewStateService } from '../../core/auth/view-state.service';
 import type {
   ProjectionResult, CompoundResult, ScenarioResult, MonteCarloResult,
   ProjectionDefault, ProjectionRequest,
@@ -1532,11 +1561,10 @@ import type {
 import { buildCompoundOptions, buildScenarioOptions, buildMonteCarloOptions } from './projection-chart-options';
 
 // PrimeNG
-import { SelectModule } from 'primeng/select';
-import { ButtonModule } from 'primeng/button';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SkeletonModule } from 'primeng/skeleton';
-import { ToggleButtonModule } from 'primeng/togglebutton';
+import { Select } from 'primeng/select';
+import { Button } from 'primeng/button';
+import { InputNumber } from 'primeng/inputnumber';
+import { Skeleton } from 'primeng/skeleton';
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
@@ -1547,7 +1575,7 @@ type ProjectionMode = 'compound' | 'scenario' | 'monte-carlo';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule, NgxEchartsDirective,
-    SelectModule, ButtonModule, InputNumberModule, SkeletonModule, ToggleButtonModule,
+    Select, Button, InputNumber, Skeleton,
   ],
   providers: [provideEchartsCore({ echarts })],
   templateUrl: './projections.component.html',
@@ -1607,10 +1635,27 @@ export class ProjectionsComponent {
         const first = e.years[0]?.value ?? 0;
         const last = e.years[e.years.length - 1]?.value ?? 0;
         const growth = first > 0 ? ((last - first) / first) * 100 : 0;
-        return { ...e, currentValue: first, projectedValue: last, growth, contribution: def };
+        return { id: e.id, label: e.label, category: e.category, entityType: e.entityType, currentValue: first, projectedValue: last, growth, contribution: def };
       });
     }
-    // For scenario/MC, use entity-level data similarly
+    if (r.mode === 'scenario') {
+      return (r as ScenarioResult).entities.map((e) => {
+        const def = defs.find((d) => d.entityId === e.id);
+        const first = e.years[0]?.base ?? 0;
+        const last = e.years[e.years.length - 1]?.base ?? 0;
+        const growth = first > 0 ? ((last - first) / first) * 100 : 0;
+        return { id: e.id, label: e.label, category: e.category, entityType: e.entityType, currentValue: first, projectedValue: last, growth, contribution: def };
+      });
+    }
+    if (r.mode === 'monte-carlo') {
+      return (r as MonteCarloResult).entities.map((e) => {
+        const def = defs.find((d) => d.entityId === e.id);
+        const first = e.years[0]?.p50 ?? 0;
+        const last = e.years[e.years.length - 1]?.p50 ?? 0;
+        const growth = first > 0 ? ((last - first) / first) * 100 : 0;
+        return { id: e.id, label: e.label, category: e.category, entityType: e.entityType, currentValue: first, projectedValue: last, growth, contribution: def };
+      });
+    }
     return [];
   });
 
@@ -1618,17 +1663,33 @@ export class ProjectionsComponent {
     // Load defaults on init
     this.api.getProjectionDefaults().subscribe((d) => this.defaults.set(d));
 
-    // React to parameter changes
+    // React to view changes from global nav
     effect(() => {
       const view = this.viewState.view();
-      const mode = this.selectedMode();
-      const horizon = this.selectedHorizon();
-      const scope = this.selectedScope();
-      const sims = this.simulations();
-      const entityId = this.selectedEntityId();
-
-      this.runProjection(mode, horizon, view, scope, sims, entityId);
+      this.refresh();
     });
+  }
+
+  protected refresh() {
+    this.runProjection(
+      this.selectedMode(), this.selectedHorizon(), this.viewState.view(),
+      this.selectedScope(), this.simulations(), this.selectedEntityId(),
+    );
+  }
+
+  protected onModeChange(mode: ProjectionMode) {
+    this.selectedMode.set(mode);
+    this.refresh();
+  }
+
+  protected onScopeChange(scope: string) {
+    this.selectedScope.set(scope);
+    this.refresh();
+  }
+
+  protected onSimulationsChange(sims: number) {
+    this.simulations.set(sims);
+    this.refresh();
   }
 
   private runProjection(
@@ -1662,10 +1723,12 @@ export class ProjectionsComponent {
   protected selectHorizon(years: number) {
     this.customHorizon.set(false);
     this.selectedHorizon.set(years);
+    this.refresh();
   }
 
   protected selectEntity(id: string | null) {
     this.selectedEntityId.set(this.selectedEntityId() === id ? null : id);
+    this.refresh();
   }
 
   protected formatCurrency(value: number): string {
@@ -1686,7 +1749,7 @@ Create `src/app/src/app/features/projections/projections.component.html`:
   <div class="controls-bar">
     <div class="control-group">
       <label>Method</label>
-      <p-select [(ngModel)]="selectedMode" [options]="modeOptions" optionLabel="label" optionValue="value" />
+      <p-select [ngModel]="selectedMode()" (ngModelChange)="onModeChange($event)" [options]="modeOptions" optionLabel="label" optionValue="value" />
     </div>
 
     <div class="control-group">
@@ -1710,7 +1773,7 @@ Create `src/app/src/app/features/projections/projections.component.html`:
       <label>Scope</label>
       <div class="scope-buttons">
         @for (s of scopeOptions; track s.value) {
-          <button class="scope-btn" [class.active]="selectedScope() === s.value" (click)="selectedScope.set(s.value)">
+          <button class="scope-btn" [class.active]="selectedScope() === s.value" (click)="onScopeChange(s.value)">
             {{ s.label }}
           </button>
         }
@@ -1720,7 +1783,7 @@ Create `src/app/src/app/features/projections/projections.component.html`:
     @if (selectedMode() === 'monte-carlo') {
       <div class="control-group">
         <label>Simulations</label>
-        <p-inputNumber [(ngModel)]="simulations" [min]="100" [max]="10000" [step]="100" [style]="{ width: '6rem' }" />
+        <p-inputNumber [ngModel]="simulations()" (ngModelChange)="onSimulationsChange($event)" [min]="100" [max]="10000" [step]="100" [style]="{ width: '6rem' }" />
       </div>
     }
   </div>
@@ -1788,7 +1851,7 @@ Create `src/app/src/app/features/projections/projections.component.html`:
   }
 
   <!-- Entity Drill-Down Cards -->
-  @if (result()?.mode === 'compound') {
+  @if (result()) {
     <h3 class="section-heading">Individual Projections</h3>
     <div class="entity-cards">
       @for (card of entityCards(); track card.id) {
