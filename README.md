@@ -2,7 +2,13 @@
 
 Self-hosted household net worth tracker. Record periodic snapshots of assets and liabilities, track growth over time, and compare positions across household members.
 
-Built to run on a Raspberry Pi 5 behind Cloudflare Tunnel.
+## Quick Start
+
+```bash
+docker run -d -p 8080:80 -v clearfolio-data:/data ghcr.io/gcaton/clearfolio
+```
+
+Then open http://localhost:8080 and complete the first-run setup wizard (household name, display name, currency, period type).
 
 ## Tech Stack
 
@@ -10,10 +16,17 @@ Built to run on a Raspberry Pi 5 behind Cloudflare Tunnel.
 |---|---|
 | API | .NET 10, minimal APIs, EF Core 10, SQLite |
 | Frontend | Angular 21, PrimeNG, Apache ECharts |
-| Auth | Cloudflare Access (Google OAuth) |
-| Hosting | Raspberry Pi 5, Docker, Cloudflare Tunnel |
-| Backups | Litestream → Cloudflare R2 |
-| CI/CD | GitHub Actions → GHCR → Pi pull-based deploy |
+| Hosting | Docker (amd64 + arm64) |
+| CI/CD | GitHub Actions → GHCR |
+
+## Features
+
+- **Dashboard** — net worth stat cards, trend line chart, asset composition donut, liquidity/growth/debt quality breakdowns, member comparison, super gap analysis
+- **Assets & Liabilities** — CRUD with type classification, sole/joint ownership with configurable split, optional ASX symbol with live price lookup
+- **Snapshots** — per-entity quarterly value recording with upsert semantics, bulk entry mode for backfilling historical data
+- **View Toggle** — switch between household, P1, and P2 views; joint assets split by configured ratio
+- **Period System** — supports both Australian Financial Year (FY) and Calendar Year (CY) conventions with quarter granularity
+- **Seed Data** — 13 asset types and 9 liability types pre-loaded with Australian financial categories
 
 ## Local Development
 
@@ -50,10 +63,9 @@ just dev          # Angular dev server with API proxy
 ```
 clearfolio.net/
 ├── .docker/
-│   ├── docker-compose.yml          # Local dev
-│   └── docker-compose.prod.yml     # Production (Pi)
+│   └── docker-compose.yml          # Local dev
 ├── .github/workflows/
-│   └── build.yml                   # CI: build ARM64 images → GHCR
+│   └── build.yml                   # CI: build multi-arch images → GHCR
 ├── src/
 │   ├── api/                        # .NET 10 solution
 │   │   ├── Clearfolio.sln
@@ -61,25 +73,27 @@ clearfolio.net/
 │   │       ├── Data/               # DbContext, migrations
 │   │       ├── Models/             # EF Core entities
 │   │       ├── DTOs/               # Request/response shapes
-│   │       ├── Endpoints/          # Minimal API route handlers
+│   │       ├── Endpoints/          # Minimal API route handlers (incl. AuthEndpoints)
 │   │       ├── Helpers/            # PeriodHelper
-│   │       └── Middleware/         # Cloudflare JWT auth
+│   │       └── Middleware/         # LocalAuthMiddleware
 │   └── app/                        # Angular 21
 │       └── src/app/
 │           ├── core/               # API service, auth, view state
 │           ├── shared/             # Currency display, period selector
 │           └── features/           # Dashboard, assets, liabilities,
 │                                   # snapshots, settings
+├── Dockerfile                      # Single multi-stage build (API + frontend + nginx)
 ├── Justfile                        # Task runner
 └── claude.md                       # AI assistant context
 ```
 
 ## API Endpoints
 
-All endpoints require Cloudflare Access JWT (bypassed in dev mode with a mock user).
+All endpoints except `/api/auth/*` require setup to be complete. All data queries are scoped to the single household.
 
 | Group | Endpoints |
 |---|---|
+| Auth | `GET /api/auth/status`, `POST /api/auth/login`, `POST /api/auth/logout`, `PUT /api/auth/passphrase`, `DELETE /api/auth/passphrase` |
 | Reference | `GET /api/asset-types`, `GET /api/liability-types` |
 | Household | `GET /api/household`, `PUT /api/household` |
 | Members | `GET /api/members`, `GET /api/members/me`, `POST /api/members`, `PUT /api/members/{id}` |
@@ -89,251 +103,66 @@ All endpoints require Cloudflare Access JWT (bypassed in dev mode with a mock us
 | Dashboard | `GET /api/dashboard/summary`, `/trend`, `/composition`, `/members`, `/super-gap` |
 | Quotes | `GET /api/quote/{symbol}` (ASX live price lookup) |
 
-## Features
-
-- **Dashboard** — net worth stat cards, trend line chart, asset composition donut, liquidity/growth/debt quality breakdowns, member comparison, super gap analysis
-- **Assets & Liabilities** — CRUD with type classification, sole/joint ownership with configurable split, optional ASX symbol with live price lookup
-- **Snapshots** — per-entity quarterly value recording with upsert semantics, bulk entry mode for backfilling historical data
-- **View Toggle** — switch between household, P1, and P2 views; joint assets split by configured ratio
-- **Period System** — supports both Australian Financial Year (FY) and Calendar Year (CY) conventions with quarter granularity
-- **Seed Data** — 13 asset types and 9 liability types pre-loaded with Australian financial categories
-
-## Raspberry Pi Setup
+## Self-Hosting
 
 ### Prerequisites
 
-- Raspberry Pi 5 running Raspberry Pi OS (64-bit / aarch64)
-- Docker and Docker Compose installed
-- A domain name (e.g. `clearfolio.net`) with DNS managed by Cloudflare
-- A GitHub account with the repo pushed (for GHCR image pulls)
+- Any machine running Docker (amd64 or arm64)
 
 ### 1. Install Docker
 
 ```bash
 curl -fsSL https://get.docker.com | sh
-sudo usermod -aG docker $USER
-# Log out and back in for group to take effect
 ```
 
-### 2. Install Just
+### 2. Run Clearfolio
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+docker run -d \
+  --name clearfolio \
+  --restart unless-stopped \
+  -p 8080:80 \
+  -v clearfolio-data:/data \
+  ghcr.io/gcaton/clearfolio
 ```
 
-### 3. Create data directory
+### 3. Open your browser
+
+Navigate to http://localhost:8080 (or your server's IP/hostname on port 8080) and complete the first-run setup wizard.
+
+### Optional: passphrase protection
+
+Add a passphrase from **Settings → Security**. Once set, all sessions will require it to log in.
+
+### Environment variables
+
+| Variable | Description |
+|---|---|
+| `CLEARFOLIO_RESET_PASSPHRASE` | Set to `true` to clear the passphrase on next startup |
+| `CLEARFOLIO_SESSION_DAYS` | Session lifetime in days (default: 30) |
+
+To reset a forgotten passphrase:
 
 ```bash
-sudo mkdir -p /var/data/clearfolio
-sudo chown $USER:$USER /var/data/clearfolio
-```
-
-### 4. Clone and configure
-
-```bash
-git clone https://github.com/<you>/clearfolio.net.git
-cd clearfolio.net
-
-# Create production env file
-cat > .docker/.env << 'EOF'
-GITHUB_OWNER=<your-github-username>
-CF_TEAM_NAME=<your-cloudflare-team>
-CF_ACCESS_AUD=<your-access-app-aud>
-EOF
-```
-
-### 5. Authenticate to GHCR
-
-Create a GitHub Personal Access Token at https://github.com/settings/tokens with `read:packages` scope, then:
-
-```bash
-echo <YOUR_PAT> | docker login ghcr.io -u <your-github-username> --password-stdin
-```
-
-### 6. Deploy
-
-```bash
-just deploy
-```
-
-The API will auto-migrate the database and seed reference data on first start.
-
-### Production commands
-
-```
-just deploy         # Pull latest images and restart
-just prod-down      # Stop production services
-just prod-logs      # Follow production logs
+docker run --rm \
+  -v clearfolio-data:/data \
+  -e CLEARFOLIO_RESET_PASSPHRASE=true \
+  ghcr.io/gcaton/clearfolio
 ```
 
 ### Updating
 
-Push to `main` → GitHub Actions builds ARM64 images → pushes to GHCR. Then on the Pi:
+Pull the latest image and recreate the container:
 
 ```bash
-just deploy
+docker pull ghcr.io/gcaton/clearfolio
+docker stop clearfolio && docker rm clearfolio
+docker run -d \
+  --name clearfolio \
+  --restart unless-stopped \
+  -p 8080:80 \
+  -v clearfolio-data:/data \
+  ghcr.io/gcaton/clearfolio
 ```
 
----
-
-## Cloudflare Setup
-
-Clearfolio uses Cloudflare for DNS, tunnelling, and authentication. No ports are exposed on the Pi — all traffic flows through the tunnel.
-
-### 1. Add your domain to Cloudflare
-
-If not already done, add your domain (e.g. `clearfolio.net`) to Cloudflare and update your registrar's nameservers to Cloudflare's.
-
-### 2. Install cloudflared on the Pi
-
-```bash
-curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared
-chmod +x /usr/local/bin/cloudflared
-
-# Authenticate (opens a browser URL to copy)
-cloudflared tunnel login
-```
-
-### 3. Create a tunnel
-
-```bash
-cloudflared tunnel create clearfolio
-```
-
-Note the tunnel ID and credentials file path from the output.
-
-### 4. Configure the tunnel
-
-Create `/etc/cloudflared/config.yml`:
-
-```yaml
-tunnel: <TUNNEL_ID>
-credentials-file: /root/.cloudflared/<TUNNEL_ID>.json
-
-ingress:
-  - hostname: clearfolio.net
-    service: http://localhost:4200
-  - hostname: api.clearfolio.net
-    service: http://localhost:5000
-  - service: http_status:404
-```
-
-Or if you want the app to handle API proxying (single hostname):
-
-```yaml
-ingress:
-  - hostname: clearfolio.net
-    service: http://localhost:4200
-  - service: http_status:404
-```
-
-The nginx container already proxies `/api/*` to the API container internally.
-
-### 5. Create DNS records
-
-```bash
-cloudflared tunnel route dns clearfolio clearfolio.net
-```
-
-### 6. Run cloudflared as a service
-
-```bash
-sudo cloudflared service install
-sudo systemctl enable cloudflared
-sudo systemctl start cloudflared
-```
-
-### 7. Set up Cloudflare Access (authentication)
-
-1. Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/) → **Access** → **Applications**
-2. Click **Add an application** → **Self-hosted**
-3. Configure:
-   - **Application name:** Clearfolio
-   - **Session duration:** 24 hours (or your preference)
-   - **Application domain:** `clearfolio.net`
-4. Add a policy:
-   - **Policy name:** Allowed Users
-   - **Action:** Allow
-   - **Include:** Emails — add the email addresses of household members
-   - **Identity providers:** Google (or your preferred provider)
-5. After saving, note the **Application Audience (AUD) tag** — you need this for the API config
-
-### 8. Configure Google OAuth (if not already set up)
-
-1. In Zero Trust dashboard → **Settings** → **Authentication** → **Login methods**
-2. Click **Add new** → **Google**
-3. Follow the prompts to create OAuth credentials in Google Cloud Console:
-   - Create a project at https://console.cloud.google.com/
-   - Go to **APIs & Services** → **Credentials** → **Create OAuth 2.0 Client ID**
-   - Set authorized redirect URI to `https://<your-team>.cloudflareaccess.com/cdn-cgi/access/callback`
-4. Enter the Client ID and Secret in Cloudflare
-
-### 9. Update the Pi environment
-
-Add the Cloudflare values to your `.docker/.env`:
-
-```bash
-CF_TEAM_NAME=<your-team-name>       # From Zero Trust dashboard URL
-CF_ACCESS_AUD=<application-aud>     # From the Access application you created
-```
-
-Then redeploy:
-
-```bash
-just deploy
-```
-
-### How authentication works
-
-1. User visits `clearfolio.net`
-2. Cloudflare Access intercepts the request — if not authenticated, redirects to Google OAuth
-3. After login, Cloudflare injects a `Cf-Access-Jwt-Assertion` header on every request
-4. The API middleware validates this JWT and extracts the user's email
-5. First-time users are auto-provisioned as household members
-
----
-
-## Litestream Backup (Optional)
-
-Litestream continuously replicates the SQLite database to Cloudflare R2 for disaster recovery.
-
-### 1. Create an R2 bucket
-
-In Cloudflare dashboard → **R2** → **Create bucket** (e.g. `clearfolio-backup`). Create an API token with read/write access.
-
-### 2. Install Litestream on the Pi
-
-```bash
-wget https://github.com/benbjohnson/litestream/releases/latest/download/litestream-*-linux-arm64.deb
-sudo dpkg -i litestream-*-linux-arm64.deb
-```
-
-### 3. Configure
-
-Create `/etc/litestream.yml`:
-
-```yaml
-dbs:
-  - path: /var/data/clearfolio/clearfolio.db
-    replicas:
-      - type: s3
-        endpoint: https://<account-id>.r2.cloudflarestorage.com
-        bucket: clearfolio-backup
-        path: replica
-        access-key-id: <R2_ACCESS_KEY>
-        secret-access-key: <R2_SECRET_KEY>
-```
-
-### 4. Run as a service
-
-```bash
-sudo systemctl enable litestream
-sudo systemctl start litestream
-```
-
-Litestream will continuously replicate WAL changes. To restore from backup:
-
-```bash
-sudo systemctl stop clearfolio  # stop the API first
-litestream restore -o /var/data/clearfolio/clearfolio.db /var/data/clearfolio/clearfolio.db
-```
+The database is stored in the `clearfolio-data` volume and persists across updates.

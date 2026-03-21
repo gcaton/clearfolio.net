@@ -2,7 +2,7 @@
 
 ## Project overview
 
-Self-hosted household net worth tracker running on a Raspberry Pi 5, exposed via Cloudflare Tunnel with authentication handled entirely by Cloudflare Access (Google OAuth). No passwords stored in-app. Users record periodic snapshots of assets and liabilities across defined categories, with analytical views tracking growth, composition, and household vs individual positions over time.
+Self-hosted household net worth tracker running in a single Docker image. Local auth with optional passphrase. No external auth dependencies. Users record periodic snapshots of assets and liabilities across defined categories, with analytical views tracking growth, composition, and household vs individual positions over time.
 
 Domain: `clearfolio.net`
 
@@ -14,14 +14,12 @@ Domain: `clearfolio.net`
 |---|---|
 | API | .NET 10 — minimal API style (not controller-based) |
 | ORM | EF Core 10 with SQLite provider |
-| Database | SQLite (single file) + Litestream replication to Cloudflare R2 |
+| Database | SQLite (single file) |
 | Frontend | Angular 21 (standalone components, signals-based state) |
 | UI components | PrimeNG (latest compatible with Angular 21) |
 | Charting | Apache ECharts via ngx-echarts |
-| Auth | Cloudflare Access JWT validation (no in-app auth) |
-| Hosting | Raspberry Pi 5, Nginx, systemd services |
-| Tunnel | Cloudflare Tunnel (cloudflared) |
-| Backups | Litestream → Cloudflare R2 |
+| Auth | Local auth with optional passphrase (no external auth dependencies) |
+| Hosting | Docker (amd64 + arm64), single image |
 | Task runner | Justfile |
 
 ---
@@ -33,6 +31,7 @@ clearfolio/
 ├── CLAUDE.md                        ← this file
 ├── Justfile                         ← build, deploy, migrate recipes
 ├── README.md
+├── Dockerfile                       ← single multi-stage build (API + frontend + nginx)
 ├── api/                             ← .NET 10 solution
 │   ├── Clearfolio.sln
 │   └── Clearfolio.Api/
@@ -40,13 +39,14 @@ clearfolio/
 │       ├── appsettings.json
 │       ├── appsettings.Development.json
 │       ├── Middleware/
-│       │   └── CloudflareJwtMiddleware.cs
+│       │   └── LocalAuthMiddleware.cs
 │       ├── Data/
 │       │   ├── ClearfolioDbContext.cs
 │       │   └── Migrations/
 │       ├── Models/                  ← EF Core entities
 │       ├── DTOs/                    ← Request/response shapes
 │       ├── Endpoints/
+│       │   ├── AuthEndpoints.cs
 │       │   ├── HouseholdEndpoints.cs
 │       │   ├── MembersEndpoints.cs
 │       │   ├── AssetsEndpoints.cs
@@ -63,7 +63,7 @@ clearfolio/
     └── src/
         └── app/
             ├── core/
-            │   ├── auth/            ← CF JWT extraction, current user signal
+            │   ├── auth/            ← auth status, current user signal
             │   └── api/             ← HttpClient service wrappers
             ├── shared/
             │   ├── components/      ← period-selector, owner-badge, currency-display
@@ -82,7 +82,7 @@ clearfolio/
 
 ### File location (production)
 ```
-/var/data/clearfolio/clearfolio.db
+/data/clearfolio.db   (inside the container, mounted from the clearfolio-data volume)
 ```
 
 ### EF Core approach
@@ -97,9 +97,6 @@ cd api/Clearfolio.Api
 dotnet ef migrations add <MigrationName>
 dotnet ef database update   # local dev only — prod migrates on startup
 ```
-
-### Litestream (backup)
-Litestream runs as a systemd service alongside the API, continuously replicating the SQLite WAL to Cloudflare R2. Config at `/etc/litestream.yml`. Replaces any cron-based backup approach.
 
 ---
 
@@ -119,10 +116,10 @@ Litestream runs as a systemd service alongside the API, continuously replicating
 |---|---|---|
 | id | TEXT (UUID) | PK |
 | household_id | TEXT (UUID) | FK → households |
-| email | TEXT | From Cloudflare JWT. Unique. |
+| email | TEXT | Nullable. Not from JWT. Not unique. |
 | display_name | TEXT | e.g. "Greg" |
 | member_tag | TEXT | `p1`, `p2` etc. |
-| is_primary | INTEGER | First to authenticate = 1 |
+| is_primary | INTEGER | First to set up household = 1 |
 | created_at | TEXT | ISO8601 UTC |
 
 ### asset_types
@@ -198,7 +195,6 @@ Litestream runs as a systemd service alongside the API, continuously replicating
 **Key indexes:**
 - `snapshots(household_id, period)`
 - `snapshots(entity_id, period)`
-- `household_members(email)`
 - `assets(household_id, is_active)`
 - `liabilities(household_id, is_active)`
 
@@ -237,45 +233,47 @@ Static utility — single source of truth for all period arithmetic in the API:
 ## Authentication
 
 ### How it works
-1. Cloudflare Access intercepts all requests to `clearfolio.net`
-2. Unauthenticated users are redirected to Google OAuth
-3. On success, Cloudflare injects `Cf-Access-Jwt-Assertion` header on every request
-4. `CloudflareJwtMiddleware` validates this JWT on every API request
-5. Email claim from JWT is the canonical user identifier
-6. First authenticated request auto-provisions a `household_members` row
+1. Angular app calls `GET /api/auth/status` on startup
+2. Response indicates one of: `setup_required`, `login_required`, `authenticated`
+3. App routes accordingly: setup wizard, login page, or dashboard
+4. `LocalAuthMiddleware` enforces auth on all non-`/api/auth/*` endpoints — returns 401 if session is absent or invalid
+5. Optional passphrase: if configured, `POST /api/auth/login` requires it. If not configured, login is passwordless.
+6. Sessions are cookie-based with configurable lifetime (`CLEARFOLIO_SESSION_DAYS`, default 30)
 
-### JWT middleware responsibilities
-- Read `Cf-Access-Jwt-Assertion` header — return 401 if absent
-- Fetch and cache JWKS from `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` (60 min cache)
-- Validate signature, expiry, and AUD claim
-- Set `HttpContext.Items["UserEmail"]` and `HttpContext.Items["HouseholdMember"]`
+### LocalAuthMiddleware responsibilities
+- Skip auth check for `/api/auth/*` routes
+- Validate session cookie on all other API routes — return 401 if absent or expired
+- Set `HttpContext.Items["HouseholdMember"]` for use by endpoint handlers
 
-### Configuration (appsettings.json / environment variables)
-```json
-{
-  "Cloudflare": {
-    "TeamName": "<your-team-name>",
-    "AccessApplicationAud": "<your-access-app-aud>"
-  }
-}
+### Auth endpoints
 ```
-Never commit real values. Use environment variables in production.
+GET    /api/auth/status        ← setup_required | login_required | authenticated
+POST   /api/auth/login         ← submit passphrase (if configured), start session
+POST   /api/auth/logout        ← clear session
+PUT    /api/auth/passphrase    ← set or change passphrase
+DELETE /api/auth/passphrase    ← remove passphrase (open access)
+```
 
-### Local development bypass
-In `Development` environment, JWT middleware skips validation and sets a mock user email from `appsettings.Development.json`:
-```json
-{
-  "DevAuth": {
-    "MockUserEmail": "you@gmail.com"
-  }
-}
+### Environment variables
+```
+CLEARFOLIO_RESET_PASSPHRASE=true   # clear passphrase on next startup
+CLEARFOLIO_SESSION_DAYS=30         # session lifetime in days
 ```
 
 ---
 
 ## API endpoints
 
-All endpoints are prefixed `/api`. All require valid CF JWT (enforced by middleware). All data queries are scoped to the authenticated user's household.
+All endpoints are prefixed `/api`. All except `/api/auth/*` require a valid session (enforced by `LocalAuthMiddleware`). All data queries are scoped to the single household.
+
+### Auth
+```
+GET    /api/auth/status
+POST   /api/auth/login
+POST   /api/auth/logout
+PUT    /api/auth/passphrase
+DELETE /api/auth/passphrase
+```
 
 ### Reference (read-only)
 ```
@@ -344,11 +342,13 @@ GET  /api/dashboard/super-gap
 - **Signals for state** — use `signal()`, `computed()`, `effect()` rather than RxJS where practical
 - **ViewStateService** — `signal<'household' | 'p1' | 'p2'>('household')` consumed by all dashboard components. Persisted to `localStorage`.
 - **PeriodService** — Angular mirror of PeriodHelper. Provides current period, previous period, display labels, and quarter date ranges.
-- **No login page** — app calls `GET /api/members/me` on startup. 401 redirects to Cloudflare Access login URL.
+- **Auth-aware routing** — app calls `GET /api/auth/status` on startup. Routes to setup wizard, login page, or dashboard based on response.
 
 ### Routing structure
 ```
 /                  → redirect to /dashboard
+/setup             → SetupComponent (first-run wizard)
+/login             → LoginComponent (passphrase entry)
 /dashboard         → DashboardComponent
 /assets            → AssetsComponent
 /liabilities       → LiabilitiesComponent
@@ -424,28 +424,21 @@ GET  /api/dashboard/super-gap
 ### Justfile recipes
 ```
 just build       # ng build --configuration production + dotnet publish
-just deploy      # rsync web dist and API publish output to Pi via SSH
-just migrate     # dotnet ef database update against Pi DB (dev use only — prod auto-migrates)
-just logs        # tail systemd journal for clearfolio-api.service
-just backup      # manually trigger Litestream snapshot
+just init        # tear down containers and rebuild from source
+just up          # start local services
+just down        # stop local services
+just logs        # follow service logs
+just dev         # Angular dev server with API proxy
 ```
 
-### Pi service layout
-```
-clearfolio-api.service    # Kestrel on localhost:5000
-cloudflared.service       # Outbound Cloudflare Tunnel
-litestream.service        # Continuous SQLite replication to R2
-nginx                     # Serves /var/www/clearfolio, proxies /api/* to :5000
-```
+### Docker image
+Single multi-stage `Dockerfile` at repo root builds the API, Angular app, and bundles both behind nginx. Published to GHCR as `ghcr.io/gcaton/clearfolio` for amd64 and arm64.
 
-### Environment variables (Pi — /etc/clearfolio/env)
+### Environment variables (production container)
 ```
 ASPNETCORE_ENVIRONMENT=Production
-DB_PATH=/var/data/clearfolio/clearfolio.db
-CF_TEAM_NAME=<your-team>
-CF_ACCESS_AUD=<your-aud>
-R2_ACCESS_KEY=<key>
-R2_SECRET_KEY=<secret>
+CLEARFOLIO_RESET_PASSPHRASE=true   # optional — clears passphrase on startup then exits
+CLEARFOLIO_SESSION_DAYS=30         # optional — session cookie lifetime
 ```
 
 ---
@@ -476,8 +469,8 @@ R2_SECRET_KEY=<secret>
 
 - **No account numbers or institution names stored** — labels and values only. Reduces sensitivity of any data exposure.
 - **Single household per installation** — the app is personal/family use, not multi-tenant.
-- **SQLite not Postgres** — appropriate for Pi-hosted personal app. Litestream handles durability.
-- **No in-app auth** — Cloudflare Access owns the full auth flow. Simplifies the codebase significantly.
+- **SQLite not Postgres** — appropriate for a single-household personal app. Back up the volume to protect your data.
+- **Optional passphrase only** — no user accounts, no OAuth. The app is single-household; auth is a simple session gate.
 - **Soft deletes only** — assets and liabilities use `is_active = 0`, never hard delete. Preserves snapshot history integrity.
 - **Snapshot upsert** — `POST /api/snapshots` upserts on `(entity_id, period)` unique constraint. Simplifies the entry UI.
 - **.NET 10 / Angular 21** — use current stable APIs. Do not suggest deprecated patterns from earlier versions.
@@ -505,6 +498,5 @@ R2_SECRET_KEY=<secret>
 ## Deployment
 
 - **Local dev:** `just init` (Docker) or `just dev` (ng serve + Docker API)
-- **CI/CD:** Push to `main` → GitHub Actions builds ARM64 images → pushes to GHCR
-- **Production:** Pi runs `just deploy` to pull latest images from GHCR
-- **Local Pi testing:** `just init` builds from source without GHCR
+- **CI/CD:** Push to `main` → GitHub Actions builds multi-arch (amd64 + arm64) image → pushes to GHCR
+- **Production:** `docker pull ghcr.io/gcaton/clearfolio && docker run ...` on any Docker host
