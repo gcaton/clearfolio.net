@@ -17,119 +17,304 @@ export function formatCurrency(value: number, locale: string, currency: string):
   return `${sign}${symbol}${Math.round(abs)}`;
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+const AXIS_LABEL_COLOR = 'var(--p-text-muted-color, #94a3b8)';
+const SPLIT_LINE_COLOR = 'var(--p-content-border-color, rgba(148,163,184,0.15))';
+
 const baseGrid = { left: 70, right: 20, top: 20, bottom: 40 };
+
+const tooltipBase = {
+  backgroundColor: 'var(--p-content-background, #ffffff)',
+  borderColor: 'var(--p-content-border-color, #e2e8f0)',
+  borderWidth: 1,
+  borderRadius: 8,
+  padding: [8, 12],
+  textStyle: {
+    color: 'var(--p-text-color, #1e293b)',
+    fontSize: 13,
+    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
+};
+
+const legendStyle = {
+  textStyle: {
+    fontSize: 12,
+    color: AXIS_LABEL_COLOR,
+    fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  },
+  icon: 'circle',
+  itemWidth: 8,
+  itemHeight: 8,
+  itemGap: 16,
+};
 
 function baseTooltip(locale: string, currency: string) {
   return {
+    ...tooltipBase,
     trigger: 'axis' as const,
     axisPointer: { type: 'shadow' as const },
     formatter: (params: unknown) => {
-      const items = params as Array<{ seriesName: string; value: number; marker: string }>;
+      const items = params as Array<{ seriesName: string; value: number; color: string }>;
       if (!items?.length) return '';
-      const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
-      const lines = items.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value, locale, currency)}</strong>`);
-      return `<div style="font-size:0.8125rem"><strong>Year ${year}</strong><br/>${lines.join('<br/>')}</div>`;
+      const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
+      let html = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
+      for (const p of items) {
+        if (p.seriesName.startsWith('_')) continue;
+        const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
+        html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
+      }
+      return html;
     },
   };
 }
 
-export function buildCompoundOptions(data: CompoundYearData[], locale: string, currency: string): EChartsOption {
+function baseXAxis(years: string[]) {
+  return {
+    type: 'category' as const,
+    data: years,
+    axisLine: { show: false },
+    axisTick: { show: false },
+    axisLabel: { fontSize: 11, color: AXIS_LABEL_COLOR },
+  };
+}
+
+function baseYAxis(locale: string, currency: string) {
+  return {
+    type: 'value' as const,
+    axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency), fontSize: 11, color: AXIS_LABEL_COLOR },
+    splitLine: { lineStyle: { color: SPLIT_LINE_COLOR, type: 'dashed' as const } },
+  };
+}
+
+function todayMarkLine(yearLabel: string) {
+  return {
+    silent: true,
+    symbol: 'none',
+    lineStyle: { type: 'dashed' as const, color: 'var(--p-text-muted-color, #94a3b8)', width: 1.5 },
+    label: {
+      formatter: 'Today',
+      position: 'insideEndTop' as const,
+      fontSize: 11,
+      fontWeight: 600 as const,
+      color: 'var(--p-text-muted-color, #94a3b8)',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+    data: [{ xAxis: yearLabel }],
+  };
+}
+
+function goalMarkLine(goalTarget: number, locale: string, currency: string) {
+  return {
+    silent: true,
+    symbol: 'none',
+    lineStyle: { type: 'dashed' as const, color: '#34d399', width: 1.5 },
+    label: {
+      formatter: `Goal: ${formatCurrency(goalTarget, locale, currency)}`,
+      position: 'insideEndBottom' as const,
+      fontSize: 11,
+      fontWeight: 600 as const,
+      color: '#34d399',
+      fontFamily: "'DM Sans', sans-serif",
+    },
+    data: [{ yAxis: goalTarget }],
+  };
+}
+
+function helperMarkLineSeries(todayYear: string, goalTarget: number | null | undefined, locale: string, currency: string): any[] {
+  const series: any[] = [
+    {
+      name: '_today',
+      type: 'line',
+      data: [],
+      markLine: todayMarkLine(todayYear),
+      tooltip: { show: false },
+    },
+  ];
+  if (goalTarget && goalTarget > 0) {
+    series.push({
+      name: '_goal',
+      type: 'line',
+      data: [],
+      markLine: goalMarkLine(goalTarget, locale, currency),
+      tooltip: { show: false },
+    });
+  }
+  return series;
+}
+
+export function buildCompoundOptions(data: CompoundYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
+
   return {
     tooltip: baseTooltip(locale, currency),
-    legend: { data: ['Net Worth', 'Assets', 'Liabilities'], bottom: 0 },
+    legend: { ...legendStyle, data: ['Net Worth', 'Assets', 'Liabilities'], bottom: 0 },
     grid: baseGrid,
-    xAxis: { type: 'category', data: years },
-    yAxis: {
-      type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
-    },
+    xAxis: baseXAxis(years),
+    yAxis: baseYAxis(locale, currency),
     series: [
       {
         name: 'Net Worth',
         type: 'line',
         data: data.map((d) => d.netWorth),
         smooth: true,
-        itemStyle: { color: '#60a5fa' },
-        lineStyle: { color: '#60a5fa', width: 2 },
+        symbol: 'circle',
+        symbolSize: 5,
+        showSymbol: data.length <= 20,
+        itemStyle: { color: '#60a5fa', borderWidth: 2, borderColor: '#fff' },
+        lineStyle: { color: '#60a5fa', width: 2.5 },
+        emphasis: {
+          itemStyle: { borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,0.4)' },
+        },
+        areaStyle: {
+          color: {
+            type: 'linear',
+            x: 0, y: 0, x2: 0, y2: 1,
+            colorStops: [
+              { offset: 0, color: 'rgba(96,165,250,0.15)' },
+              { offset: 1, color: 'rgba(96,165,250,0.02)' },
+            ],
+          },
+        },
+        z: 3,
       },
       {
         name: 'Assets',
         type: 'line',
         data: data.map((d) => d.assets),
         smooth: true,
+        symbol: 'none',
         itemStyle: { color: '#34d399' },
-        lineStyle: { color: '#34d399', type: 'dashed', width: 2 },
+        lineStyle: { color: '#34d399', type: 'dashed', width: 1.5, opacity: 0.7 },
+        emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
+        z: 1,
       },
       {
         name: 'Liabilities',
         type: 'line',
         data: data.map((d) => d.liabilities),
         smooth: true,
+        symbol: 'none',
         itemStyle: { color: '#f87171' },
-        lineStyle: { color: '#f87171', type: 'dashed', width: 2 },
+        lineStyle: { color: '#f87171', type: 'dashed', width: 1.5, opacity: 0.7 },
+        emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
+        z: 1,
       },
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
+    animationDuration: 800,
+    animationEasing: 'cubicOut',
   };
 }
 
-export function buildScenarioOptions(data: ScenarioYearData[], locale: string, currency: string): EChartsOption {
+export function buildScenarioOptions(data: ScenarioYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
+
+  // Build the band between optimistic and pessimistic
+  const pessimisticValues = data.map((d) => d.pessimistic.netWorth);
+  const bandValues = data.map((d) => d.optimistic.netWorth - d.pessimistic.netWorth);
+
   return {
     tooltip: {
+      ...tooltipBase,
       trigger: 'axis' as const,
       axisPointer: { type: 'shadow' as const },
       formatter: (params: unknown) => {
-        const items = params as Array<{ seriesName: string; value: number; marker: string }>;
+        const items = params as Array<{ seriesName: string; value: number; color: string }>;
         if (!items?.length) return '';
-        const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
-        const visible = items.filter((p) => p.seriesName !== 'Band');
-        const lines = visible.map((p) => `${p.marker} ${p.seriesName}: <strong>${formatCurrency(p.value, locale, currency)}</strong>`);
-        return `<div style="font-size:0.8125rem"><strong>Year ${year}</strong><br/>${lines.join('<br/>')}</div>`;
+        const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
+        const visible = items.filter((p) => !p.seriesName.startsWith('_') && p.seriesName !== 'Range');
+        let html = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
+        for (const p of visible) {
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
+        }
+        return html;
       },
     },
-    legend: { data: ['Optimistic', 'Base', 'Pessimistic'], bottom: 0 },
+    legend: { ...legendStyle, data: ['Optimistic', 'Base', 'Pessimistic'], bottom: 0 },
     grid: baseGrid,
-    xAxis: { type: 'category', data: years },
-    yAxis: {
-      type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
-    },
+    xAxis: baseXAxis(years),
+    yAxis: baseYAxis(locale, currency),
     series: [
+      // Band base (pessimistic, invisible — anchors the band)
+      {
+        name: '_band-base',
+        type: 'line',
+        data: pessimisticValues,
+        smooth: true,
+        lineStyle: { opacity: 0 },
+        itemStyle: { opacity: 0 },
+        stack: 'scenario-band',
+        symbol: 'none',
+        tooltip: { show: false },
+      },
+      // Band fill (optimistic - pessimistic)
+      {
+        name: 'Range',
+        type: 'line',
+        data: bandValues,
+        smooth: true,
+        lineStyle: { opacity: 0 },
+        itemStyle: { color: 'rgba(96,165,250,0.12)' },
+        areaStyle: { color: 'rgba(96,165,250,0.12)' },
+        stack: 'scenario-band',
+        symbol: 'none',
+        tooltip: { show: false },
+      },
+      // Optimistic line
       {
         name: 'Optimistic',
         type: 'line',
         data: data.map((d) => d.optimistic.netWorth),
         smooth: true,
+        symbol: 'none',
         itemStyle: { color: '#34d399' },
-        lineStyle: { color: '#34d399', width: 2 },
-        areaStyle: { color: 'rgba(52,211,153,0.08)' },
-        stack: undefined,
+        lineStyle: { color: '#34d399', width: 1.5, type: 'dashed', opacity: 0.8 },
+        emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
+        z: 2,
       },
+      // Base case line (primary)
       {
         name: 'Base',
         type: 'line',
         data: data.map((d) => d.base.netWorth),
         smooth: true,
-        itemStyle: { color: '#60a5fa' },
+        symbol: 'circle',
+        symbolSize: 5,
+        showSymbol: data.length <= 20,
+        itemStyle: { color: '#60a5fa', borderWidth: 2, borderColor: '#fff' },
         lineStyle: { color: '#60a5fa', width: 2.5 },
+        emphasis: {
+          itemStyle: { borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,0.4)' },
+        },
+        z: 3,
       },
+      // Pessimistic line
       {
         name: 'Pessimistic',
         type: 'line',
         data: data.map((d) => d.pessimistic.netWorth),
         smooth: true,
+        symbol: 'none',
         itemStyle: { color: '#f87171' },
-        lineStyle: { color: '#f87171', width: 2 },
-        areaStyle: { color: 'rgba(248,113,113,0.08)' },
+        lineStyle: { color: '#f87171', width: 1.5, type: 'dashed', opacity: 0.8 },
+        emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
+        z: 2,
       },
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
+    animationDuration: 800,
+    animationEasing: 'cubicOut',
   };
 }
 
-export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: string, currency: string): EChartsOption {
+export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
 
@@ -146,30 +331,30 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: strin
 
   return {
     tooltip: {
+      ...tooltipBase,
       trigger: 'axis' as const,
       formatter: (params: unknown) => {
-        const items = params as Array<{ seriesName: string; value: number; marker: string }>;
+        const items = params as Array<{ seriesName: string; value: number }>;
         if (!items?.length) return '';
-        const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
+        const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
         const point = data[parseInt(year) - data[0].year];
         if (!point) return '';
-        return `<div style="font-size:0.8125rem">
-          <strong>Year ${year}</strong><br/>
-          P90: <strong>${formatCurrency(point.p90, locale, currency)}</strong><br/>
-          P75: <strong>${formatCurrency(point.p75, locale, currency)}</strong><br/>
-          P50 (median): <strong>${formatCurrency(point.p50, locale, currency)}</strong><br/>
-          P25: <strong>${formatCurrency(point.p25, locale, currency)}</strong><br/>
-          P10: <strong>${formatCurrency(point.p10, locale, currency)}</strong>
-        </div>`;
+        const row = (rowLabel: string, value: number, color: string) => {
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>`;
+          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(rowLabel)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(value, locale, currency)}</span></div>`;
+        };
+        return `<div style="font-weight:600;margin-bottom:4px">${year}</div>`
+          + row('P90', point.p90, 'rgba(96,165,250,0.3)')
+          + row('P75', point.p75, 'rgba(96,165,250,0.5)')
+          + row('P50 (median)', point.p50, '#60a5fa')
+          + row('P25', point.p25, 'rgba(96,165,250,0.5)')
+          + row('P10', point.p10, 'rgba(96,165,250,0.3)');
       },
     },
-    legend: { data: ['P50 Median', 'P25–P75', 'P10–P90'], bottom: 0 },
+    legend: { ...legendStyle, data: ['P50 Median', 'P25–P75', 'P10–P90'], bottom: 0 },
     grid: baseGrid,
-    xAxis: { type: 'category', data: years },
-    yAxis: {
-      type: 'value',
-      axisLabel: { formatter: (v: number) => formatCurrency(v, locale, currency) },
-    },
+    xAxis: baseXAxis(years),
+    yAxis: baseYAxis(locale, currency),
     series: [
       // Outer band base (P10, invisible)
       {
@@ -227,11 +412,19 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: strin
         type: 'line',
         data: p50,
         smooth: true,
-        itemStyle: { color: '#60a5fa' },
+        symbol: 'circle',
+        symbolSize: 5,
+        showSymbol: data.length <= 20,
+        itemStyle: { color: '#60a5fa', borderWidth: 2, borderColor: '#fff' },
         lineStyle: { color: '#60a5fa', width: 2.5 },
-        symbol: 'none',
+        emphasis: {
+          itemStyle: { borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,0.4)' },
+        },
         z: 10,
       },
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
+    animationDuration: 800,
+    animationEasing: 'cubicOut',
   };
 }

@@ -447,7 +447,7 @@ export class PdfReportService {
     // --- Row 1: Net Worth Trend (full width) ---
     if (data.trend.length > 1) {
       y = drawSectionHeader(doc, 'Net Worth Trend', margin, y, contentWidth, colors.primary);
-      const img = renderChart(buildTrendOptions(data.trend, locale, currency), contentWidth * pxPerMm, wideChartH * pxPerMm);
+      const img = renderChart(buildTrendOptions(data.trend, locale, currency, { forPdf: true }), contentWidth * pxPerMm, wideChartH * pxPerMm);
       if (img) {
         doc.addImage(img, 'PNG', margin, y, contentWidth, wideChartH);
         y += wideChartH + gap;
@@ -456,7 +456,7 @@ export class PdfReportService {
 
     // --- Row 2: Asset Composition + Liquidity Breakdown ---
     y = this.addChartRow(doc, y, margin, colWidth, halfChartH, gap, pxPerMm, colors,
-      data.summary.assetsByCategory?.length > 0 ? { title: 'Asset Composition', options: buildCompositionOptions(data.summary) } : null,
+      data.summary.assetsByCategory?.length > 0 ? { title: 'Asset Composition', options: buildCompositionOptions(data.summary, locale, currency) } : null,
       data.summary.liquidityBreakdown?.length > 0 ? { title: 'Liquidity Breakdown', options: buildLiquidityOptions(data.summary, locale, currency) } : null,
     );
 

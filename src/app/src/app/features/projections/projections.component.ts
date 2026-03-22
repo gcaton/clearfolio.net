@@ -20,10 +20,12 @@ import {
   GridComponent,
   TooltipComponent,
   LegendComponent,
+  MarkLineComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
 import { ViewStateService } from '../../core/auth/view-state.service';
+import { GoalService } from '../../core/auth/goal.service';
 import { LocaleService } from '../../core/locale/locale.service';
 import {
   ProjectionResult,
@@ -39,7 +41,7 @@ import {
   formatCurrency,
 } from './projection-chart-options';
 
-echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
+echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, CanvasRenderer]);
 
 export type ProjectionMode = 'compound' | 'scenario' | 'monte-carlo';
 
@@ -63,6 +65,7 @@ interface EntityCard {
 export class ProjectionsComponent {
   private api = inject(ApiService);
   private viewState = inject(ViewStateService);
+  private goalService = inject(GoalService);
   private localeService = inject(LocaleService);
 
   protected selectedMode = signal<ProjectionMode>('compound');
@@ -96,13 +99,14 @@ export class ProjectionsComponent {
     if (!r) return {};
     const locale = this.localeService.locale();
     const currency = this.localeService.currency();
+    const goalTarget = this.goalService.goal().netWorthTarget;
     switch (r.mode) {
       case 'compound':
-        return buildCompoundOptions((r as CompoundResult).years, locale, currency);
+        return buildCompoundOptions((r as CompoundResult).years, locale, currency, goalTarget);
       case 'scenario':
-        return buildScenarioOptions((r as ScenarioResult).years, locale, currency);
+        return buildScenarioOptions((r as ScenarioResult).years, locale, currency, goalTarget);
       case 'monte-carlo':
-        return buildMonteCarloOptions((r as MonteCarloResult).years, locale, currency);
+        return buildMonteCarloOptions((r as MonteCarloResult).years, locale, currency, goalTarget);
     }
   });
 
