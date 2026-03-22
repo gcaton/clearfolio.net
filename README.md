@@ -1,4 +1,5 @@
 # clearfolio.net
+[![Build and Push](https://github.com/gcaton/clearfolio.net/actions/workflows/build.yml/badge.svg)](https://github.com/gcaton/clearfolio.net/actions/workflows/build.yml)
 
 > **Disclaimer:** This is a personal hobby project, not production-grade financial software. It is not intended for professional use, financial advice, or any scenario where data accuracy or availability is critical. Use at your own risk — no warranties, no guarantees, no support obligations.
 
