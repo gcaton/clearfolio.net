@@ -17,12 +17,21 @@ Log.Logger = new LoggerConfiguration()
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
 
+// #17: Limit request body size to 10 MB to prevent memory exhaustion from large payloads
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024;
+});
+
 var dbPath = builder.Configuration["DB_PATH"] ?? "clearfolio.db";
 builder.Services.AddDbContext<ClearfolioDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
 builder.Services.AddHttpClient();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<HistoricalReturnsService>();
+
+// #21: OpenAPI documentation
+builder.Services.AddOpenApi();
 
 builder.Services.AddRateLimiter(options =>
 {
@@ -35,13 +44,23 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 10,
                 Window = TimeSpan.FromMinutes(5),
             }));
+    // #4: Rate limit external API proxy endpoints
+    options.AddPolicy("external-api", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1),
+            }));
 });
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
         | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
+    options.ForwardLimit = 1;
+    options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
 });
 
@@ -52,6 +71,10 @@ app.UseForwardedHeaders();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ClearfolioDbContext>();
+
+    // #7: EnsureCreated creates the schema without migrations history.
+    // This is the intended approach for this app — schema evolution is handled
+    // via manual ALTER TABLE statements below for backward compatibility.
     db.Database.EnsureCreated();
 
     // Add locale column to existing databases (EnsureCreated handles new DBs)
@@ -72,17 +95,19 @@ using (var scope = app.Services.CreateScope())
             db.Database.ExecuteSqlRaw("ALTER TABLE households ADD COLUMN locale TEXT NOT NULL DEFAULT 'en-AU'");
     }
 
-    // Apply any pending migrations (backs up DB first)
-    if (db.Database.GetPendingMigrations().Any())
+    // #3: Clean up expired sessions on startup
+    var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+    var expiredSessions = await db.AppSettings
+        .Where(s => s.Key.StartsWith("session:"))
+        .ToListAsync();
+    var toRemove = expiredSessions
+        .Where(s => !long.TryParse(s.Value, out var expiry) || now > expiry)
+        .ToList();
+    if (toRemove.Count > 0)
     {
-        if (File.Exists(dbPath))
-        {
-            var backupPath = $"{dbPath}.{DateTime.UtcNow:yyyyMMddHHmmss}.pre-migration-backup";
-            File.Copy(dbPath, backupPath, overwrite: true);
-            Log.Information("Pending migrations detected — backed up database to {BackupPath}", backupPath);
-        }
-
-        db.Database.Migrate();
+        db.AppSettings.RemoveRange(toRemove);
+        await db.SaveChangesAsync();
+        Log.Information("Cleaned up {Count} expired sessions", toRemove.Count);
     }
 }
 
@@ -116,6 +141,9 @@ app.UseSerilogRequestLogging(options =>
 
 app.UseRateLimiter();
 app.UseMiddleware<LocalAuthMiddleware>();
+
+// #21: OpenAPI endpoint
+app.MapOpenApi();
 
 app.MapGet("/api/health", async (ClearfolioDbContext db) =>
 {

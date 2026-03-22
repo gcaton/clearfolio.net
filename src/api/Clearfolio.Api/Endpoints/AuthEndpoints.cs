@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.Helpers;
@@ -64,7 +65,8 @@ public static class AuthEndpoints
             Environment.GetEnvironmentVariable("CLEARFOLIO_SESSION_DAYS"), out var days)
             ? days : 30;
 
-        var token = Guid.NewGuid().ToString("N");
+        // #1: Use cryptographically random token instead of GUID
+        var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32)).ToLowerInvariant();
         var expiry = DateTimeOffset.UtcNow.AddDays(sessionDays).ToUnixTimeSeconds();
 
         db.AppSettings.Add(new AppSetting
@@ -72,11 +74,28 @@ public static class AuthEndpoints
             Key = $"session:{token}",
             Value = expiry.ToString()
         });
+
+        // #3: Clean up expired sessions on login
+        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var expiredSessions = await db.AppSettings
+            .Where(s => s.Key.StartsWith("session:"))
+            .ToListAsync();
+        foreach (var expired in expiredSessions.Where(s =>
+            !long.TryParse(s.Value, out var exp) || now > exp))
+        {
+            db.AppSettings.Remove(expired);
+        }
+
         await db.SaveChangesAsync();
+
+        // #5: Set Secure flag when behind HTTPS
+        var isHttps = context.Request.IsHttps ||
+            string.Equals(context.Request.Headers["X-Forwarded-Proto"], "https", StringComparison.OrdinalIgnoreCase);
 
         context.Response.Cookies.Append("clearfolio_session", token, new CookieOptions
         {
             HttpOnly = true,
+            Secure = isHttps,
             SameSite = SameSiteMode.Strict,
             MaxAge = TimeSpan.FromDays(sessionDays),
             Path = "/"
@@ -105,13 +124,17 @@ public static class AuthEndpoints
 
     private static async Task<IResult> SetPassphrase(HttpContext context, ClearfolioDbContext db)
     {
-        var member = context.Items["HouseholdMember"] as HouseholdMember;
+        var member = context.GetMemberOrNull();
         if (member is null)
             return Results.Unauthorized();
 
         var request = await context.Request.ReadFromJsonAsync<SetPassphraseRequest>();
         if (request is null || string.IsNullOrEmpty(request.NewPassphrase))
             return ApiErrors.BadRequest("New passphrase is required.");
+
+        // #2: Enforce minimum passphrase length
+        if (request.NewPassphrase.Length < 8)
+            return ApiErrors.BadRequest("Passphrase must be at least 8 characters.");
 
         var existing = await db.AppSettings.FirstOrDefaultAsync(s => s.Key == "passphrase");
 
@@ -138,7 +161,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> RemovePassphrase(HttpContext context, ClearfolioDbContext db)
     {
-        var member = context.Items["HouseholdMember"] as HouseholdMember;
+        var member = context.GetMemberOrNull();
         if (member is null)
             return Results.Unauthorized();
 

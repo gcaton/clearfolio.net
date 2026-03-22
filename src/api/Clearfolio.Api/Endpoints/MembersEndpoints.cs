@@ -22,7 +22,7 @@ public static class MembersEndpoints
 
     private static async Task<IResult> GetMembers(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var members = await db.HouseholdMembers
@@ -98,7 +98,7 @@ public static class MembersEndpoints
 
     private static async Task<IResult> CreateMember(CreateMemberRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var currentMember = GetMemberOrNull(context);
+        var currentMember = context.GetMemberOrNull();
         if (currentMember is null) return Results.Unauthorized();
 
         var memberCount = await db.HouseholdMembers.CountAsync(m => m.HouseholdId == currentMember.HouseholdId);
@@ -122,7 +122,7 @@ public static class MembersEndpoints
 
     private static async Task<IResult> UpdateMember(Guid id, UpdateMemberRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var currentMember = GetMemberOrNull(context);
+        var currentMember = context.GetMemberOrNull();
         if (currentMember is null) return Results.Unauthorized();
 
         var target = await db.HouseholdMembers.FirstOrDefaultAsync(m => m.Id == id && m.HouseholdId == currentMember.HouseholdId);
@@ -138,7 +138,7 @@ public static class MembersEndpoints
 
     private static async Task<IResult> DeleteMember(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var caller = GetMemberOrNull(context);
+        var caller = context.GetMemberOrNull();
         if (caller is null) return Results.Unauthorized();
         if (!caller.IsPrimary) return Results.Forbid();
 
@@ -175,6 +175,4 @@ public static class MembersEndpoints
         return Results.NoContent();
     }
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

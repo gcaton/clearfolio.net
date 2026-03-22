@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
 using Clearfolio.Api.Filters;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -19,7 +20,7 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> GetAssets(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var assets = await db.Assets
@@ -37,7 +38,7 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> CreateAsset(CreateAssetRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var now = DateTime.UtcNow.ToString("o");
 
@@ -75,7 +76,7 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> UpdateAsset(Guid id, UpdateAssetRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var asset = await db.Assets
@@ -112,7 +113,7 @@ public static class AssetsEndpoints
 
     private static async Task<IResult> DeleteAsset(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id && a.HouseholdId == member.HouseholdId);
@@ -138,6 +139,4 @@ public static class AssetsEndpoints
         ExpectedReturnRate: a.ExpectedReturnRate,
         ExpectedVolatility: a.ExpectedVolatility);
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

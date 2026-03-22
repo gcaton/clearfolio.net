@@ -59,7 +59,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> CreateAssetType(CreateAssetTypeRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 100)
@@ -103,7 +103,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> UpdateAssetType(Guid id, UpdateAssetTypeRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var assetType = await db.AssetTypes.FirstOrDefaultAsync(t => t.Id == id);
         if (assetType is null) return Results.NotFound();
@@ -140,7 +140,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> DeleteAssetType(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var assetType = await db.AssetTypes.FirstOrDefaultAsync(t => t.Id == id);
         if (assetType is null) return Results.NotFound();
@@ -157,7 +157,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> CreateLiabilityType(CreateLiabilityTypeRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var name = request.Name?.Trim();
         if (string.IsNullOrEmpty(name) || name.Length > 100)
@@ -194,7 +194,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> UpdateLiabilityType(Guid id, UpdateLiabilityTypeRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var liabilityType = await db.LiabilityTypes.FirstOrDefaultAsync(t => t.Id == id);
         if (liabilityType is null) return Results.NotFound();
@@ -224,7 +224,7 @@ public static class ReferenceEndpoints
 
     private static async Task<IResult> DeleteLiabilityType(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        if (GetMemberOrNull(context) is null) return Results.Unauthorized();
+        if (context.GetMemberOrNull() is null) return Results.Unauthorized();
 
         var liabilityType = await db.LiabilityTypes.FirstOrDefaultAsync(t => t.Id == id);
         if (liabilityType is null) return Results.NotFound();
@@ -239,6 +239,4 @@ public static class ReferenceEndpoints
         return Results.NoContent();
     }
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

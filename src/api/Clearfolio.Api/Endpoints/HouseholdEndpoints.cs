@@ -21,7 +21,7 @@ public static class HouseholdEndpoints
 
     private static IResult GetHousehold(HttpContext context)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var h = member.Household;
         return Results.Ok(new HouseholdDto(h.Id, h.Name, h.BaseCurrency, h.PreferredPeriodType, h.Locale, h.CreatedAt));
@@ -29,7 +29,7 @@ public static class HouseholdEndpoints
 
     private static async Task<IResult> UpdateHousehold(HttpContext context, UpdateHouseholdRequest request, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.FindAsync(member.HouseholdId);
         if (household is null) return Results.NotFound();
@@ -50,7 +50,7 @@ public static class HouseholdEndpoints
 
     private static async Task<IResult> DeleteHousehold(HttpContext context, ClearfolioDbContext db)
     {
-        var member = context.Items["HouseholdMember"] as HouseholdMember;
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         if (!member.IsPrimary) return Results.Forbid();
 
@@ -74,7 +74,7 @@ public static class HouseholdEndpoints
 
     private static async Task<IResult> ExportData(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var householdId = member.HouseholdId;
@@ -187,13 +187,21 @@ public static class HouseholdEndpoints
         return Results.Ok(export);
     }
 
-    private static async Task<IResult> ImportData(ExportDto data, HttpContext context, ClearfolioDbContext db)
+    private static async Task<IResult> ImportData(ExportDto data, HttpContext context, ClearfolioDbContext db, IConfiguration config)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         if (!member.IsPrimary) return Results.Forbid();
 
         if (data.Version != "1") return ApiErrors.BadRequest("Unsupported export version.");
+
+        // #8: Create database backup before destructive import
+        var dbPath = config["DB_PATH"] ?? "clearfolio.db";
+        if (File.Exists(dbPath))
+        {
+            var backupPath = $"{dbPath}.{DateTime.UtcNow:yyyyMMddHHmmss}.pre-import-backup";
+            File.Copy(dbPath, backupPath, overwrite: true);
+        }
 
         var householdId = member.HouseholdId;
 
@@ -475,6 +483,4 @@ public static class HouseholdEndpoints
         return Results.Ok(new { imported = true });
     }
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

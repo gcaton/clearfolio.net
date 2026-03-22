@@ -1,17 +1,13 @@
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
 
 public static class CashflowEndpoints
 {
-    private static readonly Dictionary<string, double> FrequencyMultipliers = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["weekly"] = 52, ["fortnightly"] = 26, ["monthly"] = 12, ["quarterly"] = 4, ["yearly"] = 1
-    };
-
     public static WebApplication MapCashflowEndpoints(this WebApplication app)
     {
         app.MapGet("/api/cashflow/summary", GetSummary);
@@ -20,7 +16,7 @@ public static class CashflowEndpoints
 
     private static async Task<IResult> GetSummary(HttpContext context, ClearfolioDbContext db, string view = "household")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var householdId = member.HouseholdId;
@@ -66,7 +62,7 @@ public static class CashflowEndpoints
 
         foreach (var inc in incomeStreams)
         {
-            var annual = Annualise(inc.Amount, inc.Frequency);
+            var annual = FrequencyHelper.Annualise(inc.Amount, inc.Frequency);
             if (targetMember is null || inc.OwnerMemberId == targetMember.Id)
             {
                 totalIncome += annual;
@@ -79,7 +75,7 @@ public static class CashflowEndpoints
 
         foreach (var exp in expenses)
         {
-            var annual = Annualise(exp.Amount, exp.Frequency);
+            var annual = FrequencyHelper.Annualise(exp.Amount, exp.Frequency);
             double effective;
 
             if (targetMember is null)
@@ -109,7 +105,7 @@ public static class CashflowEndpoints
         foreach (var asset in assets)
         {
             if (asset.ContributionAmount is null or 0 || asset.ContributionFrequency is null) continue;
-            var annual = Annualise(asset.ContributionAmount.Value, asset.ContributionFrequency);
+            var annual = FrequencyHelper.Annualise(asset.ContributionAmount.Value, asset.ContributionFrequency);
             double effective;
 
             if (targetMember is null)
@@ -137,7 +133,7 @@ public static class CashflowEndpoints
         foreach (var liability in liabilities)
         {
             if (liability.RepaymentAmount is null or 0 || liability.RepaymentFrequency is null) continue;
-            var annual = Annualise(liability.RepaymentAmount.Value, liability.RepaymentFrequency);
+            var annual = FrequencyHelper.Annualise(liability.RepaymentAmount.Value, liability.RepaymentFrequency);
 
             if (targetMember is null)
             {
@@ -179,10 +175,4 @@ public static class CashflowEndpoints
 
         return Results.Ok(summary);
     }
-
-    private static double Annualise(double amount, string frequency) =>
-        FrequencyMultipliers.TryGetValue(frequency, out var multiplier) ? amount * multiplier : 0;
-
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

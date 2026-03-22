@@ -43,7 +43,7 @@ public static class ExpenseCategoriesEndpoints
 
     private static async Task<IResult> GetCategories(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var categories = await db.ExpenseCategories
@@ -58,7 +58,7 @@ public static class ExpenseCategoriesEndpoints
 
     private static async Task<IResult> CreateCategory(CreateExpenseCategoryRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var name = request.Name?.Trim();
@@ -88,7 +88,7 @@ public static class ExpenseCategoriesEndpoints
 
     private static async Task<IResult> UpdateCategory(Guid id, UpdateExpenseCategoryRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var category = await db.ExpenseCategories
@@ -108,7 +108,7 @@ public static class ExpenseCategoriesEndpoints
 
     private static async Task<IResult> DeleteCategory(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var category = await db.ExpenseCategories
@@ -128,6 +128,4 @@ public static class ExpenseCategoriesEndpoints
         return Results.NoContent();
     }
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

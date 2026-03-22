@@ -5,7 +5,6 @@ using Clearfolio.Api.DTOs;
 using Clearfolio.Api.Filters;
 using Clearfolio.Api.Models;
 using Clearfolio.Api.Services;
-using static Clearfolio.Api.Services.ProjectionEngine;
 
 namespace Clearfolio.Api.Endpoints;
 
@@ -17,15 +16,12 @@ public static class ProjectionEndpoints
         app.MapPost("/api/projections/scenario", RunScenarioProjection).AddEndpointFilter<ValidationFilter<ProjectionRequest>>();
         app.MapPost("/api/projections/monte-carlo", RunMonteCarloProjection).AddEndpointFilter<ValidationFilter<ProjectionRequest>>();
         app.MapGet("/api/projections/defaults", GetDefaults);
-        app.MapGet("/api/historical-returns/{symbol}", GetHistoricalReturns);
+        app.MapGet("/api/historical-returns/{symbol}", GetHistoricalReturns).RequireRateLimiting("external-api");
     }
-
-    private static HouseholdMember? GetMemberOrNull(HttpContext context)
-        => context.Items["HouseholdMember"] as HouseholdMember;
 
     private static async Task<IResult> RunCompoundProjection(ProjectionRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
@@ -38,7 +34,7 @@ public static class ProjectionEndpoints
 
     private static async Task<IResult> RunScenarioProjection(ProjectionRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
@@ -51,13 +47,18 @@ public static class ProjectionEndpoints
 
     private static async Task<IResult> RunMonteCarloProjection(ProjectionRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         if (request.Horizon < 1 || request.Horizon > 50) return ApiErrors.BadRequest("Horizon must be 1-50 years");
 
         var sims = Math.Clamp(request.Simulations ?? 1000, 100, 10000);
         var inflation = request.InflationRate ?? 0;
         var inputs = await BuildEntityInputs(db, member, request);
+
+        // #11: Limit entity count to prevent excessive memory allocation
+        if (inputs.Count > 100)
+            return ApiErrors.BadRequest("Monte Carlo simulation is limited to 100 entities.");
+
         var result = ProjectionEngine.RunMonteCarlo(inputs, request.Horizon, sims, inflation);
 
         return Results.Ok(new { mode = "monte-carlo", result.Horizon, result.Simulations, inflationAdjusted = inflation > 0, result.Years, result.Entities });
@@ -65,7 +66,7 @@ public static class ProjectionEndpoints
 
     private static async Task<IResult> GetDefaults(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var assets = await db.Assets.AsNoTracking()
@@ -94,7 +95,7 @@ public static class ProjectionEndpoints
                 effectiveRate, effectiveVol, null,
                 rateSource,
                 a.ContributionAmount, a.ContributionFrequency,
-                NormaliseContribution(a.ContributionAmount, a.ContributionFrequency),
+                FrequencyHelper.NormaliseContribution(a.ContributionAmount, a.ContributionFrequency),
                 null, null, 0,
                 hasSnapshot ? snapshotValue : null,
                 hasSnapshot));
@@ -109,7 +110,7 @@ public static class ProjectionEndpoints
                 l.InterestRate.HasValue ? "custom" : "none",
                 null, null, 0,
                 l.RepaymentAmount, l.RepaymentFrequency,
-                NormaliseContribution(l.RepaymentAmount, l.RepaymentFrequency),
+                FrequencyHelper.NormaliseContribution(l.RepaymentAmount, l.RepaymentFrequency),
                 hasSnapshot ? snapshotValue : null,
                 hasSnapshot));
         }
@@ -119,11 +120,7 @@ public static class ProjectionEndpoints
 
     // --- Shared helpers ---
 
-    private static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
-    private static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
-    private static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
-
-    private static async Task<List<EntityInput>> BuildEntityInputs(
+    private static async Task<List<ProjectionEngine.EntityInput>> BuildEntityInputs(
         ClearfolioDbContext db, HouseholdMember member, ProjectionRequest request)
     {
         var assets = await db.Assets.AsNoTracking()
@@ -136,20 +133,11 @@ public static class ProjectionEndpoints
             .Where(l => l.HouseholdId == member.HouseholdId && l.IsActive)
             .ToListAsync();
 
-        // Apply scope filter
-        assets = request.Scope switch
-        {
-            "financial" => assets.Where(a => FinancialAssetCategories.Contains(a.AssetType.Category)).ToList(),
-            "liquid" => assets.Where(a => LiquidAssetCategories.Contains(a.AssetType.Category)).ToList(),
-            _ => assets,
-        };
-
-        liabilities = request.Scope switch
-        {
-            "financial" => liabilities.Where(l => FinancialLiabilityCategories.Contains(l.LiabilityType.Category)).ToList(),
-            "liquid" => [],
-            _ => liabilities,
-        };
+        // Apply scope filter — projections exclude all liabilities for "liquid" scope
+        assets = OwnershipHelper.ApplyAssetScopeFilter(assets, request.Scope ?? "all");
+        liabilities = request.Scope == "liquid"
+            ? []
+            : OwnershipHelper.ApplyLiabilityScopeFilter(liabilities, request.Scope ?? "all");
 
         // Apply entity filter
         if (request.EntityIds is { Count: > 0 })
@@ -164,22 +152,22 @@ public static class ProjectionEndpoints
             .Where(m => m.HouseholdId == member.HouseholdId)
             .ToListAsync();
 
-        var inputs = new List<EntityInput>();
+        var inputs = new List<ProjectionEngine.EntityInput>();
 
         foreach (var a in assets)
         {
             if (!latestSnapshots.TryGetValue(a.Id, out var value)) continue;
 
-            value = ApplyViewFilter(value, a.OwnershipType, a.OwnerMemberId, a.JointSplit, members, request.View);
+            value = OwnershipHelper.ApplyViewFilter(value, a.OwnershipType, a.OwnerMemberId, a.JointSplit, members, request.View);
             if (value == 0) continue;
 
             var effectiveRate = a.ExpectedReturnRate ?? a.AssetType.DefaultReturnRate;
             var effectiveVol = a.ExpectedVolatility ?? a.AssetType.DefaultVolatility;
 
-            inputs.Add(new EntityInput(
+            inputs.Add(new ProjectionEngine.EntityInput(
                 a.Id, a.Label, a.AssetType.Category, "asset",
                 value,
-                NormaliseContribution(a.ContributionAmount, a.ContributionFrequency),
+                FrequencyHelper.NormaliseContribution(a.ContributionAmount, a.ContributionFrequency),
                 effectiveRate, effectiveVol, 0,
                 a.ContributionEndDate));
         }
@@ -188,13 +176,13 @@ public static class ProjectionEndpoints
         {
             if (!latestSnapshots.TryGetValue(l.Id, out var value)) continue;
 
-            value = ApplyViewFilter(value, l.OwnershipType, l.OwnerMemberId, l.JointSplit, members, request.View);
+            value = OwnershipHelper.ApplyViewFilter(value, l.OwnershipType, l.OwnerMemberId, l.JointSplit, members, request.View);
             if (value == 0) continue;
 
-            inputs.Add(new EntityInput(
+            inputs.Add(new ProjectionEngine.EntityInput(
                 l.Id, l.Label, l.LiabilityType.Category, "liability",
                 value,
-                NormaliseContribution(l.RepaymentAmount, l.RepaymentFrequency),
+                FrequencyHelper.NormaliseContribution(l.RepaymentAmount, l.RepaymentFrequency),
                 0, 0, l.InterestRate ?? 0,
                 l.RepaymentEndDate));
         }
@@ -202,26 +190,10 @@ public static class ProjectionEndpoints
         return inputs;
     }
 
-    private static double ApplyViewFilter(
-        double value, string ownershipType, Guid? ownerMemberId, double jointSplit,
-        List<HouseholdMember> members, string view)
-    {
-        if (view == "household") return value;
-
-        var targetMember = members.FirstOrDefault(m => m.MemberTag == view);
-        if (targetMember is null) return 0;
-
-        if (ownershipType == "sole")
-            return ownerMemberId == targetMember.Id ? value : 0;
-
-        var p1 = members.FirstOrDefault(m => m.MemberTag == "p1");
-        return targetMember.Id == p1?.Id ? value * jointSplit : value * (1 - jointSplit);
-    }
-
     private static async Task<IResult> GetHistoricalReturns(
         string symbol, HttpContext context, HistoricalReturnsService service)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var result = await service.GetHistoricalReturn(symbol);
