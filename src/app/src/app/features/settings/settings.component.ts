@@ -1,4 +1,5 @@
 import { Component, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { InputText } from 'primeng/inputtext';
@@ -8,6 +9,7 @@ import { Button } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
+import { Checkbox } from 'primeng/checkbox';
 import { Tag } from 'primeng/tag';
 import { Toast } from 'primeng/toast';
 import { Password } from 'primeng/password';
@@ -15,12 +17,17 @@ import { MessageService, ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { GoalService } from '../../core/auth/goal.service';
-import { Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest } from '../../core/api/models';
+import { LocaleService } from '../../core/locale/locale.service';
+import {
+  Household, Member, ExpenseCategory, CreateExpenseCategoryRequest, UpdateExpenseCategoryRequest,
+  AssetType, CreateAssetTypeRequest, UpdateAssetTypeRequest,
+  LiabilityType, CreateLiabilityTypeRequest as CreateLiabTypeReq, UpdateLiabilityTypeRequest as UpdateLiabTypeReq,
+} from '../../core/api/models';
 
 @Component({
   selector: 'app-settings',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Tag, Toast, Password],
+  imports: [FormsModule, DecimalPipe, InputText, InputNumber, Select, Button, DialogModule, ConfirmDialogModule, Tabs, TabList, Tab, TabPanels, TabPanel, Checkbox, Tag, Toast, Password],
   providers: [MessageService, ConfirmationService],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
@@ -29,6 +36,7 @@ export class SettingsComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private goalService = inject(GoalService);
+  protected localeService = inject(LocaleService);
   private messageService = inject(MessageService);
   private router = inject(Router);
   private confirmationService = inject(ConfirmationService);
@@ -52,6 +60,64 @@ export class SettingsComponent implements OnInit {
   protected categoryDialogVisible = signal(false);
   protected categoryName = '';
 
+  // Asset type management
+  protected assetTypes = signal<AssetType[]>([]);
+  protected editingAssetType = signal<AssetType | null>(null);
+  protected assetTypeDialogVisible = signal(false);
+  protected atName = '';
+  protected atCategory = '';
+  protected atLiquidity = '';
+  protected atGrowthClass = '';
+  protected atIsSuper = false;
+  protected atIsCgtExempt = false;
+  protected atDefaultReturnRate: number | null = 0;
+  protected atDefaultVolatility: number | null = 0;
+
+  protected assetCategoryOptions = [
+    { label: 'Cash', value: 'cash' },
+    { label: 'Investable', value: 'investable' },
+    { label: 'Property', value: 'property' },
+    { label: 'Retirement', value: 'retirement' },
+    { label: 'Other', value: 'other' },
+  ];
+
+  protected liquidityOptions = [
+    { label: 'Immediate', value: 'immediate' },
+    { label: 'Short Term', value: 'short_term' },
+    { label: 'Long Term', value: 'long_term' },
+    { label: 'Restricted', value: 'restricted' },
+  ];
+
+  protected growthClassOptions = [
+    { label: 'Defensive', value: 'defensive' },
+    { label: 'Growth', value: 'growth' },
+    { label: 'Mixed', value: 'mixed' },
+  ];
+
+  // Liability type management
+  protected liabilityTypes = signal<LiabilityType[]>([]);
+  protected editingLiabilityType = signal<LiabilityType | null>(null);
+  protected liabilityTypeDialogVisible = signal(false);
+  protected ltName = '';
+  protected ltCategory = '';
+  protected ltDebtQuality = '';
+  protected ltIsHecs = false;
+
+  protected liabilityCategoryOptions = [
+    { label: 'Mortgage', value: 'mortgage' },
+    { label: 'Personal', value: 'personal' },
+    { label: 'Credit', value: 'credit' },
+    { label: 'Student', value: 'student' },
+    { label: 'Tax', value: 'tax' },
+    { label: 'Other', value: 'other' },
+  ];
+
+  protected debtQualityOptions = [
+    { label: 'Income-producing', value: 'productive' },
+    { label: 'Non-deductible', value: 'neutral' },
+    { label: 'Consumption', value: 'bad' },
+  ];
+
   protected passphraseEnabled = signal(false);
   protected passphraseDialogVisible = signal(false);
   protected currentPassphrase = '';
@@ -63,10 +129,21 @@ export class SettingsComponent implements OnInit {
     { label: 'Calendar Year (CY)', value: 'CY' },
   ];
 
+  protected localeOptions = [
+    { label: 'Australia (en-AU)', value: 'en-AU' },
+    { label: 'United States (en-US)', value: 'en-US' },
+    { label: 'United Kingdom (en-GB)', value: 'en-GB' },
+    { label: 'New Zealand (en-NZ)', value: 'en-NZ' },
+    { label: 'Canada (en-CA)', value: 'en-CA' },
+    { label: 'Ireland (en-IE)', value: 'en-IE' },
+  ];
+
   ngOnInit() {
     this.api.getHousehold().subscribe((h) => this.household.set(h));
     this.api.getMembers().subscribe((m) => this.members.set(m));
     this.loadCategories();
+    this.loadAssetTypes();
+    this.loadLiabilityTypes();
     this.api.getAuthStatus().subscribe(s => this.passphraseEnabled.set(s.passphraseEnabled));
   }
 
@@ -159,6 +236,270 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  loadAssetTypes() {
+    this.api.getAssetTypes().subscribe((types) => {
+      this.assetTypes.set([...types].sort((a, b) => a.sortOrder - b.sortOrder));
+    });
+  }
+
+  openAddAssetType() {
+    this.editingAssetType.set(null);
+    this.atName = '';
+    this.atCategory = 'cash';
+    this.atLiquidity = 'immediate';
+    this.atGrowthClass = 'defensive';
+    this.atIsSuper = false;
+    this.atIsCgtExempt = false;
+    this.atDefaultReturnRate = 0;
+    this.atDefaultVolatility = 0;
+    this.assetTypeDialogVisible.set(true);
+  }
+
+  openEditAssetType(at: AssetType) {
+    this.editingAssetType.set(at);
+    this.atName = at.name;
+    this.atCategory = at.category;
+    this.atLiquidity = at.liquidity;
+    this.atGrowthClass = at.growthClass;
+    this.atIsSuper = at.isSuper;
+    this.atIsCgtExempt = at.isCgtExempt;
+    this.atDefaultReturnRate = at.defaultReturnRate * 100;
+    this.atDefaultVolatility = at.defaultVolatility * 100;
+    this.assetTypeDialogVisible.set(true);
+  }
+
+  saveAssetType() {
+    const editing = this.editingAssetType();
+    if (editing) {
+      const req: UpdateAssetTypeRequest = {
+        name: this.atName,
+        category: this.atCategory,
+        liquidity: this.atLiquidity,
+        growthClass: this.atGrowthClass,
+        isSuper: this.atIsSuper,
+        isCgtExempt: this.atIsCgtExempt,
+        sortOrder: editing.sortOrder,
+        defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
+        defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
+      };
+      this.api.updateAssetType(editing.id, req).subscribe({
+        next: () => {
+          this.assetTypeDialogVisible.set(false);
+          this.loadAssetTypes();
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset type updated' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update asset type. The name may already be in use.' });
+        },
+      });
+    } else {
+      const req: CreateAssetTypeRequest = {
+        name: this.atName.trim(),
+        category: this.atCategory,
+        liquidity: this.atLiquidity,
+        growthClass: this.atGrowthClass,
+        isSuper: this.atIsSuper,
+        isCgtExempt: this.atIsCgtExempt,
+        defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
+        defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
+      };
+      this.api.createAssetType(req).subscribe({
+        next: () => {
+          this.assetTypeDialogVisible.set(false);
+          this.loadAssetTypes();
+          this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Asset type added' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add asset type. The name may already be in use.' });
+        },
+      });
+    }
+  }
+
+  deleteAssetType(at: AssetType) {
+    this.confirmationService.confirm({
+      message: `Delete asset type "${at.name}"? This cannot be undone.`,
+      header: 'Delete Asset Type?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.deleteAssetType(at.id).subscribe({
+          next: () => {
+            this.loadAssetTypes();
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Asset type "${at.name}" deleted` });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Cannot Delete', detail: 'This type is in use. Reassign or remove referencing assets first.' });
+          },
+        });
+      },
+    });
+  }
+
+  moveAssetTypeUp(at: AssetType) {
+    const types = this.assetTypes();
+    const idx = types.findIndex((t) => t.id === at.id);
+    if (idx <= 0) return;
+    const prev = types[idx - 1];
+    const prevOrder = prev.sortOrder;
+    const atOrder = at.sortOrder;
+    this.api.updateAssetType(prev.id, { ...this.assetTypeToUpdateRequest(prev), sortOrder: atOrder }).subscribe(() => {
+      this.api.updateAssetType(at.id, { ...this.assetTypeToUpdateRequest(at), sortOrder: prevOrder }).subscribe(() => {
+        this.loadAssetTypes();
+      });
+    });
+  }
+
+  moveAssetTypeDown(at: AssetType) {
+    const types = this.assetTypes();
+    const idx = types.findIndex((t) => t.id === at.id);
+    if (idx < 0 || idx >= types.length - 1) return;
+    const next = types[idx + 1];
+    const nextOrder = next.sortOrder;
+    const atOrder = at.sortOrder;
+    this.api.updateAssetType(next.id, { ...this.assetTypeToUpdateRequest(next), sortOrder: atOrder }).subscribe(() => {
+      this.api.updateAssetType(at.id, { ...this.assetTypeToUpdateRequest(at), sortOrder: nextOrder }).subscribe(() => {
+        this.loadAssetTypes();
+      });
+    });
+  }
+
+  private assetTypeToUpdateRequest(at: AssetType): UpdateAssetTypeRequest {
+    return {
+      name: at.name,
+      category: at.category,
+      liquidity: at.liquidity,
+      growthClass: at.growthClass,
+      isSuper: at.isSuper,
+      isCgtExempt: at.isCgtExempt,
+      sortOrder: at.sortOrder,
+      defaultReturnRate: at.defaultReturnRate,
+      defaultVolatility: at.defaultVolatility,
+    };
+  }
+
+  loadLiabilityTypes() {
+    this.api.getLiabilityTypes().subscribe((types) => {
+      this.liabilityTypes.set([...types].sort((a, b) => a.sortOrder - b.sortOrder));
+    });
+  }
+
+  openAddLiabilityType() {
+    this.editingLiabilityType.set(null);
+    this.ltName = '';
+    this.ltCategory = 'personal';
+    this.ltDebtQuality = 'neutral';
+    this.ltIsHecs = false;
+    this.liabilityTypeDialogVisible.set(true);
+  }
+
+  openEditLiabilityType(lt: LiabilityType) {
+    this.editingLiabilityType.set(lt);
+    this.ltName = lt.name;
+    this.ltCategory = lt.category;
+    this.ltDebtQuality = lt.debtQuality;
+    this.ltIsHecs = lt.isHecs;
+    this.liabilityTypeDialogVisible.set(true);
+  }
+
+  saveLiabilityType() {
+    const editing = this.editingLiabilityType();
+    if (editing) {
+      const req: UpdateLiabTypeReq = {
+        name: this.ltName,
+        category: this.ltCategory,
+        debtQuality: this.ltDebtQuality,
+        isHecs: this.ltIsHecs,
+        sortOrder: editing.sortOrder,
+      };
+      this.api.updateLiabilityType(editing.id, req).subscribe({
+        next: () => {
+          this.liabilityTypeDialogVisible.set(false);
+          this.loadLiabilityTypes();
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability type updated' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update liability type. The name may already be in use.' });
+        },
+      });
+    } else {
+      const req: CreateLiabTypeReq = {
+        name: this.ltName.trim(),
+        category: this.ltCategory,
+        debtQuality: this.ltDebtQuality,
+        isHecs: this.ltIsHecs,
+      };
+      this.api.createLiabilityType(req).subscribe({
+        next: () => {
+          this.liabilityTypeDialogVisible.set(false);
+          this.loadLiabilityTypes();
+          this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Liability type added' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add liability type. The name may already be in use.' });
+        },
+      });
+    }
+  }
+
+  deleteLiabilityType(lt: LiabilityType) {
+    this.confirmationService.confirm({
+      message: `Delete liability type "${lt.name}"? This cannot be undone.`,
+      header: 'Delete Liability Type?',
+      icon: 'pi pi-exclamation-triangle',
+      acceptButtonStyleClass: 'p-button-danger',
+      accept: () => {
+        this.api.deleteLiabilityType(lt.id).subscribe({
+          next: () => {
+            this.loadLiabilityTypes();
+            this.messageService.add({ severity: 'success', summary: 'Deleted', detail: `Liability type "${lt.name}" deleted` });
+          },
+          error: () => {
+            this.messageService.add({ severity: 'error', summary: 'Cannot Delete', detail: 'This type is in use. Reassign or remove referencing liabilities first.' });
+          },
+        });
+      },
+    });
+  }
+
+  moveLiabilityTypeUp(lt: LiabilityType) {
+    const types = this.liabilityTypes();
+    const idx = types.findIndex((t) => t.id === lt.id);
+    if (idx <= 0) return;
+    const prev = types[idx - 1];
+    const prevOrder = prev.sortOrder;
+    const ltOrder = lt.sortOrder;
+    this.api.updateLiabilityType(prev.id, { ...this.liabilityTypeToUpdateRequest(prev), sortOrder: ltOrder }).subscribe(() => {
+      this.api.updateLiabilityType(lt.id, { ...this.liabilityTypeToUpdateRequest(lt), sortOrder: prevOrder }).subscribe(() => {
+        this.loadLiabilityTypes();
+      });
+    });
+  }
+
+  moveLiabilityTypeDown(lt: LiabilityType) {
+    const types = this.liabilityTypes();
+    const idx = types.findIndex((t) => t.id === lt.id);
+    if (idx < 0 || idx >= types.length - 1) return;
+    const next = types[idx + 1];
+    const nextOrder = next.sortOrder;
+    const ltOrder = lt.sortOrder;
+    this.api.updateLiabilityType(next.id, { ...this.liabilityTypeToUpdateRequest(next), sortOrder: ltOrder }).subscribe(() => {
+      this.api.updateLiabilityType(lt.id, { ...this.liabilityTypeToUpdateRequest(lt), sortOrder: nextOrder }).subscribe(() => {
+        this.loadLiabilityTypes();
+      });
+    });
+  }
+
+  private liabilityTypeToUpdateRequest(lt: LiabilityType): UpdateLiabTypeReq {
+    return {
+      name: lt.name,
+      category: lt.category,
+      debtQuality: lt.debtQuality,
+      isHecs: lt.isHecs,
+      sortOrder: lt.sortOrder,
+    };
+  }
+
   saveHousehold() {
     const h = this.household();
     if (!h) return;
@@ -167,9 +508,11 @@ export class SettingsComponent implements OnInit {
         name: h.name,
         baseCurrency: h.baseCurrency,
         preferredPeriodType: h.preferredPeriodType,
+        locale: h.locale,
       })
       .subscribe((updated) => {
         this.household.set(updated);
+        this.localeService.update(updated.locale, updated.baseCurrency);
         this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Household settings updated' });
       });
   }
@@ -238,7 +581,8 @@ export class SettingsComponent implements OnInit {
   }
 
   exportData() {
-    this.api.exportData().subscribe((data) => {
+    this.api.exportData().subscribe((data: Record<string, unknown>) => {
+      data['goals'] = this.goalService.goal();
       const json = JSON.stringify(data, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -263,11 +607,17 @@ export class SettingsComponent implements OnInit {
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result as string);
+            if (data.goals) {
+              this.goalService.setGoal(data.goals);
+            }
             this.api.importData(data).subscribe({
               next: () => {
                 this.messageService.add({ severity: 'success', summary: 'Imported', detail: 'Data imported successfully' });
+                this.netWorthTarget = this.goalService.goal().netWorthTarget;
+                this.superTarget = this.goalService.goal().superTarget;
                 this.ngOnInit();
                 this.auth.loadMembers();
+                this.localeService.init();
               },
               error: () => {
                 this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Import failed' });

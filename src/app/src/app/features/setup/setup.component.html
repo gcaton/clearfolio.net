@@ -30,6 +30,9 @@
       <label for="currency">Currency</label>
       <input pInputText id="currency" [(ngModel)]="currency" placeholder="AUD" />
 
+      <label for="locale">Locale</label>
+      <p-select id="locale" [(ngModel)]="locale" [options]="localeOptions" optionLabel="label" optionValue="value" />
+
       <label>Period Type</label>
       <p-selectbutton [options]="periodOptions" [(ngModel)]="periodType" />
 

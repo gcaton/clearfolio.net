@@ -166,7 +166,7 @@
   <div class="form-grid">
     <label>Contribution</label>
     <div class="inline-group">
-      <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" [currency]="form.currency || 'AUD'" [minFractionDigits]="0" placeholder="0" />
+      <p-inputNumber [(ngModel)]="form.contributionAmount" mode="currency" [currency]="form.currency || localeService.currency()" [minFractionDigits]="0" placeholder="0" />
       <p-select [(ngModel)]="form.contributionFrequency" [options]="frequencyOptions" optionLabel="label" optionValue="value" placeholder="Frequency" [showClear]="true" />
     </div>
 

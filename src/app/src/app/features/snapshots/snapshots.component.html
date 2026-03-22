@@ -37,7 +37,7 @@
       </td>
       <td>{{ snapshot.currency }}</td>
       <td>{{ snapshot.recordedByName }}</td>
-      <td>{{ snapshot.recordedAt | date: 'short' }}</td>
+      <td>{{ snapshot.recordedAt | appDate:'short' }}</td>
       <td>
         <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEdit(snapshot)" />
         <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDelete(snapshot)" />
@@ -100,8 +100,8 @@
       id="value"
       [(ngModel)]="form.value"
       mode="currency"
-      currency="AUD"
-      locale="en-AU"
+      [currency]="localeService.currency()"
+      [locale]="localeService.locale()"
     />
 
     <label for="currency">Currency</label>

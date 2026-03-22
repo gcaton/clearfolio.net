@@ -13,6 +13,7 @@ import { Toast } from 'primeng/toast';
 import { Skeleton } from 'primeng/skeleton';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ApiService } from '../../core/api/api.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import { Liability, LiabilityType, Member, CreateLiabilityRequest, LatestSnapshot } from '../../core/api/models';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { RecordValueDialogComponent } from '../../shared/components/record-value-dialog.component';
@@ -33,6 +34,7 @@ export class LiabilitiesComponent implements OnInit {
   private api = inject(ApiService);
   private confirmService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  protected localeService = inject(LocaleService);
 
   protected liabilities = signal<Liability[]>([]);
   protected liabilityTypes = signal<LiabilityType[]>([]);
@@ -159,7 +161,7 @@ export class LiabilitiesComponent implements OnInit {
       ownershipType: 'sole',
       jointSplit: 0.5,
       label: '',
-      currency: 'AUD',
+      currency: this.localeService.currency(),
       notes: null,
       repaymentAmount: null,
       repaymentFrequency: null,

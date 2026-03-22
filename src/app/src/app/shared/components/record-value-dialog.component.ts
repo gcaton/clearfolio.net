@@ -5,6 +5,7 @@ import { InputNumber } from 'primeng/inputnumber';
 import { Select } from 'primeng/select';
 import { Button } from 'primeng/button';
 import { ApiService } from '../../core/api/api.service';
+import { LocaleService } from '../../core/locale/locale.service';
 
 @Component({
   selector: 'app-record-value-dialog',
@@ -33,8 +34,8 @@ import { ApiService } from '../../core/api/api.service';
           id="rvValue"
           [(ngModel)]="value"
           mode="currency"
-          currency="AUD"
-          locale="en-AU"
+          [currency]="currency() || localeService.currency()"
+          [locale]="localeService.locale()"
         />
       </div>
 
@@ -55,11 +56,12 @@ import { ApiService } from '../../core/api/api.service';
 })
 export class RecordValueDialogComponent implements OnInit {
   private api = inject(ApiService);
+  protected localeService = inject(LocaleService);
 
   entityId = input<string>('');
   entityType = input<string>('');
   entityLabel = input<string>('');
-  currency = input<string>('AUD');
+  currency = input<string>('');
 
   saved = output<void>();
 
@@ -120,7 +122,7 @@ export class RecordValueDialogComponent implements OnInit {
       entityType: this.entityType(),
       period: this.period,
       value: this.value,
-      currency: this.currency(),
+      currency: this.currency() || this.localeService.currency(),
       notes: null,
     }).subscribe(() => {
       this.dialogVisible.set(false);

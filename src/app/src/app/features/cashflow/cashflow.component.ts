@@ -1,7 +1,9 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { CurrencyPipe, PercentPipe } from '@angular/common';
+import { PercentPipe } from '@angular/common';
+import { AppCurrencyPipe } from '../../shared/pipes/app-currency.pipe';
+import { LocaleService } from '../../core/locale/locale.service';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { TableModule } from 'primeng/table';
 import { Tag } from 'primeng/tag';
@@ -54,7 +56,7 @@ const FREQUENCY_MULTIPLIER: Record<string, number> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FormsModule,
-    CurrencyPipe,
+    AppCurrencyPipe,
     PercentPipe,
     NgxEchartsDirective,
     TableModule,
@@ -81,6 +83,7 @@ export class CashflowComponent implements OnInit {
   private confirmService = inject(ConfirmationService);
   private messageService = inject(MessageService);
   private viewState = inject(ViewStateService);
+  protected localeService = inject(LocaleService);
 
   protected incomeStreams = signal<IncomeStream[]>([]);
   protected expenses = signal<Expense[]>([]);

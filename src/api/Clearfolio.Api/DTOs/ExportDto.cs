@@ -5,6 +5,8 @@ public record ExportDto(
     string ExportedAt,
     ExportHouseholdDto Household,
     List<ExportMemberDto> Members,
+    List<ExportAssetTypeDto>? AssetTypes,
+    List<ExportLiabilityTypeDto>? LiabilityTypes,
     List<ExportAssetDto> Assets,
     List<ExportLiabilityDto> Liabilities,
     List<ExportSnapshotDto> Snapshots,
@@ -15,7 +17,8 @@ public record ExportDto(
 public record ExportHouseholdDto(
     string Name,
     string BaseCurrency,
-    string PreferredPeriodType);
+    string PreferredPeriodType,
+    string? Locale);
 
 public record ExportMemberDto(
     string? Email,
@@ -23,8 +26,27 @@ public record ExportMemberDto(
     string MemberTag,
     bool IsPrimary);
 
+public record ExportAssetTypeDto(
+    string Name,
+    string Category,
+    string Liquidity,
+    string GrowthClass,
+    bool IsSuper,
+    bool IsCgtExempt,
+    int SortOrder,
+    double DefaultReturnRate,
+    double DefaultVolatility);
+
+public record ExportLiabilityTypeDto(
+    string Name,
+    string Category,
+    string DebtQuality,
+    bool IsHecs,
+    int SortOrder);
+
 public record ExportAssetDto(
-    Guid AssetTypeId,
+    string? AssetTypeName,
+    Guid? AssetTypeId,
     string? OwnerMemberTag,
     string OwnershipType,
     double JointSplit,
@@ -41,7 +63,8 @@ public record ExportAssetDto(
     double? ExpectedVolatility);
 
 public record ExportLiabilityDto(
-    Guid LiabilityTypeId,
+    string? LiabilityTypeName,
+    Guid? LiabilityTypeId,
     string? OwnerMemberTag,
     string OwnershipType,
     double JointSplit,

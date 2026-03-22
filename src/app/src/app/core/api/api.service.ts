@@ -41,6 +41,10 @@ import {
   Expense,
   CreateExpenseRequest,
   CashflowSummary,
+  CreateAssetTypeRequest,
+  UpdateAssetTypeRequest,
+  CreateLiabilityTypeRequest,
+  UpdateLiabilityTypeRequest,
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -67,6 +71,32 @@ export class ApiService {
     return this.http.get<LiabilityType[]>('/api/liability-types');
   }
 
+  // Asset Type CRUD
+  createAssetType(request: CreateAssetTypeRequest) {
+    return this.http.post<AssetType>('/api/asset-types', request);
+  }
+
+  updateAssetType(id: string, request: UpdateAssetTypeRequest) {
+    return this.http.put<AssetType>(`/api/asset-types/${id}`, request);
+  }
+
+  deleteAssetType(id: string) {
+    return this.http.delete(`/api/asset-types/${id}`);
+  }
+
+  // Liability Type CRUD
+  createLiabilityType(request: CreateLiabilityTypeRequest) {
+    return this.http.post<LiabilityType>('/api/liability-types', request);
+  }
+
+  updateLiabilityType(id: string, request: UpdateLiabilityTypeRequest) {
+    return this.http.put<LiabilityType>(`/api/liability-types/${id}`, request);
+  }
+
+  deleteLiabilityType(id: string) {
+    return this.http.delete(`/api/liability-types/${id}`);
+  }
+
   // Household
   getHousehold() {
     return this.http.get<Household>('/api/household');
@@ -83,7 +113,7 @@ export class ApiService {
 
   // Export / Import
   exportData() {
-    return this.http.get('/api/export');
+    return this.http.get<Record<string, unknown>>('/api/export');
   }
 
   importData(data: unknown) {
@@ -107,8 +137,8 @@ export class ApiService {
     return this.http.put<Member>(`/api/members/${id}`, { displayName, email });
   }
 
-  setup(displayName: string, householdName?: string, currency?: string, periodType?: string) {
-    return this.http.post<Member>('/api/members/setup', { displayName, householdName, currency, periodType });
+  setup(displayName: string, householdName?: string, currency?: string, periodType?: string, locale?: string) {
+    return this.http.post<Member>('/api/members/setup', { displayName, householdName, currency, periodType, locale });
   }
 
   deleteMember(id: string) {

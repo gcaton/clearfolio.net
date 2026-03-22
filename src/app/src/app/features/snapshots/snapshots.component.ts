@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, OnInit, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { DecimalPipe, DatePipe } from '@angular/common';
+import { DecimalPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { TableModule } from 'primeng/table';
 import { Button } from 'primeng/button';
@@ -15,7 +15,9 @@ import { ConfirmDialog } from 'primeng/confirmdialog';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { PeriodSelectorComponent } from '../../shared/components/period-selector.component';
 import { PeriodLabelPipe } from '../../shared/pipes/period-label.pipe';
+import { AppDatePipe } from '../../shared/pipes/app-date.pipe';
 import { ApiService } from '../../core/api/api.service';
+import { LocaleService } from '../../core/locale/locale.service';
 import { Snapshot, CreateSnapshotRequest } from '../../core/api/models';
 
 interface SnapshotTarget {
@@ -37,7 +39,7 @@ interface BulkCell {
   selector: 'app-snapshots',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FormsModule, DecimalPipe, DatePipe, TableModule, Button, DialogModule,
+    FormsModule, DecimalPipe, AppDatePipe, TableModule, Button, DialogModule,
     InputText, InputNumber, Select, Textarea, Tag, Toast, ConfirmDialog,
     PeriodSelectorComponent, PeriodLabelPipe,
   ],
@@ -49,6 +51,7 @@ export class SnapshotsComponent implements OnInit {
   private api = inject(ApiService);
   private confirmService = inject(ConfirmationService);
   private messageService = inject(MessageService);
+  protected localeService = inject(LocaleService);
 
   private periodSelector = viewChild<PeriodSelectorComponent>('periodSelector');
 
@@ -331,7 +334,7 @@ export class SnapshotsComponent implements OnInit {
       entityType: 'asset',
       period: '',
       value: 0,
-      currency: 'AUD',
+      currency: this.localeService.currency(),
       notes: null,
     };
   }

@@ -20,19 +20,19 @@
   <div class="stat-cards">
     <div class="stat-card">
       <span class="stat-label">Total Income (Annual)</span>
-      <span class="stat-value">{{ s.totalAnnualIncome | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+      <span class="stat-value">{{ s.totalAnnualIncome | appCurrency:'1.0-0' }}</span>
     </div>
     <div class="stat-card">
       <span class="stat-label">Total Expenses (Annual)</span>
-      <span class="stat-value">{{ s.totalAnnualExpenses | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+      <span class="stat-value">{{ s.totalAnnualExpenses | appCurrency:'1.0-0' }}</span>
     </div>
     <div class="stat-card">
       <span class="stat-label">Disposable Income</span>
-      <span class="stat-value">{{ s.disposableIncome | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+      <span class="stat-value">{{ s.disposableIncome | appCurrency:'1.0-0' }}</span>
     </div>
     <div class="stat-card highlight">
       <span class="stat-label">Net Cashflow</span>
-      <span class="stat-value">{{ s.netCashflow | currency: 'AUD' : 'symbol' : '1.0-0' }}</span>
+      <span class="stat-value">{{ s.netCashflow | appCurrency:'1.0-0' }}</span>
     </div>
     <div class="stat-card">
       <span class="stat-label">Contribution Rate</span>
@@ -51,10 +51,10 @@
   @if (s.totalAnnualContributions > 0 || s.totalAnnualRepayments > 0) {
     <div class="info-lines">
       @if (s.totalAnnualContributions > 0) {
-        <span class="info-line"><i class="pi pi-arrow-up"></i> Contributions: {{ s.totalAnnualContributions | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</span>
+        <span class="info-line"><i class="pi pi-arrow-up"></i> Contributions: {{ s.totalAnnualContributions | appCurrency:'1.0-0' }}/yr</span>
       }
       @if (s.totalAnnualRepayments > 0) {
-        <span class="info-line"><i class="pi pi-arrow-down"></i> Repayments: {{ s.totalAnnualRepayments | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</span>
+        <span class="info-line"><i class="pi pi-arrow-down"></i> Repayments: {{ s.totalAnnualRepayments | appCurrency:'1.0-0' }}/yr</span>
       }
     </div>
   }
@@ -120,9 +120,9 @@
           [severity]="income.incomeType === 'primary' ? 'success' : 'info'"
         />
       </td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ income.amount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ income.amount | appCurrency:'1.0-0' }}</td>
       <td>{{ income.frequency }}</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(income.amount, income.frequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(income.amount, income.frequency) | appCurrency:'1.0-0' }}</td>
       <td>
         <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditIncome(income)" />
         <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDeleteIncome(income)" />
@@ -132,7 +132,7 @@
   <ng-template #footer>
     <tr class="group-footer-row">
       <td colspan="5" style="text-align: right; font-weight: 600;">Total</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ incomeTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ incomeTotal() | appCurrency:'1.0-0' }}/yr</td>
       <td></td>
     </tr>
   </ng-template>
@@ -196,9 +196,9 @@
           <p-tag value="Household" severity="info" />
         }
       </td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ expense.amount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ expense.amount | appCurrency:'1.0-0' }}</td>
       <td>{{ expense.frequency }}</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(expense.amount, expense.frequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(expense.amount, expense.frequency) | appCurrency:'1.0-0' }}</td>
       <td>
         <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info" (onClick)="openEditExpense(expense)" />
         <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" (onClick)="confirmDeleteExpense(expense)" />
@@ -209,7 +209,7 @@
     <tr class="group-footer-row">
       <td colspan="4" style="text-align: right; font-weight: 600;">{{ expense.expenseCategoryName }} subtotal</td>
       <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">
-        {{ getCategorySubtotal(expense.expenseCategoryName) | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr
+        {{ getCategorySubtotal(expense.expenseCategoryName) | appCurrency:'1.0-0' }}/yr
       </td>
       <td></td>
     </tr>
@@ -217,7 +217,7 @@
   <ng-template #footer>
     <tr class="group-footer-row">
       <td colspan="4" style="text-align: right; font-weight: 600;">Total</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ expenseTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ expenseTotal() | appCurrency:'1.0-0' }}/yr</td>
       <td></td>
     </tr>
   </ng-template>
@@ -264,9 +264,9 @@
           <p-tag value="Joint" severity="info" />
         }
       </td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ asset.contributionAmount | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ asset.contributionAmount | appCurrency:'1.0-0' }}</td>
       <td>{{ asset.contributionFrequency }}</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(asset.contributionAmount, asset.contributionFrequency) | currency: 'AUD' : 'symbol' : '1.0-0' }}</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums;">{{ annualise(asset.contributionAmount, asset.contributionFrequency) | appCurrency:'1.0-0' }}</td>
       <td>
         @if (asset.isPreTaxContribution) {
           <p-tag value="Pre-tax" severity="warn" />
@@ -277,7 +277,7 @@
   <ng-template #footer>
     <tr class="group-footer-row">
       <td colspan="5" style="text-align: right; font-weight: 600;">Total</td>
-      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ savingsTotal() | currency: 'AUD' : 'symbol' : '1.0-0' }}/yr</td>
+      <td style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600;">{{ savingsTotal() | appCurrency:'1.0-0' }}/yr</td>
       <td></td>
     </tr>
   </ng-template>
@@ -323,7 +323,8 @@
       id="incomeAmount"
       [(ngModel)]="incomeForm.amount"
       mode="currency"
-      currency="AUD"
+      [currency]="localeService.currency()"
+      [locale]="localeService.locale()"
       [minFractionDigits]="0"
       placeholder="0"
     />
@@ -385,7 +386,8 @@
       id="expenseAmount"
       [(ngModel)]="expenseForm.amount"
       mode="currency"
-      currency="AUD"
+      [currency]="localeService.currency()"
+      [locale]="localeService.locale()"
       [minFractionDigits]="0"
       placeholder="0"
     />

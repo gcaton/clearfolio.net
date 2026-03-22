@@ -28,6 +28,7 @@ public class ClearfolioDbContext(DbContextOptions<ClearfolioDbContext> options) 
             e.Property(h => h.Name).HasColumnName("name").IsRequired();
             e.Property(h => h.BaseCurrency).HasColumnName("base_currency").HasDefaultValue("AUD");
             e.Property(h => h.PreferredPeriodType).HasColumnName("preferred_period_type").HasDefaultValue("FY");
+            e.Property(h => h.Locale).HasColumnName("locale").HasDefaultValue("en-AU");
             e.Property(h => h.CreatedAt).HasColumnName("created_at").IsRequired();
         });
 

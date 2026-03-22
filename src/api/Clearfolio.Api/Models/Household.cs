@@ -6,6 +6,7 @@ public class Household
     public string Name { get; set; } = string.Empty;
     public string BaseCurrency { get; set; } = "AUD";
     public string PreferredPeriodType { get; set; } = "FY";
+    public string Locale { get; set; } = "en-AU";
     public string CreatedAt { get; set; } = DateTime.UtcNow.ToString("o");
 
     public List<HouseholdMember> Members { get; set; } = [];

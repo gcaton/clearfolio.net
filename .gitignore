@@ -5,6 +5,7 @@ obj/
 *.db
 *.db-shm
 *.db-wal
+.idea/
 
 ## Node
 node_modules/

@@ -54,6 +54,24 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ClearfolioDbContext>();
     db.Database.EnsureCreated();
 
+    // Add locale column to existing databases (EnsureCreated handles new DBs)
+    var connection = db.Database.GetDbConnection();
+    if (connection.State != System.Data.ConnectionState.Open)
+        connection.Open();
+    using (var cmd = connection.CreateCommand())
+    {
+        cmd.CommandText = "PRAGMA table_info(households);";
+        using var reader = cmd.ExecuteReader();
+        bool hasLocale = false;
+        while (reader.Read())
+        {
+            if (string.Equals(reader["name"] as string, "locale", StringComparison.OrdinalIgnoreCase))
+            { hasLocale = true; break; }
+        }
+        if (!hasLocale)
+            db.Database.ExecuteSqlRaw("ALTER TABLE households ADD COLUMN locale TEXT NOT NULL DEFAULT 'en-AU'");
+    }
+
     // Apply any pending migrations (backs up DB first)
     if (db.Database.GetPendingMigrations().Any())
     {
