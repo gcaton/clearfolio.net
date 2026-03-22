@@ -157,61 +157,178 @@ export class CashflowComponent implements OnInit {
   protected incomeVsExpenseOptions = computed(() => {
     const s = this.summary();
     if (!s || !s.incomeByMember.length) return null;
+    const locale = this.localeService.locale();
+    const currency = this.localeService.currency();
     const memberNames = s.incomeByMember.map((m) => m.displayName);
     const incomeData = s.incomeByMember.map((m) => m.annualIncome);
     // Try to match expenses to members — fall back to total
     const expenseTotal = s.totalAnnualExpenses;
+    const currencyAbbr = (v: number) => {
+      const abs = Math.abs(v);
+      const sym = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 })
+        .format(0).replace(/[\d.,\s]/g, '').trim();
+      if (abs >= 1_000_000) return sym + (v / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+      if (abs >= 1_000) return sym + (v / 1_000).toFixed(0) + 'K';
+      return sym + Math.round(v).toString();
+    };
+    const currencyFull = (v: number) =>
+      new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(v));
     return {
-      tooltip: { trigger: 'axis' as const },
-      legend: { data: ['Income', 'Expenses'] },
+      tooltip: {
+        trigger: 'axis' as const,
+        axisPointer: { type: 'shadow' as const },
+        backgroundColor: 'var(--p-content-background, #ffffff)',
+        borderColor: 'var(--p-content-border-color, #e2e8f0)',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: [8, 12],
+        textStyle: {
+          color: 'var(--p-text-color, #1e293b)',
+          fontSize: 13,
+          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        },
+        extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
+        formatter: (params: any) => {
+          if (!Array.isArray(params)) return '';
+          const name = params[0]?.axisValue ?? '';
+          let html = `<div style="font-weight:600;margin-bottom:4px">${name}</div>`;
+          for (const p of params) {
+            const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
+            html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFull(p.value)}</span></div>`;
+          }
+          return html;
+        },
+      },
+      legend: {
+        data: ['Income', 'Expenses'],
+        bottom: 0,
+        textStyle: { fontSize: 12, color: 'var(--p-text-muted-color, #94a3b8)' },
+        icon: 'circle',
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 16,
+      },
       grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
       xAxis: {
         type: 'category' as const,
         data: memberNames,
-        axisLabel: { margin: 10 },
+        axisLabel: { margin: 10, fontSize: 12, color: 'var(--p-text-muted-color, #94a3b8)' },
+        axisLine: { show: false },
+        axisTick: { show: false },
       },
-      yAxis: { type: 'value' as const },
+      yAxis: {
+        type: 'value' as const,
+        axisLabel: { formatter: (v: number) => currencyAbbr(v), fontSize: 11, color: 'var(--p-text-muted-color, #94a3b8)' },
+        splitLine: { lineStyle: { color: 'var(--p-content-border-color, rgba(148,163,184,0.15))', type: 'dashed' as const } },
+      },
       series: [
         {
           name: 'Income',
           type: 'bar' as const,
           data: incomeData,
-          itemStyle: { color: '#22c55e' },
+          itemStyle: { color: '#22c55e', borderRadius: [4, 4, 0, 0] },
+          emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.12)' } },
+          barMaxWidth: 40,
         },
         {
           name: 'Expenses',
           type: 'bar' as const,
           data: memberNames.map(() => Math.round(expenseTotal / memberNames.length)),
-          itemStyle: { color: '#ef4444' },
+          itemStyle: { color: '#ef4444', borderRadius: [4, 4, 0, 0] },
+          emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(0,0,0,0.12)' } },
+          barMaxWidth: 40,
         },
       ],
+      animationDuration: 600,
+      animationEasing: 'cubicOut' as const,
     };
   });
 
   protected expensesByCategoryOptions = computed(() => {
     const s = this.summary();
     if (!s || !s.expensesByCategory.length) return null;
+    const total = s.expensesByCategory.reduce((sum, c) => sum + c.annualAmount, 0);
+    const locale = this.localeService.locale();
+    const currency = this.localeService.currency();
+    const formattedTotal = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(total));
     return {
-      tooltip: { trigger: 'item' as const },
-      legend: { orient: 'vertical' as const, left: 'left' },
+      tooltip: {
+        trigger: 'item' as const,
+        backgroundColor: 'var(--p-content-background, #ffffff)',
+        borderColor: 'var(--p-content-border-color, #e2e8f0)',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: [8, 12],
+        textStyle: {
+          color: 'var(--p-text-color, #1e293b)',
+          fontSize: 13,
+          fontFamily: "'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        },
+        extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
+        formatter: (params: any) => {
+          const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${params.color};margin-right:6px"></span>`;
+          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${params.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${params.value.toLocaleString()} (${params.percent}%)</span></div>`;
+        },
+      },
+      legend: {
+        orient: 'vertical' as const,
+        left: 'left',
+        top: 'middle',
+        textStyle: { fontSize: 12, color: 'var(--p-text-muted-color, #94a3b8)' },
+        icon: 'circle',
+        itemWidth: 8,
+        itemHeight: 8,
+        itemGap: 12,
+      },
       series: [
         {
           name: 'Expenses',
           type: 'pie' as const,
-          radius: ['40%', '70%'],
+          radius: ['42%', '68%'],
+          center: ['58%', '50%'],
           avoidLabelOverlap: false,
-          itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
-          label: { show: false },
-          emphasis: {
-            label: { show: true, fontSize: 14, fontWeight: 'bold' as const },
+          itemStyle: {
+            borderRadius: 4,
+            borderColor: 'var(--p-content-background, #ffffff)',
+            borderWidth: 2,
+          },
+          label: {
+            show: true,
+            position: 'center',
+            formatter: `{total|${formattedTotal}}\n{label|Total Expenses}`,
+            rich: {
+              total: {
+                fontSize: 20,
+                fontWeight: 700,
+                color: 'var(--p-text-color, #1e293b)',
+                fontFamily: "'DM Sans', sans-serif",
+                lineHeight: 28,
+              },
+              label: {
+                fontSize: 11,
+                color: 'var(--p-text-muted-color, #94a3b8)',
+                fontFamily: "'DM Sans', sans-serif",
+                lineHeight: 18,
+              },
+            },
           },
           labelLine: { show: false },
+          emphasis: {
+            scale: true,
+            scaleSize: 6,
+            itemStyle: {
+              shadowBlur: 12,
+              shadowColor: 'rgba(0,0,0,0.15)',
+            },
+          },
           data: s.expensesByCategory.map((c) => ({
             name: c.categoryName,
             value: c.annualAmount,
           })),
         },
       ],
+      animationDuration: 600,
+      animationEasing: 'cubicOut' as const,
     };
   });
 

@@ -21,6 +21,7 @@ import {
   TooltipComponent,
   LegendComponent,
   TitleComponent,
+  DataZoomComponent,
 } from 'echarts/components';
 import { CanvasRenderer } from 'echarts/renderers';
 import { ApiService } from '../../core/api/api.service';
@@ -41,7 +42,7 @@ import {
 import { buildTrendOptions, buildCompositionOptions, buildLiquidityOptions, buildGrowthOptions, buildDebtQualityOptions, buildMemberOptions, buildSuperGapOptions } from './chart-options';
 import { FadeInDirective } from '../../shared/directives/fade-in.directive';
 
-echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, CanvasRenderer]);
+echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, LegendComponent, TitleComponent, DataZoomComponent, CanvasRenderer]);
 
 @Component({
   selector: 'app-dashboard',
@@ -70,7 +71,7 @@ export class DashboardComponent {
   protected cashflowSummary = signal<CashflowSummary | null>(null);
 
   protected trendOptions = computed(() => buildTrendOptions(this.trend(), this.localeService.locale(), this.localeService.currency()));
-  protected compositionOptions = computed(() => buildCompositionOptions(this.summary()));
+  protected compositionOptions = computed(() => buildCompositionOptions(this.summary(), this.localeService.locale(), this.localeService.currency()));
   protected liquidityOptions = computed(() => buildLiquidityOptions(this.summary(), this.localeService.locale(), this.localeService.currency()));
   protected growthOptions = computed(() => buildGrowthOptions(this.summary()));
   protected debtQualityOptions = computed(() => buildDebtQualityOptions(this.summary(), this.localeService.locale(), this.localeService.currency()));
