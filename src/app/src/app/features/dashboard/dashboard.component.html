@@ -2,15 +2,6 @@
 <div class="dashboard-header">
   <h1>Dashboard</h1>
   <div class="header-controls">
-    <p-selectbutton
-      [options]="scopeOptions"
-      [ngModel]="selectedScope()"
-      (ngModelChange)="onScopeChange($event)"
-      optionLabel="label"
-      optionValue="value"
-      [allowEmpty]="false"
-      size="small"
-    />
     <p-button
       icon="pi pi-file-pdf"
       label="Export PDF"
@@ -29,7 +20,7 @@
 
 @if (!summary()) {
   <div class="stat-cards">
-    @for (i of [1,2,3,4]; track i) {
+    @for (i of [1,2,3,4,5,6]; track i) {
       <div class="stat-card">
         <p-skeleton width="5rem" height="0.875rem" />
         <p-skeleton width="8rem" height="1.75rem" />
@@ -59,6 +50,14 @@
         }
       </div>
       <app-net-worth-change [change]="s.netWorthChange" [percent]="s.netWorthChangePercent" />
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Financial Net Worth</span>
+      <app-currency [value]="s.financialNetWorth ?? 0" [colorize]="true" />
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">Liquid Net Worth</span>
+      <app-currency [value]="s.liquidNetWorth ?? 0" [colorize]="true" />
     </div>
     <div class="stat-card">
       <span class="stat-label">Period</span>

@@ -1,12 +1,10 @@
 import { Component, ChangeDetectionStrategy, inject, signal, computed, effect } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import { Toast } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { Skeleton } from 'primeng/skeleton';
 import { ProgressBar } from 'primeng/progressbar';
-import { SelectButton } from 'primeng/selectbutton';
 import { Button } from 'primeng/button';
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from 'primeng/tabs';
 import { GoalService } from '../../core/auth/goal.service';
@@ -48,7 +46,7 @@ echarts.use([LineChart, BarChart, PieChart, GridComponent, TooltipComponent, Leg
 @Component({
   selector: 'app-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, SelectButton, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent, FadeInDirective],
+  imports: [NgxEchartsDirective, RouterLink, DecimalPipe, CurrencyDisplayComponent, NetWorthChangeComponent, PeriodLabelPipe, Skeleton, ProgressBar, Button, Tabs, TabList, Tab, TabPanels, TabPanel, Toast, OnboardingChecklistComponent, FadeInDirective],
   providers: [provideEchartsCore({ echarts }), MessageService],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
@@ -63,11 +61,6 @@ export class DashboardComponent {
   protected localeService = inject(LocaleService);
 
   protected selectedScope = signal('all');
-  protected scopeOptions = [
-    { label: 'Total Net Worth', value: 'all' },
-    { label: 'Financial Net Worth', value: 'financial' },
-    { label: 'Liquid Net Worth', value: 'liquid' },
-  ];
   protected summary = signal<DashboardSummary | null>(null);
   protected trend = signal<TrendPoint[]>([]);
   protected composition = signal<CompositionPoint[]>([]);
@@ -130,11 +123,6 @@ export class DashboardComponent {
         this.checkMilestones(s, t);
       }
     });
-  }
-
-  onScopeChange(scope: string) {
-    this.selectedScope.set(scope);
-    this.loadData(this.viewState.view());
   }
 
   private loadData(view: string) {

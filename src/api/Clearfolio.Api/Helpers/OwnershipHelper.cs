@@ -11,7 +11,7 @@ public static class OwnershipHelper
     public static List<Asset> ApplyAssetScopeFilter(List<Asset> assets, string scope) => scope switch
     {
         "financial" => assets.Where(a => FinancialAssetCategories.Contains(a.AssetType.Category)).ToList(),
-        "liquid" => assets.Where(a => LiquidAssetCategories.Contains(a.AssetType.Category)).ToList(),
+        "liquid" => assets.Where(a => LiquidAssetCategories.Contains(a.AssetType.Category) && a.AssetType.Liquidity is "immediate" or "short_term").ToList(),
         _ => assets,
     };
 

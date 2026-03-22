@@ -194,6 +194,8 @@ export interface DashboardSummary {
   totalAssets: number;
   totalLiabilities: number;
   netWorth: number;
+  financialNetWorth: number;
+  liquidNetWorth: number;
   previousNetWorth: number | null;
   netWorthChange: number | null;
   netWorthChangePercent: number | null;

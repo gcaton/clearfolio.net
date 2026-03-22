@@ -6,6 +6,8 @@ public record DashboardSummaryDto(
     double TotalAssets,
     double TotalLiabilities,
     double NetWorth,
+    double FinancialNetWorth,
+    double LiquidNetWorth,
     double? PreviousNetWorth,
     double? NetWorthChange,
     double? NetWorthChangePercent,
