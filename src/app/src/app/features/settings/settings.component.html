@@ -223,7 +223,7 @@
   </p-tabpanels>
 </p-tabs>
 
-<p-dialog header="Delete All Data" [(visible)]="deleteAllDialogVisible" [modal]="true" [style]="{ width: '450px' }">
+<p-dialog header="Delete All Data" [(visible)]="deleteAllDialogVisible" [modal]="true" [style]="{ width: 'min(450px, 95vw)' }">
   <p>This will <strong>permanently delete all data</strong> and cannot be undone. Type the household name to confirm:</p>
   <p class="confirm-name">{{ household()?.name }}</p>
   <input pInputText [(ngModel)]="deleteAllConfirmName" placeholder="Type household name" class="confirm-input" />
@@ -234,7 +234,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog [header]="editingAssetType() ? 'Edit Asset Type' : 'Add Asset Type'" [(visible)]="assetTypeDialogVisible" [modal]="true" [style]="{ width: '500px' }">
+<p-dialog [header]="editingAssetType() ? 'Edit Asset Type' : 'Add Asset Type'" [(visible)]="assetTypeDialogVisible" [modal]="true" [style]="{ width: 'min(500px, 95vw)' }">
   <div class="form-grid">
     <label for="atName">Name</label>
     <input pInputText id="atName" [(ngModel)]="atName" placeholder="e.g. Retirement Account" />
@@ -271,7 +271,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog [header]="editingLiabilityType() ? 'Edit Liability Type' : 'Add Liability Type'" [(visible)]="liabilityTypeDialogVisible" [modal]="true" [style]="{ width: '500px' }">
+<p-dialog [header]="editingLiabilityType() ? 'Edit Liability Type' : 'Add Liability Type'" [(visible)]="liabilityTypeDialogVisible" [modal]="true" [style]="{ width: 'min(500px, 95vw)' }">
   <div class="form-grid">
     <label for="ltName">Name</label>
     <input pInputText id="ltName" [(ngModel)]="ltName" placeholder="e.g. Student Loan" />
@@ -293,7 +293,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog [header]="editingCategory() ? 'Edit Category' : 'Add Category'" [(visible)]="categoryDialogVisible" [modal]="true" [style]="{ width: '400px' }">
+<p-dialog [header]="editingCategory() ? 'Edit Category' : 'Add Category'" [(visible)]="categoryDialogVisible" [modal]="true" [style]="{ width: 'min(400px, 95vw)' }">
   <div class="form-grid">
     <label for="catName">Category Name</label>
     <input pInputText id="catName" [(ngModel)]="categoryName" placeholder="e.g. Groceries" />
@@ -304,7 +304,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog header="Add Member" [(visible)]="addMemberVisible" [modal]="true" [style]="{ width: '400px' }">
+<p-dialog header="Add Member" [(visible)]="addMemberVisible" [modal]="true" [style]="{ width: 'min(400px, 95vw)' }">
   <div class="form-grid">
     <label for="newEmail">Email (optional)</label>
     <input pInputText id="newEmail" [(ngModel)]="newMemberEmail" placeholder="partner@gmail.com" />
@@ -319,7 +319,7 @@
   </ng-template>
 </p-dialog>
 
-<p-dialog header="Passphrase" [(visible)]="passphraseDialogVisible" [modal]="true" [style]="{ width: '400px' }">
+<p-dialog header="Passphrase" [(visible)]="passphraseDialogVisible" [modal]="true" [style]="{ width: 'min(400px, 95vw)' }">
   <div class="form-grid">
     @if (passphraseEnabled()) {
       <label for="curPass">Current Passphrase</label>
