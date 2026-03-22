@@ -306,6 +306,10 @@
     gap: 1rem;
   }
 
+  .controls-right {
+    flex-wrap: wrap;
+  }
+
   .btn-group {
     flex-wrap: wrap;
   }
@@ -314,11 +318,58 @@
     grid-template-columns: 1fr 1fr;
   }
 
+  .stat-card {
+    padding: 1rem;
+  }
+
+  .stat-value {
+    font-size: 1.125rem;
+
+    &.range {
+      font-size: 0.875rem;
+    }
+  }
+
   .entity-cards {
     grid-template-columns: 1fr 1fr;
   }
 
   .projection-chart {
     height: 300px;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .entity-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card {
+    padding: 0.875rem;
+  }
+
+  .stat-value {
+    font-size: 1rem;
+
+    &.range {
+      font-size: 0.875rem;
+    }
+  }
+
+  .projection-chart {
+    height: 250px;
+  }
+
+  .chart-empty {
+    height: 250px;
   }
 }
