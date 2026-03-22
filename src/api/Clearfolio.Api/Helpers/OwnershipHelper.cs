@@ -4,9 +4,9 @@ namespace Clearfolio.Api.Helpers;
 
 public static class OwnershipHelper
 {
-    public static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
-    public static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
-    public static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
+    private static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
+    private static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
+    private static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
 
     public static List<Asset> ApplyAssetScopeFilter(List<Asset> assets, string scope) => scope switch
     {

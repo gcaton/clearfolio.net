@@ -1,5 +1,3 @@
-using Clearfolio.Api.Helpers;
-
 namespace Clearfolio.Api.Services;
 
 public static class ProjectionEngine

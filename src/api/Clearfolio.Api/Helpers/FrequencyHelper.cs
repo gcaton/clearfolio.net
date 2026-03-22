@@ -2,7 +2,7 @@ namespace Clearfolio.Api.Helpers;
 
 public static class FrequencyHelper
 {
-    public static readonly Dictionary<string, int> Multipliers = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, int> Multipliers = new(StringComparer.OrdinalIgnoreCase)
     {
         ["weekly"] = 52,
         ["fortnightly"] = 26,
