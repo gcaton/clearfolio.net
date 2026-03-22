@@ -1,11 +1,13 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { ApiService } from '../api/api.service';
+import { LocaleService } from '../locale/locale.service';
 import { Member } from '../api/models';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private api = inject(ApiService);
+  private localeService = inject(LocaleService);
 
   private readonly _currentMember = signal<Member | null>(null);
   private readonly _members = signal<Member[]>([]);
@@ -37,6 +39,7 @@ export class AuthService {
         const member = await firstValueFrom(this.api.getCurrentMember());
         this._currentMember.set(member);
         await this.loadMembers();
+        this.localeService.init();
       } else {
         this._currentMember.set(null);
         this._members.set([]);
@@ -60,6 +63,7 @@ export class AuthService {
       const member = await firstValueFrom(this.api.getCurrentMember());
       this._currentMember.set(member);
       await this.loadMembers();
+      this.localeService.init();
     } finally {
       this._loading.set(false);
     }
