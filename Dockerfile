@@ -27,6 +27,7 @@ RUN apk add --no-cache nginx
 
 COPY --from=frontend-build /app/dist/app/browser /usr/share/nginx/html
 COPY src/app/nginx.conf /etc/nginx/http.d/default.conf
+COPY src/app/security-headers.conf /etc/nginx/http.d/security-headers.conf
 
 WORKDIR /app
 COPY --from=api-build /app/publish .
