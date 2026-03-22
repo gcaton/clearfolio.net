@@ -33,8 +33,10 @@ public static partial class DashboardEndpoints
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
-        var assets = OwnershipHelper.ApplyAssetScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
-        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
+        var allAssetsRaw = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
+        var allLiabilitiesRaw = await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync();
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(allAssetsRaw, scope);
+        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(allLiabilitiesRaw, scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         var assetValues = CalculateAssetValues(snapshots, assets, members, view);
@@ -42,6 +44,17 @@ public static partial class DashboardEndpoints
 
         var totalAssets = assetValues.Sum(v => v.Value);
         var totalLiabilities = liabilityValues.Sum(v => v.Value);
+
+        // Compute financial and liquid net worth
+        var financialAssets = OwnershipHelper.ApplyAssetScopeFilter(allAssetsRaw, "financial");
+        var financialLiabilities = OwnershipHelper.ApplyLiabilityScopeFilter(allLiabilitiesRaw, "financial");
+        var financialNetWorth = CalculateAssetValues(snapshots, financialAssets, members, view).Sum(v => v.Value)
+                              - CalculateLiabilityValues(snapshots, financialLiabilities, members, view).Sum(v => v.Value);
+
+        var liquidAssets = OwnershipHelper.ApplyAssetScopeFilter(allAssetsRaw, "liquid");
+        var liquidLiabilities = OwnershipHelper.ApplyLiabilityScopeFilter(allLiabilitiesRaw, "liquid");
+        var liquidNetWorth = CalculateAssetValues(snapshots, liquidAssets, members, view).Sum(v => v.Value)
+                           - CalculateLiabilityValues(snapshots, liquidLiabilities, members, view).Sum(v => v.Value);
 
         var previousPeriod = PeriodHelper.PreviousPeriod(period);
         var prevSnapshots = await GetEffectiveSnapshots(db, member.HouseholdId, previousPeriod);
@@ -55,6 +68,7 @@ public static partial class DashboardEndpoints
 
         return Results.Ok(new DashboardSummaryDto(
             period, view, totalAssets, totalLiabilities, totalAssets - totalLiabilities,
+            financialNetWorth, liquidNetWorth,
             previousNetWorth, netWorthChange, netWorthChangePercent,
             assetValues.GroupBy(v => v.Category).Select(g => new CategoryBreakdownDto(g.Key, g.Sum(x => x.Value))).ToList(),
             liabilityValues.GroupBy(v => v.Category).Select(g => new CategoryBreakdownDto(g.Key, g.Sum(x => x.Value))).ToList(),

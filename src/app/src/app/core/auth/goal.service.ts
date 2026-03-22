@@ -16,6 +16,11 @@ export class GoalService {
     localStorage.setItem('clearfolio_goals', JSON.stringify(goal));
   }
 
+  clear() {
+    this._goal.set({ netWorthTarget: null, superTarget: null });
+    localStorage.removeItem('clearfolio_goals');
+  }
+
   private load(): Goal {
     const stored = localStorage.getItem('clearfolio_goals');
     if (stored) {
