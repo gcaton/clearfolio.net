@@ -59,13 +59,18 @@ public static class MembersEndpoints
         if (await db.Households.AnyAsync())
             return ApiErrors.BadRequest("Setup has already been completed.");
 
+        string[] allowedLocales = ["en-AU", "en-US", "en-GB", "en-NZ", "en-CA", "en-IE"];
+        var locale = request.Locale ?? "en-AU";
+        if (!allowedLocales.Contains(locale))
+            locale = "en-AU";
+
         var household = new Household
         {
             Id = Guid.NewGuid(),
             Name = request.HouseholdName ?? "My Household",
             BaseCurrency = request.Currency ?? "AUD",
             PreferredPeriodType = request.PeriodType ?? "FY",
-            Locale = request.Locale ?? "en-AU",
+            Locale = locale,
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
         db.Households.Add(household);

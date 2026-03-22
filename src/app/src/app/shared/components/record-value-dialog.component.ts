@@ -34,7 +34,7 @@ import { LocaleService } from '../../core/locale/locale.service';
           id="rvValue"
           [(ngModel)]="value"
           mode="currency"
-          [currency]="localeService.currency()"
+          [currency]="currency() || localeService.currency()"
           [locale]="localeService.locale()"
         />
       </div>

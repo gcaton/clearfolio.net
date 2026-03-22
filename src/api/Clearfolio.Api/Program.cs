@@ -55,11 +55,22 @@ using (var scope = app.Services.CreateScope())
     db.Database.EnsureCreated();
 
     // Add locale column to existing databases (EnsureCreated handles new DBs)
-    try
+    var connection = db.Database.GetDbConnection();
+    if (connection.State != System.Data.ConnectionState.Open)
+        connection.Open();
+    using (var cmd = connection.CreateCommand())
     {
-        db.Database.ExecuteSqlRaw("ALTER TABLE households ADD COLUMN locale TEXT NOT NULL DEFAULT 'en-AU'");
+        cmd.CommandText = "PRAGMA table_info(households);";
+        using var reader = cmd.ExecuteReader();
+        bool hasLocale = false;
+        while (reader.Read())
+        {
+            if (string.Equals(reader["name"] as string, "locale", StringComparison.OrdinalIgnoreCase))
+            { hasLocale = true; break; }
+        }
+        if (!hasLocale)
+            db.Database.ExecuteSqlRaw("ALTER TABLE households ADD COLUMN locale TEXT NOT NULL DEFAULT 'en-AU'");
     }
-    catch { /* Column already exists */ }
 
     // Apply any pending migrations (backs up DB first)
     if (db.Database.GetPendingMigrations().Any())

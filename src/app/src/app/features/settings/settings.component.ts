@@ -282,14 +282,19 @@ export class SettingsComponent implements OnInit {
         defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
         defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
       };
-      this.api.updateAssetType(editing.id, req).subscribe(() => {
-        this.assetTypeDialogVisible.set(false);
-        this.loadAssetTypes();
-        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset type updated' });
+      this.api.updateAssetType(editing.id, req).subscribe({
+        next: () => {
+          this.assetTypeDialogVisible.set(false);
+          this.loadAssetTypes();
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Asset type updated' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update asset type. The name may already be in use.' });
+        },
       });
     } else {
       const req: CreateAssetTypeRequest = {
-        name: this.atName,
+        name: this.atName.trim(),
         category: this.atCategory,
         liquidity: this.atLiquidity,
         growthClass: this.atGrowthClass,
@@ -298,10 +303,15 @@ export class SettingsComponent implements OnInit {
         defaultReturnRate: (this.atDefaultReturnRate ?? 0) / 100,
         defaultVolatility: (this.atDefaultVolatility ?? 0) / 100,
       };
-      this.api.createAssetType(req).subscribe(() => {
-        this.assetTypeDialogVisible.set(false);
-        this.loadAssetTypes();
-        this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Asset type added' });
+      this.api.createAssetType(req).subscribe({
+        next: () => {
+          this.assetTypeDialogVisible.set(false);
+          this.loadAssetTypes();
+          this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Asset type added' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add asset type. The name may already be in use.' });
+        },
       });
     }
   }
@@ -402,22 +412,32 @@ export class SettingsComponent implements OnInit {
         isHecs: this.ltIsHecs,
         sortOrder: editing.sortOrder,
       };
-      this.api.updateLiabilityType(editing.id, req).subscribe(() => {
-        this.liabilityTypeDialogVisible.set(false);
-        this.loadLiabilityTypes();
-        this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability type updated' });
+      this.api.updateLiabilityType(editing.id, req).subscribe({
+        next: () => {
+          this.liabilityTypeDialogVisible.set(false);
+          this.loadLiabilityTypes();
+          this.messageService.add({ severity: 'success', summary: 'Saved', detail: 'Liability type updated' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to update liability type. The name may already be in use.' });
+        },
       });
     } else {
       const req: CreateLiabTypeReq = {
-        name: this.ltName,
+        name: this.ltName.trim(),
         category: this.ltCategory,
         debtQuality: this.ltDebtQuality,
         isHecs: this.ltIsHecs,
       };
-      this.api.createLiabilityType(req).subscribe(() => {
-        this.liabilityTypeDialogVisible.set(false);
-        this.loadLiabilityTypes();
-        this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Liability type added' });
+      this.api.createLiabilityType(req).subscribe({
+        next: () => {
+          this.liabilityTypeDialogVisible.set(false);
+          this.loadLiabilityTypes();
+          this.messageService.add({ severity: 'success', summary: 'Added', detail: 'Liability type added' });
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to add liability type. The name may already be in use.' });
+        },
       });
     }
   }
