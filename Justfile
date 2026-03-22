@@ -46,6 +46,7 @@ rebuild:
 dev:
     #!/usr/bin/env bash
     set -euo pipefail
+    command -v tmux >/dev/null 2>&1 || { echo "Error: tmux is required for 'just dev'. Install it or use 'just dev-api' and 'just dev-app' separately."; exit 1; }
     root="{{justfile_directory()}}"
     session="clearfolio"
     if tmux has-session -t "$session" 2>/dev/null; then

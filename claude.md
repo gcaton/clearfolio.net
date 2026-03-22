@@ -428,7 +428,7 @@ just up            # start the container
 just down          # stop the container
 just rebuild       # rebuild image and restart container
 just logs          # follow container logs
-just dev           # open API + Angular in new terminal tabs
+just dev           # start API + Angular dev servers in tmux panes (requires tmux)
 just dev-api       # run API dev server (dotnet watch)
 just dev-app       # run Angular dev server with API proxy
 just test          # run .NET tests
@@ -503,6 +503,6 @@ CLEARFOLIO_SESSION_DAYS=30         # optional — session cookie lifetime
 
 ## Deployment
 
-- **Local dev:** `just init` (Docker) or `just dev` (opens API + Angular in Ptyxis tabs)
+- **Local dev:** `just init` (Docker) or `just dev` (API + Angular in tmux panes)
 - **CI/CD:** Push to `main` → GitHub Actions builds multi-arch (amd64 + arm64) image → pushes to GHCR
 - **Production:** `docker pull ghcr.io/gcaton/clearfolio && docker run ...` on any Docker host
