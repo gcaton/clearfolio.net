@@ -1,5 +1,7 @@
 # clearfolio.net
 
+> **Disclaimer:** This is a personal hobby project, not production-grade financial software. It is not intended for professional use, financial advice, or any scenario where data accuracy or availability is critical. Use at your own risk — no warranties, no guarantees, no support obligations.
+
 Self-hosted household net worth tracker. Record periodic snapshots of assets and liabilities, track growth over time, and compare positions across household members.
 
 ## Quick Start
@@ -40,7 +42,7 @@ cd clearfolio.net
 # Build image and start container
 just init
 
-# Or run Angular dev server with hot reload (proxies /api to Docker container)
+# Or run API + Angular dev servers in tmux (requires tmux)
 just dev
 ```
 
@@ -55,7 +57,7 @@ just up           # Start the container
 just down         # Stop the container
 just logs         # Follow container logs
 just rebuild      # Rebuild image and restart container
-just dev          # Angular dev server with API proxy
+just dev          # API + Angular dev servers in tmux (requires tmux)
 ```
 
 ## Project Structure

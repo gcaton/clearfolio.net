@@ -423,12 +423,18 @@ GET  /api/dashboard/super-gap
 
 ### Justfile recipes
 ```
-just build       # ng build --configuration production + dotnet publish
-just init        # tear down containers and rebuild from source
-just up          # start local services
-just down        # stop local services
-just logs        # follow service logs
-just dev         # Angular dev server with API proxy
+just init          # tear down containers, rebuild image, start fresh
+just up            # start the container
+just down          # stop the container
+just rebuild       # rebuild image and restart container
+just logs          # follow container logs
+just dev           # start API + Angular dev servers in tmux panes (requires tmux)
+just dev-api       # run API dev server (dotnet watch)
+just dev-app       # run Angular dev server with API proxy
+just test          # run .NET tests
+just migrate <Name>  # add a new EF Core migration
+just migrate-apply   # apply pending migrations (local dev only)
+just changelog     # generate changelog.json from conventional commits
 ```
 
 ### Docker image
@@ -497,6 +503,6 @@ CLEARFOLIO_SESSION_DAYS=30         # optional — session cookie lifetime
 
 ## Deployment
 
-- **Local dev:** `just init` (Docker) or `just dev` (ng serve + Docker API)
+- **Local dev:** `just init` (Docker) or `just dev` (API + Angular in tmux panes)
 - **CI/CD:** Push to `main` → GitHub Actions builds multi-arch (amd64 + arm64) image → pushes to GHCR
 - **Production:** `docker pull ghcr.io/gcaton/clearfolio && docker run ...` on any Docker host
