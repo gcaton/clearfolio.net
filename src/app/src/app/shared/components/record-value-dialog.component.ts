@@ -16,7 +16,7 @@ import { LocaleService } from '../../core/locale/locale.service';
       header="Record Value"
       [(visible)]="dialogVisible"
       [modal]="true"
-      [style]="{ width: '350px' }"
+      [style]="{ width: 'min(350px, 95vw)' }"
     >
       <div class="form-grid">
         <label>{{ entityLabel() }}</label>

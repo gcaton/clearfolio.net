@@ -194,3 +194,111 @@
     }
   }
 }
+
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart {
+    height: 250px;
+  }
+
+  .chart-empty {
+    height: 250px;
+  }
+
+  .stat-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .info-lines {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  :host ::ng-deep {
+    .p-datatable-table {
+      display: block !important;
+      min-width: unset !important;
+    }
+    .p-datatable-thead {
+      display: none !important;
+    }
+    .p-datatable-tfoot {
+      display: none !important;
+    }
+    .p-datatable-tbody {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .p-datatable-tbody > tr {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      padding: 1rem;
+      background: var(--p-content-background);
+      border: 1px solid var(--p-content-border-color);
+      border-radius: 0.5rem;
+    }
+    .p-datatable-tbody > tr > td {
+      border: none !important;
+      padding: 0 !important;
+    }
+    // Label - full width
+    .p-datatable-tbody > tr > td:nth-child(1) {
+      flex: 0 0 100%;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+    // Middle columns - inline
+    .p-datatable-tbody > tr > td:nth-child(2),
+    .p-datatable-tbody > tr > td:nth-child(3),
+    .p-datatable-tbody > tr > td:nth-child(4),
+    .p-datatable-tbody > tr > td:nth-child(5) {
+      flex: 0 0 auto;
+      font-size: 0.8125rem;
+      color: var(--p-text-muted-color);
+    }
+    // Annualised value - full width
+    .p-datatable-tbody > tr > td:nth-child(n+5):nth-last-child(2) {
+      flex: 0 0 100%;
+      text-align: left !important;
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-top: 0.25rem;
+    }
+    // Actions - full width
+    .p-datatable-tbody > tr > td:last-child {
+      flex: 0 0 100%;
+      display: flex;
+      justify-content: flex-end;
+      border-top: 1px solid var(--p-content-border-color) !important;
+      padding-top: 0.5rem !important;
+      margin-top: 0.25rem;
+    }
+    // Group header rows
+    .p-datatable-row-group-header > td {
+      flex: 0 0 100% !important;
+    }
+    // Group footer rows
+    .p-datatable-row-group-footer > td {
+      flex: 0 0 auto !important;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+  }
+}

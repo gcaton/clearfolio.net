@@ -291,7 +291,7 @@
   [header]="editingIncome() ? 'Edit Income Stream' : 'New Income Stream'"
   [(visible)]="incomeDialogVisible"
   [modal]="true"
-  [style]="{ width: '450px' }"
+  [style]="{ width: 'min(450px, 95vw)' }"
 >
   <div class="form-grid">
     <label for="incomeLabel">Label</label>
@@ -354,7 +354,7 @@
   [header]="editingExpense() ? 'Edit Expense' : 'New Expense'"
   [(visible)]="expenseDialogVisible"
   [modal]="true"
-  [style]="{ width: '450px' }"
+  [style]="{ width: 'min(450px, 95vw)' }"
 >
   <div class="form-grid">
     <label for="expenseLabel">Label</label>

@@ -14,11 +14,13 @@
     <p-button
       icon="pi pi-file-pdf"
       label="Export PDF"
+      ariaLabel="Export PDF"
       severity="secondary"
       [outlined]="true"
       size="small"
       [disabled]="!summary()"
       (onClick)="exportReport()"
+      styleClass="export-btn"
     />
   </div>
 </div>
@@ -138,7 +140,7 @@
   </div>
 }
 
-<p-tabs value="0" appFadeIn>
+<p-tabs value="0" [lazy]="true" appFadeIn>
   <p-tablist>
     <p-tab value="0">Trends</p-tab>
     <p-tab value="1">Composition</p-tab>

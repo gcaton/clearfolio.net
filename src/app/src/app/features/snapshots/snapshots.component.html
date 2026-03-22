@@ -62,7 +62,7 @@
   [header]="editing() ? 'Edit Snapshot' : 'Record Value'"
   [(visible)]="dialogVisible"
   [modal]="true"
-  [style]="{ width: '450px' }"
+  [style]="{ width: 'min(450px, 95vw)' }"
 >
   <div class="form-grid">
     @if (!editing()) {
