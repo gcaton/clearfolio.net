@@ -111,6 +111,11 @@
   }
 }
 
+.passphrase-actions {
+  display: flex;
+  gap: 1rem;
+}
+
 .confirm-name {
   font-weight: 700;
   font-size: 1rem;
