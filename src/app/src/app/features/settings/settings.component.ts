@@ -575,6 +575,7 @@ export class SettingsComponent implements OnInit {
     const h = this.household();
     if (!h || this.deleteAllConfirmName !== h.name) return;
     this.api.deleteAllData().subscribe(async () => {
+      this.goalService.clear();
       await this.auth.init();
       this.router.navigate(['/setup']);
     });
