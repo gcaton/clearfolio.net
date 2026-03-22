@@ -95,6 +95,10 @@ using (var scope = app.Services.CreateScope())
             db.Database.ExecuteSqlRaw("ALTER TABLE households ADD COLUMN locale TEXT NOT NULL DEFAULT 'en-AU'");
     }
 
+    // Update investment bond liquidity for existing databases
+    db.Database.ExecuteSqlRaw(
+        "UPDATE asset_types SET liquidity = 'long_term' WHERE id = 'a0000000-0000-0000-0000-00000000000e' AND liquidity = 'short_term'");
+
     // #3: Clean up expired sessions on startup
     var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     var expiredSessions = await db.AppSettings
