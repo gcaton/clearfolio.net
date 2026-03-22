@@ -17,6 +17,10 @@ export function formatCurrency(value: number, locale: string, currency: string):
   return `${sign}${symbol}${Math.round(abs)}`;
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 const AXIS_LABEL_COLOR = 'var(--p-text-muted-color, #94a3b8)';
 const SPLIT_LINE_COLOR = 'var(--p-content-border-color, rgba(148,163,184,0.15))';
 
@@ -56,11 +60,12 @@ function baseTooltip(locale: string, currency: string) {
     formatter: (params: unknown) => {
       const items = params as Array<{ seriesName: string; value: number; color: string }>;
       if (!items?.length) return '';
-      const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
+      const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
       let html = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
       for (const p of items) {
+        if (p.seriesName.startsWith('_')) continue;
         const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-        html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
+        html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
       }
       return html;
     },
@@ -119,21 +124,31 @@ function goalMarkLine(goalTarget: number, locale: string, currency: string) {
   };
 }
 
-export interface ProjectionChartContext {
-  locale: string;
-  currency: string;
-  goalTarget?: number | null;
+function helperMarkLineSeries(todayYear: string, goalTarget: number | null | undefined, locale: string, currency: string): any[] {
+  const series: any[] = [
+    {
+      name: '_today',
+      type: 'line',
+      data: [],
+      markLine: todayMarkLine(todayYear),
+      tooltip: { show: false },
+    },
+  ];
+  if (goalTarget && goalTarget > 0) {
+    series.push({
+      name: '_goal',
+      type: 'line',
+      data: [],
+      markLine: goalMarkLine(goalTarget, locale, currency),
+      tooltip: { show: false },
+    });
+  }
+  return series;
 }
 
 export function buildCompoundOptions(data: CompoundYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
-  const todayYear = years[0];
-
-  const markLines: any[] = [todayMarkLine(todayYear)];
-  if (goalTarget && goalTarget > 0) {
-    markLines.push(goalMarkLine(goalTarget, locale, currency));
-  }
 
   return {
     tooltip: baseTooltip(locale, currency),
@@ -165,7 +180,6 @@ export function buildCompoundOptions(data: CompoundYearData[], locale: string, c
             ],
           },
         },
-        markLine: markLines[0],
         z: 3,
       },
       {
@@ -188,9 +202,9 @@ export function buildCompoundOptions(data: CompoundYearData[], locale: string, c
         itemStyle: { color: '#f87171' },
         lineStyle: { color: '#f87171', type: 'dashed', width: 1.5, opacity: 0.7 },
         emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
-        ...(markLines.length > 1 ? { markLine: markLines[1] } : {}),
         z: 1,
       },
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
     animationDuration: 800,
     animationEasing: 'cubicOut',
@@ -200,16 +214,10 @@ export function buildCompoundOptions(data: CompoundYearData[], locale: string, c
 export function buildScenarioOptions(data: ScenarioYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
-  const todayYear = years[0];
 
   // Build the band between optimistic and pessimistic
   const pessimisticValues = data.map((d) => d.pessimistic.netWorth);
   const bandValues = data.map((d) => d.optimistic.netWorth - d.pessimistic.netWorth);
-
-  const markLines: any[] = [todayMarkLine(todayYear)];
-  if (goalTarget && goalTarget > 0) {
-    markLines.push(goalMarkLine(goalTarget, locale, currency));
-  }
 
   return {
     tooltip: {
@@ -219,12 +227,12 @@ export function buildScenarioOptions(data: ScenarioYearData[], locale: string, c
       formatter: (params: unknown) => {
         const items = params as Array<{ seriesName: string; value: number; color: string }>;
         if (!items?.length) return '';
-        const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
-        const visible = items.filter((p) => p.seriesName !== '_band-base' && p.seriesName !== 'Range');
+        const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
+        const visible = items.filter((p) => !p.seriesName.startsWith('_') && p.seriesName !== 'Range');
         let html = `<div style="font-weight:600;margin-bottom:4px">${year}</div>`;
         for (const p of visible) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -285,8 +293,6 @@ export function buildScenarioOptions(data: ScenarioYearData[], locale: string, c
         emphasis: {
           itemStyle: { borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,0.4)' },
         },
-        markLine: markLines[0],
-        ...(markLines.length > 1 ? {} : {}),
         z: 3,
       },
       // Pessimistic line
@@ -299,9 +305,9 @@ export function buildScenarioOptions(data: ScenarioYearData[], locale: string, c
         itemStyle: { color: '#f87171' },
         lineStyle: { color: '#f87171', width: 1.5, type: 'dashed', opacity: 0.8 },
         emphasis: { lineStyle: { width: 2.5, opacity: 1 } },
-        ...(markLines.length > 1 ? { markLine: markLines[1] } : {}),
         z: 2,
       },
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
     animationDuration: 800,
     animationEasing: 'cubicOut',
@@ -311,7 +317,6 @@ export function buildScenarioOptions(data: ScenarioYearData[], locale: string, c
 export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: string, currency: string, goalTarget?: number | null): EChartsOption {
   if (!data?.length) return {};
   const years = data.map((d) => String(d.year));
-  const todayYear = years[0];
 
   // Band series use stack trick: lower bound hidden, upper bound shows area
   const p10 = data.map((d) => d.p10);
@@ -324,11 +329,6 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: strin
   const outerBand = data.map((d, i) => d.p90 - p10[i]);
   const innerBand = data.map((d, i) => d.p75 - p25[i]);
 
-  const markLines: any[] = [todayMarkLine(todayYear)];
-  if (goalTarget && goalTarget > 0) {
-    markLines.push(goalMarkLine(goalTarget, locale, currency));
-  }
-
   return {
     tooltip: {
       ...tooltipBase,
@@ -336,12 +336,12 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: strin
       formatter: (params: unknown) => {
         const items = params as Array<{ seriesName: string; value: number }>;
         if (!items?.length) return '';
-        const year = (params as Array<{ axisValueLabel: string }>)[0].axisValueLabel;
+        const year = escapeHtml((params as Array<{ axisValueLabel: string }>)[0].axisValueLabel);
         const point = data[parseInt(year) - data[0].year];
         if (!point) return '';
-        const row = (label: string, value: number, color: string) => {
+        const row = (rowLabel: string, value: number, color: string) => {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:6px"></span>`;
-          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${label}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(value, locale, currency)}</span></div>`;
+          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(rowLabel)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(value, locale, currency)}</span></div>`;
         };
         return `<div style="font-weight:600;margin-bottom:4px">${year}</div>`
           + row('P90', point.p90, 'rgba(96,165,250,0.3)')
@@ -420,17 +420,9 @@ export function buildMonteCarloOptions(data: MonteCarloYearData[], locale: strin
         emphasis: {
           itemStyle: { borderWidth: 3, shadowBlur: 8, shadowColor: 'rgba(96,165,250,0.4)' },
         },
-        markLine: markLines[0],
         z: 10,
       },
-      // Invisible series just to carry the goal markLine
-      ...(markLines.length > 1 ? [{
-        name: '_goal',
-        type: 'line' as const,
-        data: [],
-        markLine: markLines[1],
-        tooltip: { show: false },
-      }] : []),
+      ...helperMarkLineSeries(years[0], goalTarget, locale, currency),
     ],
     animationDuration: 800,
     animationEasing: 'cubicOut',

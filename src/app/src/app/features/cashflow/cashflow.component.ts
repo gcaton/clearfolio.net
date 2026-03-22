@@ -190,11 +190,12 @@ export class CashflowComponent implements OnInit {
         extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
         formatter: (params: any) => {
           if (!Array.isArray(params)) return '';
-          const name = params[0]?.axisValue ?? '';
+          const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+          const name = esc(params[0]?.axisValue ?? '');
           let html = `<div style="font-weight:600;margin-bottom:4px">${name}</div>`;
           for (const p of params) {
             const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-            html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFull(p.value)}</span></div>`;
+            html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${esc(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFull(p.value)}</span></div>`;
           }
           return html;
         },
@@ -266,8 +267,10 @@ export class CashflowComponent implements OnInit {
         },
         extraCssText: 'box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);',
         formatter: (params: any) => {
+          const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${params.color};margin-right:6px"></span>`;
-          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${params.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${params.value.toLocaleString()} (${params.percent}%)</span></div>`;
+          const formattedValue = new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(params.value));
+          return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${esc(params.name)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formattedValue} (${params.percent}%)</span></div>`;
         },
       },
       legend: {

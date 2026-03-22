@@ -48,6 +48,10 @@ function label(key: string): string {
   return LABEL_MAP[key] ?? key;
 }
 
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function currencyFormatter(value: number, locale: string, currency: string): string {
   return new Intl.NumberFormat(locale, { style: 'currency', currency, maximumFractionDigits: 0 }).format(Math.round(value));
 }
@@ -108,18 +112,22 @@ const legendStyle = {
   itemGap: 16,
 };
 
-export function buildTrendOptions(data: TrendPoint[], locale: string, currency: string): EChartsOption {
-  const showDataZoom = data.length > 12;
+export interface TrendChartOptions {
+  forPdf?: boolean;
+}
+
+export function buildTrendOptions(data: TrendPoint[], locale: string, currency: string, options?: TrendChartOptions): EChartsOption {
+  const showDataZoom = !options?.forPdf && data.length > 12;
   return {
     tooltip: {
       ...tooltipStyle,
       formatter: (params: any) => {
         if (!Array.isArray(params)) return '';
-        const period = params[0]?.axisValue ?? '';
+        const period = escapeHtml(params[0]?.axisValue ?? '');
         let html = `<div style="font-weight:600;margin-bottom:4px">${period}</div>`;
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -220,18 +228,16 @@ export function buildTrendOptions(data: TrendPoint[], locale: string, currency: 
   };
 }
 
-export function buildCompositionOptions(summary: DashboardSummary | null, locale?: string, currency?: string): EChartsOption {
+export function buildCompositionOptions(summary: DashboardSummary | null, locale: string, currency: string): EChartsOption {
   if (!summary) return {};
   const total = summary.assetsByCategory.reduce((sum, c) => sum + c.value, 0);
-  const formattedTotal = locale && currency
-    ? currencyAbbr(total, locale, currency)
-    : `$${(total / 1000).toFixed(0)}K`;
+  const formattedTotal = currencyAbbr(total, locale, currency);
   return {
     tooltip: {
       ...itemTooltipStyle,
       formatter: (params: any) => {
         const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${params.color};margin-right:6px"></span>`;
-        return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${params.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${params.value.toLocaleString()} (${params.percent}%)</span></div>`;
+        return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(params.name)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(params.value, locale, currency)} (${params.percent}%)</span></div>`;
       },
     },
     legend: {
@@ -249,7 +255,7 @@ export function buildCompositionOptions(summary: DashboardSummary | null, locale
         label: {
           show: true,
           position: 'center',
-          formatter: `{total|${formattedTotal}}\n{label|Total Assets}`,
+          formatter: `{total|${escapeHtml(formattedTotal)}}\n{label|Total Assets}`,
           rich: {
             total: {
               fontSize: 20,
@@ -304,7 +310,7 @@ export function buildLiquidityOptions(summary: DashboardSummary | null, locale: 
         let html = '';
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.name)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -341,14 +347,17 @@ export function buildLiquidityOptions(summary: DashboardSummary | null, locale: 
   };
 }
 
-export function buildGrowthOptions(summary: DashboardSummary | null): EChartsOption {
+export function buildGrowthOptions(summary: DashboardSummary | null, locale?: string, currency?: string): EChartsOption {
   if (!summary) return {};
   return {
     tooltip: {
       ...itemTooltipStyle,
       formatter: (params: any) => {
         const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${params.color};margin-right:6px"></span>`;
-        return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${params.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${params.value.toLocaleString()} (${params.percent}%)</span></div>`;
+        const formattedValue = locale && currency
+          ? currencyFormatter(params.value, locale, currency)
+          : params.value.toLocaleString();
+        return `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(params.name)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formattedValue} (${params.percent}%)</span></div>`;
       },
     },
     legend: {
@@ -402,7 +411,7 @@ export function buildDebtQualityOptions(summary: DashboardSummary | null, locale
         let html = '';
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.name}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.name)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -448,11 +457,11 @@ export function buildMemberOptions(data: MemberComparison[], locale: string, cur
       ...tooltipStyle,
       formatter: (params: any) => {
         if (!Array.isArray(params)) return '';
-        const name = params[0]?.axisValue ?? '';
+        const name = escapeHtml(params[0]?.axisValue ?? '');
         let html = `<div style="font-weight:600;margin-bottom:4px">${name}</div>`;
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
-          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${p.seriesName}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
+          html += `<div style="display:flex;justify-content:space-between;gap:16px"><span>${dot}${escapeHtml(p.seriesName)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${currencyFormatter(p.value, locale, currency)}</span></div>`;
         }
         return html;
       },
@@ -509,7 +518,7 @@ export function buildSuperGapOptions(data: SuperGap[], locale: string, currency:
       ...tooltipStyle,
       formatter: (params: any) => {
         if (!Array.isArray(params)) return '';
-        const name = params[0]?.axisValue ?? '';
+        const name = escapeHtml(params[0]?.axisValue ?? '');
         let html = `<div style="font-weight:600;margin-bottom:4px">${name}</div>`;
         for (const p of params) {
           const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px"></span>`;
