@@ -1,3 +1,4 @@
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.Services;
 using static Clearfolio.Api.Services.ProjectionEngine;
 
@@ -35,38 +36,38 @@ public class ProjectionEngineTests
     [DataRow("yearly", 1)]
     public void NormaliseContribution_CorrectMultiplier(string frequency, int expectedMultiplier)
     {
-        var result = ProjectionEngine.NormaliseContribution(100, frequency);
+        var result = FrequencyHelper.NormaliseContribution(100, frequency);
         Assert.AreEqual(100.0 * expectedMultiplier, result);
     }
 
     [TestMethod]
     public void NormaliseContribution_NullAmount_ReturnsZero()
     {
-        Assert.AreEqual(0, ProjectionEngine.NormaliseContribution(null, "monthly"));
+        Assert.AreEqual(0, FrequencyHelper.NormaliseContribution(null, "monthly"));
     }
 
     [TestMethod]
     public void NormaliseContribution_ZeroAmount_ReturnsZero()
     {
-        Assert.AreEqual(0, ProjectionEngine.NormaliseContribution(0, "monthly"));
+        Assert.AreEqual(0, FrequencyHelper.NormaliseContribution(0, "monthly"));
     }
 
     [TestMethod]
     public void NormaliseContribution_NegativeAmount_ReturnsZero()
     {
-        Assert.AreEqual(0, ProjectionEngine.NormaliseContribution(-100, "monthly"));
+        Assert.AreEqual(0, FrequencyHelper.NormaliseContribution(-100, "monthly"));
     }
 
     [TestMethod]
     public void NormaliseContribution_NullFrequency_ReturnsZero()
     {
-        Assert.AreEqual(0, ProjectionEngine.NormaliseContribution(100, null));
+        Assert.AreEqual(0, FrequencyHelper.NormaliseContribution(100, null));
     }
 
     [TestMethod]
     public void NormaliseContribution_UnknownFrequency_ReturnsZero()
     {
-        Assert.AreEqual(0, ProjectionEngine.NormaliseContribution(100, "biannually"));
+        Assert.AreEqual(0, FrequencyHelper.NormaliseContribution(100, "biannually"));
     }
 
     // --- RunCompound ---

@@ -1,16 +1,9 @@
+using Clearfolio.Api.Helpers;
+
 namespace Clearfolio.Api.Services;
 
 public static class ProjectionEngine
 {
-    private static readonly Dictionary<string, int> FrequencyMultipliers = new()
-    {
-        ["weekly"] = 52,
-        ["fortnightly"] = 26,
-        ["monthly"] = 12,
-        ["quarterly"] = 4,
-        ["yearly"] = 1,
-    };
-
     public record EntityInput(
         Guid Id,
         string Label,
@@ -314,15 +307,6 @@ public static class ProjectionEngine
             year > endDate.Year)
             return 0;
         return entity.AnnualContribution;
-    }
-
-    public static double NormaliseContribution(double? amount, string? frequency)
-    {
-        if (amount is null || amount <= 0 || frequency is null)
-            return 0;
-        return FrequencyMultipliers.TryGetValue(frequency, out var mult)
-            ? amount.Value * mult
-            : 0;
     }
 
     private static double SampleNormal(Random random, double mean, double stdDev)

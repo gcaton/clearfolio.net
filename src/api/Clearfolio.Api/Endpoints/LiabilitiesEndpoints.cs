@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
 using Clearfolio.Api.Filters;
+using Clearfolio.Api.Helpers;
 using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
@@ -19,7 +20,7 @@ public static class LiabilitiesEndpoints
 
     private static async Task<IResult> GetLiabilities(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var liabilities = await db.Liabilities
@@ -37,7 +38,7 @@ public static class LiabilitiesEndpoints
 
     private static async Task<IResult> CreateLiability(CreateLiabilityRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var now = DateTime.UtcNow.ToString("o");
 
@@ -72,7 +73,7 @@ public static class LiabilitiesEndpoints
 
     private static async Task<IResult> UpdateLiability(Guid id, UpdateLiabilityRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var liability = await db.Liabilities
@@ -106,7 +107,7 @@ public static class LiabilitiesEndpoints
 
     private static async Task<IResult> DeleteLiability(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var liability = await db.Liabilities.FirstOrDefaultAsync(l => l.Id == id && l.HouseholdId == member.HouseholdId);
@@ -130,6 +131,4 @@ public static class LiabilitiesEndpoints
         RepaymentEndDate: l.RepaymentEndDate,
         InterestRate: l.InterestRate);
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

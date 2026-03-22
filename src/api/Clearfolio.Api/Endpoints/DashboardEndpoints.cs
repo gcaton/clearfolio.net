@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using Clearfolio.Api.Data;
 using Clearfolio.Api.DTOs;
@@ -6,8 +7,12 @@ using Clearfolio.Api.Models;
 
 namespace Clearfolio.Api.Endpoints;
 
-public static class DashboardEndpoints
+public static partial class DashboardEndpoints
 {
+    // #13: Use GeneratedRegex instead of Regex.Match in loops
+    [GeneratedRegex(@"^(CY|FY)(\d{4})")]
+    private static partial Regex YearPattern();
+
     public static WebApplication MapDashboardEndpoints(this WebApplication app)
     {
         app.MapGet("/api/dashboard/summary", GetSummary);
@@ -22,14 +27,14 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetSummary(HttpContext context, ClearfolioDbContext db, string? period = null, string view = "household", string scope = "all")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
-        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
-        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         var assetValues = CalculateAssetValues(snapshots, assets, members, view);
@@ -61,15 +66,15 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetTrend(HttpContext context, ClearfolioDbContext db, string view = "household", string scope = "all")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var currentPeriod = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var allAssetsRaw = await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync();
-        var assets = ApplyScopeFilter(allAssetsRaw, scope);
-        var financialAssets = ApplyScopeFilter(allAssetsRaw, "financial");
-        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(allAssetsRaw, scope);
+        var financialAssets = OwnershipHelper.ApplyAssetScopeFilter(allAssetsRaw, "financial");
+        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         var allSnapshots = await db.Snapshots.AsNoTracking()
@@ -109,12 +114,12 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetGoalProjection(HttpContext context, ClearfolioDbContext db, double target, string view = "household", string scope = "all")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
 
-        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
-        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
 
         // Get all distinct periods that have snapshot data
@@ -178,7 +183,6 @@ public static class DashboardEndpoints
             if (periodsAhead is > 0 and < 200) // Cap at 50 years of quarters
             {
                 // Determine period interval from data
-                var convention = household.PreferredPeriodType;
                 var currentPeriod = sortedPeriods[^1];
 
                 // Walk forward period by period
@@ -199,13 +203,13 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetComposition(HttpContext context, ClearfolioDbContext db, string? period = null, string scope = "all")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
-        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
 
         var composition = new List<CompositionPointDto>();
         foreach (var snapshot in snapshots.Where(s => s.EntityType == "asset"))
@@ -225,15 +229,15 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetMembers(HttpContext context, ClearfolioDbContext db, string? period = null, string scope = "all")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         period ??= PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
 
         var members = await db.HouseholdMembers.AsNoTracking().Where(m => m.HouseholdId == member.HouseholdId).ToListAsync();
         var snapshots = await GetEffectiveSnapshots(db, member.HouseholdId, period);
-        var assets = ApplyScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
-        var liabilities = ApplyScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
+        var assets = OwnershipHelper.ApplyAssetScopeFilter(await db.Assets.AsNoTracking().Include(a => a.AssetType).Where(a => a.HouseholdId == member.HouseholdId && a.IsActive).ToListAsync(), scope);
+        var liabilities = OwnershipHelper.ApplyLiabilityScopeFilter(await db.Liabilities.AsNoTracking().Include(l => l.LiabilityType).Where(l => l.HouseholdId == member.HouseholdId && l.IsActive).ToListAsync(), scope);
 
         var result = new List<MemberComparisonDto>();
         foreach (var m in members)
@@ -248,7 +252,7 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetSuperGap(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var period = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
@@ -271,7 +275,7 @@ public static class DashboardEndpoints
 
     private static async Task<IResult> GetAssetPerformance(HttpContext context, ClearfolioDbContext db, string view = "household")
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
         var household = await db.Households.AsNoTracking().FirstAsync(h => h.Id == member.HouseholdId);
         var currentPeriod = PeriodHelper.CurrentPeriod(household.PreferredPeriodType);
@@ -297,11 +301,14 @@ public static class DashboardEndpoints
             p = PeriodHelper.NextPeriod(p);
         }
 
+        // #13: Use compiled regex for period year extraction
+        var yearRegex = YearPattern();
+
         // Group periods by year — take last quarter per year
         var yearEndPeriods = new Dictionary<string, string>(); // "CY 2024" → "CY2024-Q4"
         foreach (var period in periodList)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(period, @"^(CY|FY)(\d{4})");
+            var match = yearRegex.Match(period);
             if (!match.Success) continue;
             var yearKey = $"{match.Groups[1].Value} {match.Groups[2].Value}";
             yearEndPeriods[yearKey] = period; // last one wins
@@ -322,11 +329,11 @@ public static class DashboardEndpoints
             {
                 if (assetSnapshots.TryGetValue(period, out var snap))
                 {
-                    latestValue = ApplyViewFilter(snap.Value, asset.OwnershipType, asset.OwnerMemberId, asset.JointSplit, members, view);
+                    latestValue = OwnershipHelper.ApplyViewFilter(snap.Value, asset.OwnershipType, asset.OwnerMemberId, asset.JointSplit, members, view);
                 }
 
                 // If this period is a year-end period, record the value
-                var yearMatch = System.Text.RegularExpressions.Regex.Match(period, @"^(CY|FY)(\d{4})");
+                var yearMatch = yearRegex.Match(period);
                 if (yearMatch.Success)
                 {
                     var yearKey = $"{yearMatch.Groups[1].Value} {yearMatch.Groups[2].Value}";
@@ -367,24 +374,6 @@ public static class DashboardEndpoints
         return latestByEntity.Values.ToList();
     }
 
-    // Scope filters: "all" = everything, "financial" = cash+investable+retirement, "liquid" = cash+investable
-    private static readonly HashSet<string> FinancialAssetCategories = ["cash", "investable", "retirement"];
-    private static readonly HashSet<string> LiquidAssetCategories = ["cash", "investable"];
-    private static readonly HashSet<string> FinancialLiabilityCategories = ["personal", "credit", "student", "tax", "other"];
-
-    private static List<Asset> ApplyScopeFilter(List<Asset> assets, string scope) => scope switch
-    {
-        "financial" => assets.Where(a => FinancialAssetCategories.Contains(a.AssetType.Category)).ToList(),
-        "liquid" => assets.Where(a => LiquidAssetCategories.Contains(a.AssetType.Category)).ToList(),
-        _ => assets,
-    };
-
-    private static List<Liability> ApplyScopeFilter(List<Liability> liabilities, string scope) => scope switch
-    {
-        "financial" or "liquid" => liabilities.Where(l => FinancialLiabilityCategories.Contains(l.LiabilityType.Category)).ToList(),
-        _ => liabilities,
-    };
-
     private record AssetValue(double Value, string Category, string Liquidity, string GrowthClass);
     private record LiabilityValue(double Value, string Category, string DebtQuality);
 
@@ -396,7 +385,7 @@ public static class DashboardEndpoints
             var asset = assets.FirstOrDefault(a => a.Id == snapshot.EntityId);
             if (asset is null) continue;
 
-            var value = ApplyViewFilter(snapshot.Value, asset.OwnershipType, asset.OwnerMemberId, asset.JointSplit, members, view);
+            var value = OwnershipHelper.ApplyViewFilter(snapshot.Value, asset.OwnershipType, asset.OwnerMemberId, asset.JointSplit, members, view);
             if (value > 0)
                 result.Add(new AssetValue(value, asset.AssetType.Category, asset.AssetType.Liquidity, asset.AssetType.GrowthClass));
         }
@@ -411,30 +400,10 @@ public static class DashboardEndpoints
             var liability = liabilities.FirstOrDefault(l => l.Id == snapshot.EntityId);
             if (liability is null) continue;
 
-            var value = ApplyViewFilter(snapshot.Value, liability.OwnershipType, liability.OwnerMemberId, liability.JointSplit, members, view);
+            var value = OwnershipHelper.ApplyViewFilter(snapshot.Value, liability.OwnershipType, liability.OwnerMemberId, liability.JointSplit, members, view);
             if (value > 0)
                 result.Add(new LiabilityValue(value, liability.LiabilityType.Category, liability.LiabilityType.DebtQuality));
         }
         return result;
     }
-
-    private static double ApplyViewFilter(double value, string ownershipType, Guid? ownerMemberId, double jointSplit, List<HouseholdMember> members, string view)
-    {
-        if (view == "household")
-            return value;
-
-        var targetMember = members.FirstOrDefault(m => m.MemberTag == view);
-        if (targetMember is null)
-            return 0;
-
-        if (ownershipType == "sole")
-            return ownerMemberId == targetMember.Id ? value : 0;
-
-        // Joint: p1 gets jointSplit, p2 gets remainder
-        var p1 = members.FirstOrDefault(m => m.MemberTag == "p1");
-        return targetMember.Id == p1?.Id ? value * jointSplit : value * (1 - jointSplit);
-    }
-
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

@@ -23,7 +23,7 @@ public static class IncomeStreamsEndpoints
 
     private static async Task<IResult> GetIncomeStreams(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var items = await db.IncomeStreams
@@ -40,7 +40,7 @@ public static class IncomeStreamsEndpoints
 
     private static async Task<IResult> CreateIncomeStream(CreateIncomeStreamRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var label = request.Label?.Trim();
@@ -92,7 +92,7 @@ public static class IncomeStreamsEndpoints
 
     private static async Task<IResult> UpdateIncomeStream(Guid id, UpdateIncomeStreamRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var item = await db.IncomeStreams
@@ -142,7 +142,7 @@ public static class IncomeStreamsEndpoints
 
     private static async Task<IResult> DeleteIncomeStream(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var item = await db.IncomeStreams.FirstOrDefaultAsync(i => i.Id == id && i.HouseholdId == member.HouseholdId);
@@ -160,6 +160,4 @@ public static class IncomeStreamsEndpoints
         i.Label, i.IncomeType, i.Amount, i.Frequency,
         i.IsActive, i.Notes, i.CreatedAt, i.UpdatedAt);
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }

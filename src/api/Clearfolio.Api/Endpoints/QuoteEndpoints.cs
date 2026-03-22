@@ -7,7 +7,8 @@ public static class QuoteEndpoints
 {
     public static WebApplication MapQuoteEndpoints(this WebApplication app)
     {
-        app.MapGet("/api/quote/{symbol}", GetQuote);
+        // #4: Rate limit external API proxy endpoint
+        app.MapGet("/api/quote/{symbol}", GetQuote).RequireRateLimiting("external-api");
         return app;
     }
 

@@ -23,7 +23,7 @@ public static class ExpensesEndpoints
 
     private static async Task<IResult> GetExpenses(HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var items = await db.Expenses
@@ -40,7 +40,7 @@ public static class ExpensesEndpoints
 
     private static async Task<IResult> CreateExpense(CreateExpenseRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var label = request.Label?.Trim();
@@ -87,7 +87,7 @@ public static class ExpensesEndpoints
 
     private static async Task<IResult> UpdateExpense(Guid id, UpdateExpenseRequest request, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var item = await db.Expenses
@@ -131,7 +131,7 @@ public static class ExpensesEndpoints
 
     private static async Task<IResult> DeleteExpense(Guid id, HttpContext context, ClearfolioDbContext db)
     {
-        var member = GetMemberOrNull(context);
+        var member = context.GetMemberOrNull();
         if (member is null) return Results.Unauthorized();
 
         var item = await db.Expenses.FirstOrDefaultAsync(e => e.Id == id && e.HouseholdId == member.HouseholdId);
@@ -150,6 +150,4 @@ public static class ExpensesEndpoints
         e.Label, e.Amount, e.Frequency,
         e.IsActive, e.Notes, e.CreatedAt, e.UpdatedAt);
 
-    private static HouseholdMember? GetMemberOrNull(HttpContext context) =>
-        context.Items["HouseholdMember"] as HouseholdMember;
 }
