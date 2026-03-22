@@ -87,6 +87,19 @@ public static class HouseholdEndpoints
 
         var memberLookup = members.ToDictionary(m => m.Id, m => m.MemberTag);
 
+        var assetTypes = await db.AssetTypes
+            .AsNoTracking()
+            .OrderBy(t => t.SortOrder)
+            .ToListAsync();
+
+        var liabilityTypes = await db.LiabilityTypes
+            .AsNoTracking()
+            .OrderBy(t => t.SortOrder)
+            .ToListAsync();
+
+        var assetTypeLookup = assetTypes.ToDictionary(t => t.Id, t => t.Name);
+        var liabilityTypeLookup = liabilityTypes.ToDictionary(t => t.Id, t => t.Name);
+
         var assets = await db.Assets
             .Where(a => a.HouseholdId == householdId)
             .OrderBy(a => a.Label)
@@ -131,14 +144,22 @@ public static class HouseholdEndpoints
             ExportedAt: DateTime.UtcNow.ToString("o"),
             Household: new ExportHouseholdDto(household.Name, household.BaseCurrency, household.PreferredPeriodType, household.Locale),
             Members: members.Select(m => new ExportMemberDto(m.Email, m.DisplayName, m.MemberTag, m.IsPrimary)).ToList(),
+            AssetTypes: assetTypes.Select(t => new ExportAssetTypeDto(
+                t.Name, t.Category, t.Liquidity, t.GrowthClass, t.IsSuper, t.IsCgtExempt, t.SortOrder, t.DefaultReturnRate, t.DefaultVolatility
+            )).ToList(),
+            LiabilityTypes: liabilityTypes.Select(t => new ExportLiabilityTypeDto(
+                t.Name, t.Category, t.DebtQuality, t.IsHecs, t.SortOrder
+            )).ToList(),
             Assets: assets.Select(a => new ExportAssetDto(
-                a.AssetTypeId,
+                assetTypeLookup.TryGetValue(a.AssetTypeId, out var atn) ? atn : null,
+                null,
                 a.OwnerMemberId.HasValue && memberLookup.TryGetValue(a.OwnerMemberId.Value, out var atag) ? atag : null,
                 a.OwnershipType, a.JointSplit, a.Label, a.Symbol, a.Currency, a.Notes, a.IsActive,
                 a.ContributionAmount, a.ContributionFrequency, a.ContributionEndDate, a.IsPreTaxContribution, a.ExpectedReturnRate, a.ExpectedVolatility
             )).ToList(),
             Liabilities: liabilities.Select(l => new ExportLiabilityDto(
-                l.LiabilityTypeId,
+                liabilityTypeLookup.TryGetValue(l.LiabilityTypeId, out var ltn) ? ltn : null,
+                null,
                 l.OwnerMemberId.HasValue && memberLookup.TryGetValue(l.OwnerMemberId.Value, out var ltag) ? ltag : null,
                 l.OwnershipType, l.JointSplit, l.Label, l.Currency, l.Notes, l.IsActive,
                 l.RepaymentAmount, l.RepaymentFrequency, l.RepaymentEndDate, l.InterestRate
@@ -213,18 +234,79 @@ public static class HouseholdEndpoints
             });
         }
 
+        // Import asset types — match by name, create missing
+        var existingAssetTypes = await db.AssetTypes.ToListAsync();
+        var assetTypeNameToId = existingAssetTypes.ToDictionary(t => t.Name, t => t.Id);
+        if (data.AssetTypes is { Count: > 0 })
+        {
+            var maxSort = existingAssetTypes.Count > 0 ? existingAssetTypes.Max(t => t.SortOrder) : 0;
+            foreach (var t in data.AssetTypes)
+            {
+                if (assetTypeNameToId.ContainsKey(t.Name)) continue;
+                var id = Guid.NewGuid();
+                assetTypeNameToId[t.Name] = id;
+                db.AssetTypes.Add(new AssetType
+                {
+                    Id = id,
+                    Name = t.Name,
+                    Category = t.Category,
+                    Liquidity = t.Liquidity,
+                    GrowthClass = t.GrowthClass,
+                    IsSuper = t.IsSuper,
+                    IsCgtExempt = t.IsCgtExempt,
+                    SortOrder = ++maxSort,
+                    IsSystem = false,
+                    DefaultReturnRate = t.DefaultReturnRate,
+                    DefaultVolatility = t.DefaultVolatility,
+                });
+            }
+        }
+
+        // Import liability types — match by name, create missing
+        var existingLiabilityTypes = await db.LiabilityTypes.ToListAsync();
+        var liabilityTypeNameToId = existingLiabilityTypes.ToDictionary(t => t.Name, t => t.Id);
+        if (data.LiabilityTypes is { Count: > 0 })
+        {
+            var maxSort = existingLiabilityTypes.Count > 0 ? existingLiabilityTypes.Max(t => t.SortOrder) : 0;
+            foreach (var t in data.LiabilityTypes)
+            {
+                if (liabilityTypeNameToId.ContainsKey(t.Name)) continue;
+                var id = Guid.NewGuid();
+                liabilityTypeNameToId[t.Name] = id;
+                db.LiabilityTypes.Add(new LiabilityType
+                {
+                    Id = id,
+                    Name = t.Name,
+                    Category = t.Category,
+                    DebtQuality = t.DebtQuality,
+                    IsHecs = t.IsHecs,
+                    SortOrder = ++maxSort,
+                    IsSystem = false,
+                });
+            }
+        }
+
         // Import assets — map label to new ID
         var assetLabelToId = new Dictionary<string, Guid>();
         var now = DateTime.UtcNow.ToString("o");
         foreach (var a in data.Assets)
         {
+            // Resolve type: prefer name lookup, fall back to GUID for v1 compat
+            Guid assetTypeId;
+            if (a.AssetTypeName != null && assetTypeNameToId.TryGetValue(a.AssetTypeName, out var resolvedAtId))
+                assetTypeId = resolvedAtId;
+            else if (a.AssetTypeId.HasValue)
+                assetTypeId = a.AssetTypeId.Value;
+            else
+                continue; // skip asset with unresolvable type
+
             var id = Guid.NewGuid();
             assetLabelToId[a.Label] = id;
             db.Assets.Add(new Asset
             {
                 Id = id,
                 HouseholdId = householdId,
-                AssetTypeId = a.AssetTypeId,
+                AssetTypeId = assetTypeId,
                 OwnerMemberId = a.OwnerMemberTag != null && memberTagToId.TryGetValue(a.OwnerMemberTag, out var oid) ? oid : null,
                 OwnershipType = a.OwnershipType,
                 JointSplit = a.JointSplit,
@@ -248,13 +330,22 @@ public static class HouseholdEndpoints
         var liabilityLabelToId = new Dictionary<string, Guid>();
         foreach (var l in data.Liabilities)
         {
+            // Resolve type: prefer name lookup, fall back to GUID for v1 compat
+            Guid liabilityTypeId;
+            if (l.LiabilityTypeName != null && liabilityTypeNameToId.TryGetValue(l.LiabilityTypeName, out var resolvedLtId))
+                liabilityTypeId = resolvedLtId;
+            else if (l.LiabilityTypeId.HasValue)
+                liabilityTypeId = l.LiabilityTypeId.Value;
+            else
+                continue; // skip liability with unresolvable type
+
             var id = Guid.NewGuid();
             liabilityLabelToId[l.Label] = id;
             db.Liabilities.Add(new Liability
             {
                 Id = id,
                 HouseholdId = householdId,
-                LiabilityTypeId = l.LiabilityTypeId,
+                LiabilityTypeId = liabilityTypeId,
                 OwnerMemberId = l.OwnerMemberTag != null && memberTagToId.TryGetValue(l.OwnerMemberTag, out var oid) ? oid : null,
                 OwnershipType = l.OwnershipType,
                 JointSplit = l.JointSplit,
