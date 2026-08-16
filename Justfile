@@ -18,9 +18,14 @@ default:
 web-install:
     cd {{web_dir}} && npm install
 
-# Run the Next.js dev server (http://localhost:3000)
+# Apply pending migrations and seed reference data
 [group('web')]
-web-dev:
+web-migrate:
+    cd {{web_dir}} && npm run db:migrate
+
+# Run the Next.js dev server (http://localhost:3000), migrating first
+[group('web')]
+web-dev: web-migrate
     cd {{web_dir}} && npm run dev
 
 # Run the domain unit tests (Vitest)
@@ -53,6 +58,7 @@ web-check: web-typecheck web-test
 init:
     cd {{web_dir}} && npm install
     just web-check
+    just web-migrate
     @echo ""
     @echo "  Ready. Next:  just web-dev   →  http://localhost:3000"
     @echo ""
