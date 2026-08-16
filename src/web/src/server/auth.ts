@@ -10,22 +10,39 @@ const SCRYPT_KEYLEN = 64
 const SALT_BYTES = 16
 const TOKEN_BYTES = 32
 
-/** Stored as `scrypt$<saltHex>$<hashHex>`. */
+// Node's scrypt cost parameters, recorded explicitly in the stored hash so a
+// future change to these constants cannot silently break verification of
+// hashes written under the old ones. These are Node's own defaults — do not
+// raise SCRYPT_N here; raising it is a separate decision (and above 16384
+// also requires passing an explicit `maxmem` to scryptSync, since Node's
+// default maxmem of 32MB caps N at 16384).
+const SCRYPT_N = 16384
+const SCRYPT_R = 8
+const SCRYPT_P = 1
+
+/** Stored as `scrypt$<N>$<r>$<p>$<saltHex>$<hashHex>`. */
 export function hashPassphrase(passphrase: string): string {
   const salt = randomBytes(SALT_BYTES)
-  const hash = scryptSync(passphrase, salt, SCRYPT_KEYLEN)
-  return `scrypt$${salt.toString('hex')}$${hash.toString('hex')}`
+  const hash = scryptSync(passphrase, salt, SCRYPT_KEYLEN, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P })
+  return `scrypt$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${salt.toString('hex')}$${hash.toString('hex')}`
 }
 
 export function verifyPassphrase(passphrase: string, stored: string): boolean {
   const parts = stored.split('$')
-  if (parts.length !== 3 || parts[0] !== 'scrypt') return false
+  if (parts.length !== 6 || parts[0] !== 'scrypt') return false
+
+  const [, nStr, rStr, pStr, saltHex, hashHex] = parts
+  const n = Number(nStr)
+  const r = Number(rStr)
+  const p = Number(pStr)
+  if (!Number.isInteger(n) || !Number.isInteger(r) || !Number.isInteger(p)) return false
+  if (n <= 0 || r <= 0 || p <= 0) return false
 
   try {
-    const salt = Buffer.from(parts[1], 'hex')
-    const expected = Buffer.from(parts[2], 'hex')
+    const salt = Buffer.from(saltHex, 'hex')
+    const expected = Buffer.from(hashHex, 'hex')
     if (expected.length !== SCRYPT_KEYLEN) return false
-    const actual = scryptSync(passphrase, salt, SCRYPT_KEYLEN)
+    const actual = scryptSync(passphrase, salt, SCRYPT_KEYLEN, { N: n, r, p })
     return timingSafeEqual(actual, expected)
   } catch {
     return false
@@ -52,7 +69,8 @@ export function setPassphrase(
   }
 
   const existing = storedPassphrase(db)
-  if (existing !== null) {
+  const isRotation = existing !== null
+  if (isRotation) {
     if (!currentPassphrase || !verifyPassphrase(currentPassphrase, existing)) {
       throw new Error('Current passphrase is incorrect.')
     }
@@ -61,10 +79,20 @@ export function setPassphrase(
   // Derive once — scrypt is deliberately expensive.
   const hashed = hashPassphrase(newPassphrase)
 
-  db.insert(appSettings)
-    .values({ key: PASSPHRASE_KEY, value: hashed })
-    .onConflictDoUpdate({ target: appSettings.key, set: { value: hashed } })
-    .run()
+  db.transaction((tx) => {
+    tx.insert(appSettings)
+      .values({ key: PASSPHRASE_KEY, value: hashed })
+      .onConflictDoUpdate({ target: appSettings.key, set: { value: hashed } })
+      .run()
+
+    // Changing an existing passphrase must revoke every outstanding session —
+    // the realistic reason to rotate it is suspected compromise, and a stale
+    // session cookie should not outlive that. On first-time bootstrap there
+    // are no sessions yet, so there is nothing to clear.
+    if (isRotation) {
+      tx.delete(sessions).run()
+    }
+  })
 }
 
 export function removePassphrase(
@@ -77,8 +105,10 @@ export function removePassphrase(
     throw new Error('Current passphrase is incorrect.')
   }
 
-  db.delete(appSettings).where(eq(appSettings.key, PASSPHRASE_KEY)).run()
-  db.delete(sessions).run()
+  db.transaction((tx) => {
+    tx.delete(appSettings).where(eq(appSettings.key, PASSPHRASE_KEY)).run()
+    tx.delete(sessions).run()
+  })
 }
 
 function sessionDays(): number {

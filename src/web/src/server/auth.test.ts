@@ -27,6 +27,35 @@ describe('passphrase hashing', () => {
   it('rejects a malformed stored value rather than throwing', () => {
     expect(verifyPassphrase('anything', 'not-a-valid-hash')).toBe(false)
   })
+
+  it('rejects an empty stored value rather than throwing', () => {
+    expect(verifyPassphrase('anything', '')).toBe(false)
+  })
+
+  it('rejects a stored value with the wrong segment count rather than throwing', () => {
+    expect(verifyPassphrase('anything', 'scrypt$16384$8$1$deadbeef')).toBe(false)
+  })
+
+  it('rejects a stored value with a non-hex salt rather than throwing', () => {
+    expect(
+      verifyPassphrase('anything', 'scrypt$16384$8$1$not-hex-zz$' + 'ab'.repeat(64)),
+    ).toBe(false)
+  })
+
+  it('rejects a stored value with a truncated hash rather than throwing', () => {
+    expect(
+      verifyPassphrase('anything', `scrypt$16384$8$1$${'ab'.repeat(16)}$dead`),
+    ).toBe(false)
+  })
+
+  it('rejects a stored value with a non-numeric N rather than throwing', () => {
+    expect(
+      verifyPassphrase(
+        'anything',
+        `scrypt$not-a-number$8$1$${'ab'.repeat(16)}$${'ab'.repeat(64)}`,
+      ),
+    ).toBe(false)
+  })
 })
 
 describe('passphrase lifecycle', () => {
@@ -66,6 +95,18 @@ describe('passphrase lifecycle', () => {
 
     const token = createSession(db, NOW)
     expect(validateSession(db, token, NOW)).toBe(true)
+    sqlite.close()
+  })
+
+  it('invalidates existing sessions when the passphrase is changed', () => {
+    const { db, sqlite } = createTestDb()
+    setPassphrase(db, 'first passphrase')
+    const token = createSession(db, NOW)
+    expect(validateSession(db, token, NOW)).toBe(true)
+
+    setPassphrase(db, 'second passphrase', 'first passphrase')
+
+    expect(validateSession(db, token, NOW)).toBe(false)
     sqlite.close()
   })
 
