@@ -121,9 +121,15 @@ changelog:
 
 [private]
 _run:
+    # Volume name intentionally differs from the v1 (.NET/Angular) image's
+    # "clearfolio-data". v2's schema cannot read v1 data, and this container
+    # runs migrations on start — mounting the old volume here would run those
+    # migrations against a v1 database. Do not "tidy" this back to
+    # clearfolio-data; the old volume is meant to stay untouched so v1 can
+    # still be started against it if needed.
     docker run -d \
       --name {{container}} \
       -p 4200:3000 \
       -e DB_PATH=/data/clearfolio.db \
-      -v clearfolio-data:/data \
+      -v clearfolio-data-v2:/data \
       {{image}}

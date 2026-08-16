@@ -5,12 +5,12 @@
 
 Self-hosted household net worth tracker. Record periodic snapshots of assets and liabilities, track growth over time, and compare positions across household members.
 
-> **Breaking change in v2.0:** Clearfolio has been rewritten on Next.js. The database schema is not compatible with v1.x — existing `/data` volumes cannot be read. Start with a fresh volume.
+> **Breaking change in v2.0:** Clearfolio has been rewritten on Next.js. The database schema is not compatible with v1.x — v1 data cannot be read by v2, and there is no conversion path. v2 therefore uses a new Docker volume name, `clearfolio-data-v2`, instead of v1's `clearfolio-data`. This is deliberate: the old `clearfolio-data` volume is never touched by v2 and is left exactly as it was, so if you need your v1 data back you can still start the old (v1) image against it. Just don't point a v2 container at a `clearfolio-data` volume that has v1 data in it — migrations will run against it and it will not go well.
 
 ## Quick Start
 
 ```bash
-docker run -d -p 8080:3000 -v clearfolio-data:/data ghcr.io/gcaton/clearfolio
+docker run -d -p 8080:3000 -v clearfolio-data-v2:/data ghcr.io/gcaton/clearfolio
 ```
 
 Then open http://localhost:8080 and complete the first-run setup wizard (household name, display name, currency, period type).
@@ -120,7 +120,7 @@ docker run -d \
   --name clearfolio \
   --restart unless-stopped \
   -p 8080:3000 \
-  -v clearfolio-data:/data \
+  -v clearfolio-data-v2:/data \
   ghcr.io/gcaton/clearfolio
 ```
 
@@ -172,7 +172,7 @@ docker stop clearfolio
 
 # 2. Run a temporary container that resets the passphrase
 docker run --rm \
-  -v clearfolio-data:/data \
+  -v clearfolio-data-v2:/data \
   -e CLEARFOLIO_RESET_PASSPHRASE=true \
   ghcr.io/gcaton/clearfolio
 
@@ -225,14 +225,14 @@ docker run -d \
   --name clearfolio \
   --restart unless-stopped \
   -p 8080:3000 \
-  -v clearfolio-data:/data \
+  -v clearfolio-data-v2:/data \
   ghcr.io/gcaton/clearfolio
 
 # 3. Verify
 docker logs clearfolio
 ```
 
-The database is stored in the `clearfolio-data` volume and persists across updates. If a migration fails, the container will fail to start — check `docker logs clearfolio` for details, restore your backup, and report the issue.
+The database is stored in the `clearfolio-data-v2` volume and persists across updates. If a migration fails, the container will fail to start — check `docker logs clearfolio` for details, restore your backup, and report the issue.
 
 To roll back to a previous version:
 
@@ -243,6 +243,6 @@ docker run -d \
   --name clearfolio \
   --restart unless-stopped \
   -p 8080:3000 \
-  -v clearfolio-data:/data \
+  -v clearfolio-data-v2:/data \
   ghcr.io/gcaton/clearfolio:<previous-version>
 ```
