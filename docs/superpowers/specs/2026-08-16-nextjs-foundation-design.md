@@ -308,7 +308,9 @@ The layout is the single enforcement point. It handles all three auth states, in
 
 ### Rate limiting
 
-The two external-proxy route handlers keep fixed-window rate limiting (30 requests/minute per IP), implemented in-process. Login attempts are limited to 10 per 5 minutes per IP. In-memory counters are acceptable for a single-container, single-user deployment.
+The two external-proxy route handlers keep fixed-window rate limiting (30 requests/minute per IP), implemented in-process. In-memory counters are acceptable for a single-container, single-user deployment.
+
+Login rate limiting is **not implemented in this slice** — see the deferred list below.
 
 ## Visual Direction
 
@@ -382,6 +384,8 @@ Slice 1 is done when:
 ## Out of Scope
 
 Deferred to slices 2–4, and explicitly **not** built here despite their tables existing: assets, liabilities and snapshots CRUD; the dashboard and all charts; cashflow; the projections UI; settings; help; PDF export; onboarding checklist; keyboard shortcuts; import/export; changelog generation.
+
+**Login rate limiting is also deferred**, to the slice that introduces the external quote proxies — the fixed-window in-process limiter is built once, for both the proxy routes and the login route, rather than twice. In the interim, `scrypt`-based passphrase verification (~24ms per attempt) imposes a meaningful floor on brute-force attempt rate even without an explicit limiter.
 
 Also out of scope permanently for this slice: currency conversion, an OpenAPI document, and any migration path from existing databases.
 
