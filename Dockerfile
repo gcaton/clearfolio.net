@@ -18,14 +18,22 @@ WORKDIR /app
 
 RUN apk add --no-cache wget
 
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
-COPY --from=build /app/src/db/migrations ./src/db/migrations
-COPY --from=build /app/dist/migrate.js ./scripts/migrate.js
-COPY --from=build /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY src/web/scripts/start.sh ./start.sh
-RUN chmod +x ./start.sh
+# Run as the unprivileged `node` user (uid 1000, ships with node:24-alpine)
+# rather than root. Ownership is set with COPY --chown at copy time (not a
+# later `chown -R`, which would copy-up every file into a new layer and
+# roughly double the image size). /data must be created and owned by `node`
+# before anything is mounted, because Docker seeds a fresh named volume's
+# ownership from the image directory it first mounts over — get this wrong
+# once and every volume created against this image is stuck root-owned,
+# requiring a manual chown for every user who hits it.
+COPY --chown=node:node --from=build /app/.next/standalone ./
+COPY --chown=node:node --from=build /app/.next/static ./.next/static
+COPY --chown=node:node --from=build /app/public ./public
+COPY --chown=node:node --from=build /app/src/db/migrations ./src/db/migrations
+COPY --chown=node:node --from=build /app/dist/migrate.js ./scripts/migrate.js
+COPY --chown=node:node --from=build /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+COPY --chown=node:node src/web/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh && mkdir -p /data && chown node:node /data
 
 ENV NODE_ENV=production
 ENV DB_PATH=/data/clearfolio.db
@@ -38,4 +46,5 @@ VOLUME /data
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD wget -qO- http://localhost:3000/api/health || exit 1
 
+USER node
 ENTRYPOINT ["./start.sh"]
