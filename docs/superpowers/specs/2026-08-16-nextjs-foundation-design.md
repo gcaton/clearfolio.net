@@ -292,6 +292,10 @@ Flow:
 3. Set cookie `clearfolio_session`: `HttpOnly`, `SameSite=Strict`, `Secure` when the request arrived over HTTPS (honouring `X-Forwarded-Proto`), `Path=/`.
 4. Logout deletes the row and clears the cookie.
 
+**Completing setup with a passphrase mints a session**, so the user lands on the dashboard rather than being asked to retype the passphrase they chose seconds earlier. This does not weaken the "no session without proof of passphrase" invariant: *choosing* a passphrase is proof of knowledge, strictly stronger than verifying one, and the invariant exists to stop an attacker minting a session — not the person who just chose the secret. Setup with **no** passphrase mints nothing; the app is open by design in that case.
+
+Both session-minting call sites live in the action layer (`app/setup/actions.ts` and `app/login/actions.ts`), never in the service layer. `completeSetup` stays free of cookie and framework concerns, and the two places that can create a session sit side by side where they can be audited together.
+
 **Passphrase is optional**, as today: if no hash is set, the app is unauthenticated. `CLEARFOLIO_RESET_PASSPHRASE=true` remains as the escape hatch, clearing the hash and all sessions at startup.
 
 ### No auth middleware
