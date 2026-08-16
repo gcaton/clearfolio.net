@@ -50,6 +50,13 @@ export interface CompoundResult {
 
 // --- shared helpers ---
 
+// Values are carried as unrounded floats through every year of a projection
+// and rounded to cents once, at the point each year is emitted (see the
+// roundToCents(value * discount) call sites below). The C# original rounds
+// entity values once at each year and again after applying the inflation
+// discount, which compounds rounding error across a multi-year horizon.
+// This is deliberate, not a bug to reconcile against the C# original — do
+// not "fix" it to double-round to match.
 function inflationDiscount(inflationRate: number, years: number): number {
   return inflationRate > 0 ? 1 / Math.pow(1 + inflationRate, years) : 1
 }

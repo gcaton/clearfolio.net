@@ -101,6 +101,14 @@ export const liabilities = sqliteTable('liabilities', {
  * enforced in the service layer. The cross-row invariant that shareBp sums
  * to 10000 per entity cannot be expressed as a single-row CHECK and is
  * enforced in src/domain/ownership.ts.
+ *
+ * memberId cascades on household_members deletion. Deleting a member can
+ * therefore leave an entity's remaining ownership rows summing below 10000
+ * — SQLite cannot express a cross-row sum constraint to prevent this at the
+ * schema level, so the service layer that deletes a member must re-normalise
+ * the affected entities' shares (normaliseShares in src/domain/ownership.ts)
+ * or block the deletion outright. Do not treat the cascade alone as
+ * sufficient.
  */
 export const ownership = sqliteTable('ownership', {
   id: text('id').primaryKey(),

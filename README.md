@@ -52,16 +52,22 @@ just docker-init
 ### Available Commands
 
 ```
-just              # Show all commands
-just init         # Set up the Next.js app from a clean checkout, then verify it
-just web-dev      # Run the Next.js dev server, migrating first
-just web-check    # Type-check and run unit tests
-just test-e2e     # Run the end-to-end tests (Playwright)
-just docker-init  # Tear down existing container, rebuild image, and start fresh
-just up           # Start the container
-just down         # Stop the container
-just logs         # Follow container logs
-just rebuild      # Rebuild image and restart container
+just                     # Show all commands
+just init                # Set up the Next.js app from a clean checkout, then verify it
+just web-install         # Install Next.js app dependencies
+just web-migrate-generate # Generate a Drizzle migration from schema changes
+just web-migrate         # Apply pending migrations
+just web-dev             # Run the Next.js dev server, migrating first
+just web-test            # Run unit tests
+just web-typecheck       # Type-check the Next.js app
+just web-build           # Build the Next.js app for production
+just web-check           # Type-check and run unit tests
+just test-e2e            # Run the end-to-end tests (Playwright)
+just docker-init         # Tear down existing container, rebuild image, and start fresh
+just up                  # Start the container
+just down                # Stop the container
+just logs                # Follow container logs
+just rebuild             # Rebuild image and restart container
 ```
 
 ## Project Structure
