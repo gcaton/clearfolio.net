@@ -15,6 +15,10 @@ import { resolveAuthState, SESSION_COOKIE } from './session'
  * module is the one that pays that cost.
  */
 export async function requireSession(): Promise<void> {
+  // Order is load-bearing: `next build` runs before any database exists, so
+  // awaiting cookies() first is what forces this route into dynamic
+  // rendering and skips prerendering. Call getDb() first and the build
+  // fails trying to open a database that isn't there yet.
   const cookieStore = await cookies()
   const db = getDb()
   const state = resolveAuthState(db, cookieStore.get(SESSION_COOKIE)?.value ?? null)
