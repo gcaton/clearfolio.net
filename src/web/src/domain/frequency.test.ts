@@ -36,6 +36,13 @@ describe('normaliseContribution', () => {
   it('matches frequency case-insensitively', () => {
     expect(normaliseContribution(cents(10_000), 'Monthly')).toBe(120_000)
   })
+
+  it.each(['toString', 'constructor', 'valueOf'])(
+    'returns zero for the inherited property name %s, not a NaN from calling it as a multiplier',
+    (frequency) => {
+      expect(normaliseContribution(cents(10_000), frequency)).toBe(0)
+    },
+  )
 })
 
 describe('annualise', () => {
@@ -45,6 +52,10 @@ describe('annualise', () => {
 
   it('returns zero for an unknown frequency', () => {
     expect(annualise(cents(50_000), 'never')).toBe(0)
+  })
+
+  it('returns zero for the inherited property name toString, not a NaN', () => {
+    expect(annualise(cents(50_000), 'toString')).toBe(0)
   })
 
   it('annualises negative amounts, unlike normaliseContribution', () => {

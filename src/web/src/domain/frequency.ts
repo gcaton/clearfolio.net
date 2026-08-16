@@ -13,7 +13,7 @@ export const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
 function multiplierFor(frequency: string | null | undefined): number | null {
   if (!frequency) return null
   const key = frequency.toLowerCase() as Frequency
-  return key in FREQUENCY_MULTIPLIERS ? FREQUENCY_MULTIPLIERS[key] : null
+  return Object.hasOwn(FREQUENCY_MULTIPLIERS, key) ? FREQUENCY_MULTIPLIERS[key] : null
 }
 
 /** Annual equivalent of a recurring amount. Unknown frequency yields zero. */
