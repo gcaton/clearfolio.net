@@ -19,7 +19,7 @@
 - **Timestamps are integer unix seconds.** Calendar dates (`contribution_end_date`, `repayment_end_date`) stay ISO `YYYY-MM-DD` text.
 - **Soft delete is preserved** (`is_active`); entities are never hard-deleted outside import/replace.
 - **`src/domain/` imports nothing from `src/db/` or `src/server/`.** Every value it needs is passed in.
-- **No database access in `middleware.ts`** — cookie presence check and redirect only.
+- **No auth `middleware.ts` at all.** Auth is resolved in the authenticated layout via `resolveAuthState`. Cookie-presence middleware is not a weaker version of this — it is wrong, because the passphrase-disabled default has no cookie.
 - **IDs are UUID strings.**
 - **`src/api` and `src/app` are not modified and not deleted** in this slice. They remain as porting reference. They simply stop being built.
 - **Branch:** all work lands on `nextjs-rewrite`. Nothing merges to `main` in this slice.
@@ -46,8 +46,11 @@
 - [ ] **Step 1: Create the project directory and package.json**
 
 ```bash
-mkdir -p src/web/app src/web/src/domain
+mkdir -p src/web/app src/web/src/domain src/web/public
+touch src/web/public/.gitkeep
 ```
+
+`public/` must exist and be committed — the Dockerfile in Task 16 copies it, and `COPY` fails on a missing source.
 
 `src/web/package.json`:
 
@@ -209,6 +212,7 @@ src/web/playwright-report/
 - [ ] **Step 8: Commit**
 
 ```bash
+git add -f src/web/public/.gitkeep
 git add src/web .gitignore
 git commit -m "feat: scaffold Next.js app with Vitest harness"
 ```
@@ -1873,31 +1877,59 @@ Run: `cd src/web && npm install -D tsx`
 
 ```ts
 import { describe, it, expect } from 'vitest'
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { households, householdMembers, ownership, snapshots } from './schema'
+import { readFileSync, readdirSync } from 'node:fs'
+import path from 'node:path'
 
-function memoryDb() {
-  const sqlite = new Database(':memory:')
-  sqlite.pragma('foreign_keys = ON')
-  return { sqlite, db: drizzle(sqlite) }
+/**
+ * Asserts against the generated migration SQL, which is what actually reaches
+ * a user's database. Behavioural constraint tests live in seed.test.ts (Task 8),
+ * once there is a migrated database to exercise.
+ */
+const MIGRATIONS_DIR = path.join(process.cwd(), 'src/db/migrations')
+
+function migrationSql(): string {
+  const files = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql'))
+  return files.map((f) => readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8')).join('\n')
 }
 
-describe('schema', () => {
-  it('exposes the expected table names', () => {
-    // Drizzle exposes the SQL name via a symbol-keyed accessor; the simplest
-    // stable check is that each table object is defined and distinct.
-    const tables = [households, householdMembers, ownership, snapshots]
-    expect(new Set(tables).size).toBe(tables.length)
+describe('generated migration', () => {
+  it('creates all 15 tables', () => {
+    const matches = migrationSql().match(/CREATE TABLE/g) ?? []
+    expect(matches).toHaveLength(15)
   })
 
-  it('creates every table from the generated migration', () => {
-    const { sqlite } = memoryDb()
-    // Applied by the migration runner in Task 8; here we only assert the
-    // schema module loads and better-sqlite3 is usable in this environment.
-    const row = sqlite.prepare('SELECT 1 AS ok').get() as { ok: number }
-    expect(row.ok).toBe(1)
-    sqlite.close()
+  it.each([
+    'households', 'household_members', 'sessions', 'app_settings',
+    'asset_types', 'liability_types', 'assets', 'liabilities',
+    'ownership', 'snapshots', 'expense_categories', 'income_streams',
+    'expenses', 'scenarios', 'scenario_assumptions',
+  ])('creates %s', (table) => {
+    expect(migrationSql()).toContain(`\`${table}\``)
+  })
+
+  it('enforces one snapshot per entity per period', () => {
+    expect(migrationSql()).toMatch(/CREATE UNIQUE INDEX.*uq_snapshots_entity_period/)
+  })
+
+  it('enforces one ownership row per entity per member', () => {
+    expect(migrationSql()).toMatch(/CREATE UNIQUE INDEX.*uq_ownership_entity_member/)
+  })
+
+  it('stores money as integer cents, never as REAL', () => {
+    const sql = migrationSql()
+    const centsColumns = sql.match(/`\w*_cents`\s+\w+/g) ?? []
+    expect(centsColumns.length).toBeGreaterThan(0)
+    for (const column of centsColumns) {
+      expect(column).toMatch(/integer/i)
+    }
+  })
+
+  it('stores price_per_unit as REAL, for sub-cent precision', () => {
+    expect(migrationSql()).toMatch(/`price_per_unit`\s+real/i)
+  })
+
+  it('has no currency column on assets, liabilities or snapshots', () => {
+    expect(migrationSql()).not.toMatch(/`currency`/)
   })
 })
 ```
@@ -1905,7 +1937,7 @@ describe('schema', () => {
 - [ ] **Step 3: Run test to verify it fails**
 
 Run: `cd src/web && npx vitest run src/db/schema.test.ts`
-Expected: FAIL — `Failed to resolve import "./schema"`
+Expected: FAIL — `ENOENT: no such file or directory, scandir '.../src/db/migrations'`. The migrations do not exist yet; Steps 4–5 create them.
 
 - [ ] **Step 4: Write the schema**
 
@@ -2114,23 +2146,14 @@ export default {
 Run: `cd src/web && npm run db:generate`
 Expected: a `src/db/migrations/0000_*.sql` file plus a `meta/` directory.
 
-- [ ] **Step 6: Verify the generated SQL contains the critical constraints**
-
-Run:
-
-```bash
-cd src/web && grep -c "CREATE TABLE" src/db/migrations/0000_*.sql
-grep "uq_snapshots_entity_period\|uq_ownership_entity_member" src/db/migrations/0000_*.sql
-```
-
-Expected: 15 tables; both unique indexes present.
-
-- [ ] **Step 7: Run the test to verify it passes**
+- [ ] **Step 6: Run the tests to verify they pass**
 
 Run: `cd src/web && npx vitest run src/db/schema.test.ts`
-Expected: PASS
+Expected: PASS, 21 tests — 15 tables, both unique indexes, cents-are-integer, `price_per_unit` REAL, no `currency` column.
 
-- [ ] **Step 8: Commit**
+If the cents assertion fails, a money column was declared `real()` instead of `integer()`. If the currency assertion fails, a `currency` column survived the port. Both are Global Constraint violations — fix the schema, regenerate, do not relax the test.
+
+- [ ] **Step 7: Commit**
 
 ```bash
 git add src/web/src/db src/web/drizzle.config.ts src/web/package.json src/web/package-lock.json
@@ -2599,12 +2622,12 @@ export function setPassphrase(
     }
   }
 
+  // Derive once — scrypt is deliberately expensive.
+  const hashed = hashPassphrase(newPassphrase)
+
   db.insert(appSettings)
-    .values({ key: PASSPHRASE_KEY, value: hashPassphrase(newPassphrase) })
-    .onConflictDoUpdate({
-      target: appSettings.key,
-      set: { value: hashPassphrase(newPassphrase) },
-    })
+    .values({ key: PASSPHRASE_KEY, value: hashed })
+    .onConflictDoUpdate({ target: appSettings.key, set: { value: hashed } })
     .run()
 }
 
@@ -2686,11 +2709,12 @@ git commit -m "feat: add scrypt passphrase auth with session table"
 
 ---
 
-### Task 10: Session helpers, cookie handling and middleware
+### Task 10: Session helpers and cookie handling
+
+> **No `middleware.ts`.** Middleware runs on the edge runtime, where `better-sqlite3` cannot load, so it could only check whether the session cookie is *present*. That check is wrong for this app: when no passphrase is set the user is authorised by design and no cookie exists, so cookie-presence middleware would redirect a legitimate user to a login page with no passphrase to accept — an inescapable loop on a default install. `resolveAuthState` in the authenticated layout is the single enforcement point and handles all three states correctly.
 
 **Files:**
 - Create: `src/web/src/server/session.ts`
-- Create: `src/web/middleware.ts`
 - Test: `src/web/src/server/session.test.ts`
 
 **Interfaces:**
@@ -2864,46 +2888,21 @@ export function sessionCookieOptions(isHttps: boolean): SessionCookieOptions {
 }
 ```
 
-- [ ] **Step 4: Write the middleware**
-
-`src/web/middleware.ts` — no database access, per the spec:
-
-```ts
-import { NextResponse, type NextRequest } from 'next/server'
-import { SESSION_COOKIE } from '@/server/session'
-
-/**
- * Cookie-presence check only. Real validation happens in the authenticated
- * layout via resolveAuthState — middleware runs on the edge runtime by
- * default, where better-sqlite3 cannot load, and it runs on every matched
- * request, so a database read here would buy nothing.
- */
-export function middleware(request: NextRequest) {
-  const hasCookie = request.cookies.has(SESSION_COOKIE)
-  if (!hasCookie) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('from', request.nextUrl.pathname)
-    return NextResponse.redirect(url)
-  }
-  return NextResponse.next()
-}
-
-export const config = {
-  matcher: ['/dashboard/:path*', '/assets/:path*', '/settings/:path*'],
-}
-```
-
-- [ ] **Step 5: Run tests to verify they pass**
+- [ ] **Step 4: Run tests to verify they pass**
 
 Run: `cd src/web && npx vitest run src/server/session.test.ts`
 Expected: PASS, 10 tests
 
+- [ ] **Step 5: Confirm no middleware file exists**
+
+Run: `test ! -f src/web/middleware.ts && echo "correct: no auth middleware"`
+Expected: prints the confirmation. If a `middleware.ts` exists, delete it — see the note at the top of this task.
+
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/web/src/server/session.ts src/web/src/server/session.test.ts src/web/middleware.ts
-git commit -m "feat: add auth state resolution, cookie options and middleware"
+git add src/web/src/server/session.ts src/web/src/server/session.test.ts
+git commit -m "feat: add auth state resolution and session cookie options"
 ```
 
 ---
@@ -3175,10 +3174,14 @@ git commit -m "feat: add design tokens, theme toggle and app shell"
 - Test: `src/web/src/server/services/setup.test.ts`
 
 **Interfaces:**
-- Consumes: schema tables; `soleOwnership`, `assertSharesValid` from `@/domain/ownership`; `seedReferenceData`
+- Consumes: schema tables; `seedReferenceData` from `@/db/seed`; `setPassphrase` from `@/server/auth`; `isSetupComplete` from `@/server/session`
 - Produces:
-  - `interface SetupInput { householdName, displayName, secondMemberName?, baseCurrency, locale, preferredPeriodType }`
+  - `interface SetupInput { householdName, displayName, secondMemberName?, baseCurrency, locale, preferredPeriodType, passphrase? }`
   - `completeSetup(db, input, now?): { householdId: string; memberIds: string[] }`
+
+> **Why the passphrase lives here:** spec acceptance criterion 4 requires that a passphrase can be set and that login works. Settings is slice 4, so setup is the only place in slice 1 that can satisfy it — and offering it at first run is the natural product behaviour anyway. `setPassphrase` and its tests already exist from Task 9; this only exposes them.
+>
+> **No ownership rows are created here.** Ownership attaches to assets and liabilities, which arrive in slice 2. `@/domain/ownership` is not imported by this task.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -3188,6 +3191,7 @@ git commit -m "feat: add design tokens, theme toggle and app shell"
 import { describe, it, expect } from 'vitest'
 import { createTestDb } from '@/db/client'
 import { households, householdMembers, scenarios, expenseCategories } from '@/db/schema'
+import { isPassphraseSet } from '@/server/auth'
 import { completeSetup } from './setup'
 
 const NOW = 1_800_000_000
@@ -3274,6 +3278,27 @@ describe('completeSetup', () => {
       .toThrow(/display name/i)
     sqlite.close()
   })
+
+  it('leaves the app open when no passphrase is supplied', () => {
+    const { db, sqlite } = createTestDb()
+    completeSetup(db, INPUT, NOW)
+    expect(isPassphraseSet(db)).toBe(false)
+    sqlite.close()
+  })
+
+  it('sets the passphrase when supplied', () => {
+    const { db, sqlite } = createTestDb()
+    completeSetup(db, { ...INPUT, passphrase: 'a good passphrase' }, NOW)
+    expect(isPassphraseSet(db)).toBe(true)
+    sqlite.close()
+  })
+
+  it('rejects a too-short passphrase without creating a household', () => {
+    const { db, sqlite } = createTestDb()
+    expect(() => completeSetup(db, { ...INPUT, passphrase: 'short' }, NOW)).toThrow(/8/)
+    expect(db.select().from(households).all()).toHaveLength(0)
+    sqlite.close()
+  })
 })
 ```
 
@@ -3293,6 +3318,7 @@ import {
   households, householdMembers, scenarios, expenseCategories,
 } from '@/db/schema'
 import { seedReferenceData } from '@/db/seed'
+import { setPassphrase, MIN_PASSPHRASE_LENGTH } from '../auth'
 import { isSetupComplete } from '../session'
 
 export interface SetupInput {
@@ -3302,6 +3328,8 @@ export interface SetupInput {
   baseCurrency: string
   locale: string
   preferredPeriodType: 'FY' | 'CY'
+  /** Optional. When omitted the app runs unauthenticated, as it does today. */
+  passphrase?: string
 }
 
 const DEFAULT_EXPENSE_CATEGORIES = [
@@ -3322,6 +3350,11 @@ export function completeSetup(
   }
   if (!input.displayName.trim()) {
     throw new Error('Display name is required.')
+  }
+  // Validate before writing anything, so a rejected passphrase leaves no
+  // half-created household behind.
+  if (input.passphrase && input.passphrase.length < MIN_PASSPHRASE_LENGTH) {
+    throw new Error(`Passphrase must be at least ${MIN_PASSPHRASE_LENGTH} characters.`)
   }
 
   const householdId = randomUUID()
@@ -3384,6 +3417,10 @@ export function completeSetup(
     ).run()
 
     seedReferenceData(tx as unknown as BetterSQLite3Database)
+
+    if (input.passphrase) {
+      setPassphrase(tx as unknown as BetterSQLite3Database, input.passphrase)
+    }
   })
 
   return { householdId, memberIds }
@@ -3411,6 +3448,7 @@ const SetupSchema = z.object({
   baseCurrency: z.string().trim().length(3),
   locale: z.string().trim().min(2),
   preferredPeriodType: z.enum(['FY', 'CY']),
+  passphrase: z.string().optional().transform((v) => (v ? v : undefined)),
 })
 
 export async function submitSetup(_prev: unknown, formData: FormData) {
@@ -3489,6 +3527,22 @@ export default function SetupPage() {
           </select>
         </label>
 
+        <label className="block">
+          <span className="mb-1 block text-xs">
+            Passphrase <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+          </span>
+          <input
+            name="passphrase"
+            type="password"
+            minLength={8}
+            className={FIELD}
+            style={FIELD_STYLE}
+          />
+          <span className="mt-1 block text-xs" style={{ color: 'var(--text-muted)' }}>
+            Leave blank to run without a sign-in prompt. Minimum 8 characters.
+          </span>
+        </label>
+
         {state?.error && (
           <p className="text-sm value-negative" role="alert">{state.error}</p>
         )}
@@ -3510,7 +3564,7 @@ export default function SetupPage() {
 - [ ] **Step 5: Run tests to verify they pass**
 
 Run: `cd src/web && npx vitest run src/server/services/setup.test.ts`
-Expected: PASS, 8 tests
+Expected: PASS, 11 tests
 
 - [ ] **Step 6: Commit**
 
@@ -3859,7 +3913,7 @@ export default defineConfig({
   timeout: 30_000,
   use: { baseURL: 'http://localhost:3100' },
   webServer: {
-    command: `rm -f ${DB_PATH} && npm run db:migrate && npm run start -- --port 3100`,
+    command: `rm -f ${DB_PATH} && npm run build && npm run db:migrate && npm run start -- --port 3100`,
     url: 'http://localhost:3100/api/health',
     reuseExistingServer: false,
     timeout: 60_000,
@@ -3875,12 +3929,19 @@ export default defineConfig({
 ```ts
 import { test, expect } from '@playwright/test'
 
+const PASSPHRASE = 'e2e test passphrase'
+
+// These tests share one database and run in declaration order, because setup
+// can only happen once per database.
+test.describe.configure({ mode: 'serial' })
+
 test('first run walks through setup and reaches the dashboard', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/setup/)
 
   await page.fill('input[name="householdName"]', 'E2E Household')
   await page.fill('input[name="displayName"]', 'Tester')
+  await page.fill('input[name="passphrase"]', PASSPHRASE)
   await page.selectOption('select[name="preferredPeriodType"]', 'FY')
   await page.click('button[type="submit"]')
 
@@ -3901,20 +3962,42 @@ test('navigation and theme toggle render in the shell', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('data-theme', /light|dark/)
 })
 
-test('signing out returns to the login page when a passphrase is set', async ({ page }) => {
-  // With no passphrase configured the app is open, so this asserts the
-  // unauthenticated redirect path rather than a full credential round-trip.
+test('signing out ends the session and requires the passphrase again', async ({ page }) => {
   await page.goto('/dashboard')
-  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sign out' }).click()
+
+  await expect(page).toHaveURL(/\/login/)
+
+  // The session is genuinely gone — the dashboard now redirects to login.
+  await page.goto('/dashboard')
+  await expect(page).toHaveURL(/\/login/)
+})
+
+test('an incorrect passphrase is rejected', async ({ page }) => {
+  await page.goto('/login')
+  await page.fill('input[name="passphrase"]', 'definitely wrong')
+  await page.click('button[type="submit"]')
+
+  await expect(page.getByRole('alert')).toContainText('Incorrect passphrase')
+  await expect(page).toHaveURL(/\/login/)
+})
+
+test('the correct passphrase signs back in', async ({ page }) => {
+  await page.goto('/login')
+  await page.fill('input[name="passphrase"]', PASSPHRASE)
+  await page.click('button[type="submit"]')
+
+  await expect(page).toHaveURL(/\/dashboard/)
+  await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible()
 })
 ```
 
-> **Scope note:** a full passphrase round-trip needs the Settings UI to set a passphrase, which lands in slice 4. This suite covers setup, shell rendering and the redirect paths that exist in slice 1. The passphrase login path is covered by the unit tests in Tasks 9 and 10.
+This is the full round-trip required by spec acceptance criteria 4, 5 and 8: passphrase set during setup, session established, sign-out, rejected credential, and successful re-entry.
 
 - [ ] **Step 4: Run the end-to-end suite**
 
 Run: `cd src/web && npm run test:e2e`
-Expected: 3 tests pass.
+Expected: 5 tests pass.
 
 - [ ] **Step 5: Commit**
 
@@ -3955,7 +4038,7 @@ exec node server.js
 Add a build step that compiles `src/db/migrate.ts` for the standalone runtime. In `src/web/package.json` scripts:
 
 ```json
-"build:migrate": "tsx --tsconfig tsconfig.json -e \"\" && npx esbuild src/db/migrate.ts --bundle --platform=node --external:better-sqlite3 --outfile=dist/migrate.js"
+"build:migrate": "esbuild src/db/migrate.ts --bundle --platform=node --external:better-sqlite3 --outfile=dist/migrate.js"
 ```
 
 Run: `cd src/web && npm install -D esbuild`
@@ -4139,27 +4222,34 @@ git commit -m "build: package as single Next.js container, retire nginx"
 | Schema — 15 tables, cents, bp, epoch, soft delete | 7 |
 | Ownership table and share semantics | 5, 7, 12 |
 | Snapshots — units, price REAL, unique index | 7 |
-| Polymorphic entity integrity | 7 (schema comment), 5 (assertion helpers) |
+| Polymorphic entity integrity | 7 (schema comment and generated-SQL assertions), 5 (assertion helpers) |
 | Scenarios and assumptions | 7, 12 (baseline seeded) |
 | Sessions table | 7, 9 |
 | Currency columns dropped | 7 |
 | Seed data | 8 |
-| Auth — scrypt, cookie, reset hatch | 9, 13 |
-| Middleware constraint | 10 |
+| Auth — scrypt, cookie | 9, 12 (passphrase set at setup), 13 |
+| No auth middleware | 10 (verified absent in Step 5) |
 | Rate limiting | **Gap — see below** |
+| `CLEARFOLIO_RESET_PASSPHRASE` | **Gap — see below** |
 | Visual direction | 11 |
 | Testing — ported suites | 3, 4, 6 |
 | Packaging — standalone, no nginx, port 3000 | 16 |
 | Branch sequencing | Global Constraints; enforced by not deleting `src/api` / `src/app` |
 | Acceptance criteria 1–9 | 16, 12, 13, 7, 6, 15, 11 |
 
+**Resolved during review — worth knowing why:**
+
+1. **Acceptance criterion 4 was unreachable.** It requires that a passphrase can be set and login works, but Settings is slice 4, so nothing in slice 1 called `setPassphrase`. Resolved by adding an optional passphrase field to the setup wizard (Task 12) — the natural place for it anyway — which makes the full login round-trip real and testable end-to-end (Task 15).
+2. **The planned `middleware.ts` would have locked users out on a default install.** It redirected on cookie *absence*, but when no passphrase is set the user is authorised and no cookie exists — so setup would have bounced to a login page with no passphrase to accept. Removed entirely; `resolveAuthState` in the authenticated layout was already the correct and complete enforcement point. The spec's Authentication section was rewritten to match.
+3. **Spec criterion 3 claimed setup creates `ownership` rows.** It cannot — ownership attaches to assets and liabilities, which arrive in slice 2. The spec was corrected; the task was already right.
+
 **Known gaps, deliberately deferred:**
 
-1. **Rate limiting** (spec: Authentication → Rate limiting) has no task. It guards `/api/quote` and `/api/historical-returns`, neither of which exists in slice 1, and the login limiter guards a form that cannot be reached until a passphrase can be set in Settings (slice 4). Carry it into the slice that introduces those routes rather than building an unused limiter here.
-2. **`CLEARFOLIO_RESET_PASSPHRASE`** is listed in Global Constraints but has no implementation step. It belongs in the startup path alongside migrations; add it when Settings introduces passphrase management in slice 4. The environment variable is documented as retained, not as working in slice 1.
+1. **Rate limiting** (spec: Authentication → Rate limiting) has no task. It guards `/api/quote` and `/api/historical-returns`, neither of which exists in slice 1. The login limiter is now *reachable* — a passphrase can be set at setup — so this is a genuine deferral rather than a vacuous one: a self-hosted single-user app behind a passphrase is a weak brute-force target, and the limiter lands with the external proxies it primarily exists for.
+2. **`CLEARFOLIO_RESET_PASSPHRASE`** is listed in Global Constraints but has no implementation step. It belongs in the startup path alongside migrations, in the slice that introduces passphrase management in Settings. Until then the variable is documented as retained, not as working. **If you set a passphrase at setup and forget it, slice 1 has no recovery path short of deleting the volume** — worth knowing before the first real use.
 
-Both are recorded here rather than silently dropped. If either should land in slice 1 instead, say so before execution starts.
+If either should land in slice 1 instead, say so before execution starts.
 
 **Placeholder scan:** no TBDs, no "add error handling", no "similar to Task N". Every code step carries its full content.
 
-**Type consistency:** `Cents` flows from Task 2 through 4, 5 and 6 unchanged. `OwnershipShare` and `View` are defined once in Task 5. `ProjectionEntity` field names match between Task 6's tests and implementation. `SESSION_COOKIE` is defined in Task 10 and imported by Tasks 10, 13. `createTestDb` is defined in Task 8 and used by Tasks 8, 9, 10, 12. `resolveAuthState` returns the same three-state union everywhere it is consumed.
+**Type consistency:** `Cents` flows from Task 2 through 4, 5 and 6 unchanged. `OwnershipShare` and `View` are defined once in Task 5 and consumed in slice 2, not slice 1 — Task 12 does not import them. `ProjectionEntity` field names match between Task 6's tests and implementation. `SESSION_COOKIE` is defined in Task 10 and imported by Task 13 only. `createTestDb` is defined in Task 8 and used by Tasks 8, 9, 10, 12. `resolveAuthState` returns the same three-state union everywhere it is consumed. `SetupInput.passphrase` is optional in Task 12's interface, Zod schema, form field and tests alike. `MIN_PASSPHRASE_LENGTH` is exported from Task 9 and imported by Task 12.

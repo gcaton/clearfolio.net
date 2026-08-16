@@ -43,7 +43,7 @@ Single container on GHCR, SQLite file on a mounted `/data` volume. Not Vercel, n
 
 The current API has 63 endpoints. They exist because Angular needed HTTP to reach the server. In Next, reads happen in server components and mutations in server actions, so most of them stop existing.
 
-Route handlers are retained **only** where a real HTTP surface is required:
+Six route handlers are retained — **only** where a real HTTP surface is required:
 
 | Route | Why it must be HTTP |
 |---|---|
@@ -52,6 +52,7 @@ Route handlers are retained **only** where a real HTTP surface is required:
 | `GET /api/historical-returns/{symbol}` | External proxy; wants independent rate limiting |
 | `GET /api/export` | File download |
 | `POST /api/import` | File upload |
+| `POST /api/logout` | Must clear a cookie and redirect from a plain `<form>` in the shell |
 
 Everything else becomes a server action or a server-component query.
 
@@ -258,11 +259,13 @@ Flow:
 
 **Passphrase is optional**, as today: if no hash is set, the app is unauthenticated. `CLEARFOLIO_RESET_PASSPHRASE=true` remains as the escape hatch, clearing the hash and all sessions at startup.
 
-### Middleware constraint
+### No auth middleware
 
-`middleware.ts` performs a cookie-presence check and redirect only. Real session validation happens in `requireSession()`, called from the authenticated layout and from each route handler.
+**There is no `middleware.ts` doing authentication.** Auth is resolved in the authenticated layout and in route handlers, both of which call `resolveAuthState(db, token)`.
 
-This is a **decision**, not an absolute limit. Middleware defaults to the edge runtime, where `better-sqlite3` cannot load; Next 16 does allow opting middleware into the Node runtime. We keep the database out of middleware anyway, because middleware runs on every matched request including static assets, and a synchronous SQLite read there buys nothing that the layout check does not already provide.
+Middleware defaults to the edge runtime, where `better-sqlite3` cannot load, so middleware could only check whether the session *cookie is present* — not whether it is valid. That check is actively wrong here: **when no passphrase is set the app is unauthenticated by design and no cookie exists**, so cookie-presence middleware would redirect a legitimately-authorised user to a login page that has no passphrase to accept. Next 16 does allow opting middleware into the Node runtime, but that only reintroduces a database read on every matched request to duplicate a decision the layout already makes correctly.
+
+The layout is the single enforcement point. It handles all three auth states, including the passphrase-disabled case.
 
 ### Rate limiting
 
@@ -329,8 +332,8 @@ Slice 1 is done when:
 
 1. `docker build` produces an image that runs on amd64 and arm64.
 2. Starting the container with an empty `/data` volume runs all migrations and serves the setup wizard.
-3. The setup wizard captures household name, display name, currency, locale and period type, creates the household, its members with `ownership` rows, and the seeded Baseline scenario.
-4. A passphrase can be set, and login/logout work with the session cookie surviving a container restart.
+3. The setup wizard captures household name, display name, currency, locale and period type, and creates the household, its members, the default expense categories and the seeded Baseline scenario. (Ownership rows are not created here — ownership attaches to assets and liabilities, which arrive in slice 2.)
+4. A passphrase can be set during setup, and login/logout work with the session cookie surviving a container restart.
 5. Visiting an authenticated route without a valid session redirects to login.
 6. The full 15-table schema exists with all constraints, indexes and seed data.
 7. `just test` passes, including the ported `period` and `projection` suites.
