@@ -17,6 +17,11 @@ default:
 web-install:
     cd {{web_dir}} && npm install
 
+# Generate a migration from schema changes
+[group('web')]
+web-migrate-generate:
+    cd {{web_dir}} && npm run db:generate
+
 # Apply pending migrations and seed reference data
 [group('web')]
 web-migrate:

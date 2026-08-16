@@ -1,0 +1,10 @@
+.git
+**/node_modules
+src/web/.next
+src/web/dist
+src/web/test-results
+src/web/playwright-report
+src/web/*.tsbuildinfo
+src/web/clearfolio.db
+src/web/clearfolio.db-shm
+src/web/clearfolio.db-wal
