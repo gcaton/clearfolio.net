@@ -1,47 +1,41 @@
-# Stage 1: Build Angular
-FROM node:24-alpine AS frontend-build
+# Stage 1: Build the Next.js application
+FROM node:24-alpine AS build
 WORKDIR /app
 ARG APP_VERSION=dev
 
-COPY src/app/package.json src/app/package-lock.json ./
+RUN apk add --no-cache python3 make g++
+
+COPY src/web/package.json src/web/package-lock.json ./
 RUN npm ci
 
-COPY src/app/ .
-RUN sed -i "s/version: 'dev'/version: '${APP_VERSION}'/" src/environments/environment.ts
-RUN npx ng build --configuration production
+COPY src/web/ .
+ENV NEXT_PUBLIC_APP_VERSION=${APP_VERSION}
+RUN npm run build && npm run build:migrate
 
-# Stage 2: Build .NET API
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS api-build
-WORKDIR /src
-
-COPY src/api/Clearfolio.Api/Clearfolio.Api.csproj Clearfolio.Api/
-RUN dotnet restore Clearfolio.Api/Clearfolio.Api.csproj
-
-COPY src/api/ .
-RUN dotnet publish Clearfolio.Api/Clearfolio.Api.csproj -c Release -o /app/publish
-
-# Stage 3: Runtime
-FROM mcr.microsoft.com/dotnet/aspnet:10.0-alpine
-
-RUN apk add --no-cache nginx
-
-COPY --from=frontend-build /app/dist/app/browser /usr/share/nginx/html
-COPY src/app/nginx.conf /etc/nginx/http.d/default.conf
-COPY src/app/security-headers.conf /etc/nginx/http.d/security-headers.conf
-
+# Stage 2: Runtime
+FROM node:24-alpine
 WORKDIR /app
-COPY --from=api-build /app/publish .
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN apk add --no-cache wget
 
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+COPY --from=build /app/src/db/migrations ./src/db/migrations
+COPY --from=build /app/dist/migrate.js ./scripts/migrate.js
+COPY --from=build /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+COPY src/web/scripts/start.sh ./start.sh
+RUN chmod +x ./start.sh
+
+ENV NODE_ENV=production
 ENV DB_PATH=/data/clearfolio.db
-ENV ASPNETCORE_URLS=http://+:8080
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-EXPOSE 80
+EXPOSE 3000
 VOLUME /data
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD wget -qO- http://localhost/api/health || exit 1
+    CMD wget -qO- http://localhost:3000/api/health || exit 1
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["./start.sh"]

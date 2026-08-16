@@ -5,10 +5,12 @@
 
 Self-hosted household net worth tracker. Record periodic snapshots of assets and liabilities, track growth over time, and compare positions across household members.
 
+> **Breaking change in v2.0:** Clearfolio has been rewritten on Next.js. The database schema is not compatible with v1.x — existing `/data` volumes cannot be read. Start with a fresh volume.
+
 ## Quick Start
 
 ```bash
-docker run -d -p 8080:80 -v clearfolio-data:/data ghcr.io/gcaton/clearfolio
+docker run -d -p 8080:3000 -v clearfolio-data:/data ghcr.io/gcaton/clearfolio
 ```
 
 Then open http://localhost:8080 and complete the first-run setup wizard (household name, display name, currency, period type).
@@ -17,8 +19,7 @@ Then open http://localhost:8080 and complete the first-run setup wizard (househo
 
 | Layer | Technology |
 |---|---|
-| API | .NET 10, minimal APIs, EF Core 10, SQLite |
-| Frontend | Angular 21, PrimeNG, Apache ECharts |
+| App | Next.js 16, React 19, Drizzle ORM, SQLite |
 | Hosting | Docker (amd64 + arm64) |
 | CI/CD | GitHub Actions → GHCR |
 
@@ -33,32 +34,34 @@ Then open http://localhost:8080 and complete the first-run setup wizard (househo
 
 ## Local Development
 
-**Prerequisites:** .NET 10 SDK, Node.js 24+, Docker
+**Prerequisites:** Node.js 24+, Docker
 
 ```bash
-# Clone and start
+# Clone and set up the Next.js app
 git clone https://github.com/<you>/clearfolio.net.git
 cd clearfolio.net
-
-# Build image and start container
 just init
 
-# Or run API + Angular dev servers in tmux (requires tmux)
-just dev
-```
+# Run the dev server (http://localhost:3000)
+just web-dev
 
-The app runs on `localhost:4200`.
+# Or build and run the container instead
+just docker-init
+```
 
 ### Available Commands
 
 ```
 just              # Show all commands
-just init         # Tear down container, rebuild image from scratch
+just init         # Set up the Next.js app from a clean checkout, then verify it
+just web-dev      # Run the Next.js dev server, migrating first
+just web-check    # Type-check and run unit tests
+just test-e2e     # Run the end-to-end tests (Playwright)
+just docker-init  # Tear down existing container, rebuild image, and start fresh
 just up           # Start the container
 just down         # Stop the container
 just logs         # Follow container logs
 just rebuild      # Rebuild image and restart container
-just dev          # API + Angular dev servers in tmux (requires tmux)
 ```
 
 ## Project Structure
@@ -66,24 +69,18 @@ just dev          # API + Angular dev servers in tmux (requires tmux)
 ```
 clearfolio.net/
 ├── .github/workflows/
-│   └── build.yml                   # CI: build multi-arch images → GHCR
+│   └── build.yml                   # CI: unit tests + build multi-arch images → GHCR
 ├── src/
-│   ├── api/                        # .NET 10 solution
-│   │   ├── Clearfolio.sln
-│   │   └── Clearfolio.Api/
-│   │       ├── Data/               # DbContext, migrations
-│   │       ├── Models/             # EF Core entities
-│   │       ├── DTOs/               # Request/response shapes
-│   │       ├── Endpoints/          # Minimal API route handlers (incl. AuthEndpoints)
-│   │       ├── Helpers/            # PeriodHelper
-│   │       └── Middleware/         # LocalAuthMiddleware
-│   └── app/                        # Angular 21
-│       └── src/app/
-│           ├── core/               # API service, auth, view state
-│           ├── shared/             # Currency display, period selector
-│           └── features/           # Dashboard, assets, liabilities,
-│                                   # snapshots, settings
-├── Dockerfile                      # Single multi-stage build (API + frontend + nginx)
+│   ├── web/                        # Next.js 16 app (the shipping app)
+│   │   ├── app/                    # Routes (App Router)
+│   │   ├── src/
+│   │   │   ├── db/                 # Drizzle schema, client, migrations, seed
+│   │   │   ├── domain/             # Domain logic
+│   │   │   └── server/             # Auth, sessions
+│   │   └── scripts/start.sh        # Container entrypoint: migrate, then serve
+│   ├── api/                        # .NET 10 API — porting reference only, not built
+│   └── app/                        # Angular 21 frontend — porting reference only, not built
+├── Dockerfile                      # Single-stage Next.js build (standalone output)
 ├── Justfile                        # Task runner
 └── claude.md                       # AI assistant context
 ```
@@ -122,7 +119,7 @@ curl -fsSL https://get.docker.com | sh
 docker run -d \
   --name clearfolio \
   --restart unless-stopped \
-  -p 8080:80 \
+  -p 8080:3000 \
   -v clearfolio-data:/data \
   ghcr.io/gcaton/clearfolio
 ```
@@ -149,7 +146,7 @@ clearfolio.example.com {
 labels:
   - "traefik.http.routers.clearfolio.rule=Host(`clearfolio.example.com`)"
   - "traefik.http.routers.clearfolio.tls.certresolver=letsencrypt"
-  - "traefik.http.services.clearfolio.loadbalancer.server.port=80"
+  - "traefik.http.services.clearfolio.loadbalancer.server.port=3000"
 ```
 
 ### Optional: passphrase protection
@@ -227,7 +224,7 @@ docker stop clearfolio && docker rm clearfolio
 docker run -d \
   --name clearfolio \
   --restart unless-stopped \
-  -p 8080:80 \
+  -p 8080:3000 \
   -v clearfolio-data:/data \
   ghcr.io/gcaton/clearfolio
 
@@ -245,7 +242,7 @@ docker cp ./clearfolio-backup-2026-03-21.db clearfolio:/data/clearfolio.db
 docker run -d \
   --name clearfolio \
   --restart unless-stopped \
-  -p 8080:80 \
+  -p 8080:3000 \
   -v clearfolio-data:/data \
   ghcr.io/gcaton/clearfolio:<previous-version>
 ```

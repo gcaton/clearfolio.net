@@ -10,10 +10,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx src/db/migrate.ts"
+    "db:migrate": "tsx src/db/migrate.ts",
+    "build:migrate": "esbuild src/db/migrate.ts --bundle --platform=node --external:better-sqlite3 --outfile=dist/migrate.js"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.3",
@@ -31,6 +31,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.28.2",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
