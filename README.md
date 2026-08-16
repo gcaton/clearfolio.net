@@ -157,7 +157,7 @@ labels:
 
 ### Optional: passphrase protection
 
-Add a passphrase from **Settings → Security**. Once set, all sessions will require it to log in.
+Set a passphrase during the first-run setup wizard. Once set, all sessions will require it to log in. (A way to add or change a passphrase after setup, from a Settings screen, is planned for a later release — for now, the passphrase can only be set during initial setup.)
 
 There is no email or account recovery — if you forget your passphrase, see [Forgot your passphrase?](#forgot-your-passphrase) below.
 
@@ -186,7 +186,7 @@ docker run --rm \
 docker start clearfolio
 ```
 
-You can then set a new passphrase from **Settings → Security**.
+Once cleared, the app runs unauthenticated again (as it did before you first set a passphrase). A way to set a new passphrase after this point, from a Settings screen, is planned for a later release.
 
 ### Backups
 
