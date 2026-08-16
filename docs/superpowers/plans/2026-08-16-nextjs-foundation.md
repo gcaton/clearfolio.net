@@ -965,18 +965,50 @@ describe('applyViewFilter', () => {
       .toBe(100_000)
   })
 
-  it('member views sum to the household view', () => {
+  // NOTE: the value here must NOT divide evenly across the shares, or this
+  // test passes trivially without ever entering the rounding path.
+  it('member views sum to the household view when rounding bites', () => {
+    const odd = cents(100_001)
     const shares = [
       { memberId: ALICE, shareBp: 3_333 },
       { memberId: BOB, shareBp: 3_333 },
       { memberId: CAROL, shareBp: 3_334 },
     ]
-    const household = applyViewFilter(value, shares, { kind: 'household' })
+    const household = applyViewFilter(odd, shares, { kind: 'household' })
     const sum =
-      applyViewFilter(value, shares, { kind: 'member', memberId: ALICE }) +
-      applyViewFilter(value, shares, { kind: 'member', memberId: BOB }) +
-      applyViewFilter(value, shares, { kind: 'member', memberId: CAROL })
+      applyViewFilter(odd, shares, { kind: 'member', memberId: ALICE }) +
+      applyViewFilter(odd, shares, { kind: 'member', memberId: BOB }) +
+      applyViewFilter(odd, shares, { kind: 'member', memberId: CAROL })
     expect(sum).toBe(household)
+    expect(sum).toBe(100_001)
+  })
+
+  it('conserves the total across a wider split', () => {
+    const odd = cents(100_007)
+    const shares = Array.from({ length: 5 }, (_, i) => ({
+      memberId: `m${i}`,
+      shareBp: 2_000,
+    }))
+    const sum = shares.reduce(
+      (total, s) =>
+        total + applyViewFilter(odd, shares, { kind: 'member', memberId: s.memberId }),
+      0,
+    )
+    expect(sum).toBe(100_007)
+  })
+
+  it('conserves the total for negative values', () => {
+    const owed = cents(-100_001)
+    const shares = [
+      { memberId: ALICE, shareBp: 3_333 },
+      { memberId: BOB, shareBp: 3_333 },
+      { memberId: CAROL, shareBp: 3_334 },
+    ]
+    const sum =
+      applyViewFilter(owed, shares, { kind: 'member', memberId: ALICE }) +
+      applyViewFilter(owed, shares, { kind: 'member', memberId: BOB }) +
+      applyViewFilter(owed, shares, { kind: 'member', memberId: CAROL })
+    expect(sum).toBe(-100_001)
   })
 })
 
@@ -1086,9 +1118,45 @@ export function shareBpForMember(shares: OwnershipShare[], memberId: string): nu
 }
 
 /**
+ * Allocates a value across all shares using largest-remainder distribution,
+ * so the parts always sum to exactly the whole. Rounding each member's slice
+ * independently does NOT conserve the total — it silently creates or destroys
+ * up to (shares.length - 1) cents. Allocation is computed on the absolute
+ * value and the sign reapplied, because Math.floor is asymmetric across zero
+ * and net worth can be negative.
+ */
+function allocate(value: Cents, shares: OwnershipShare[]): Map<string, Cents> {
+  const sign = value < 0 ? -1 : 1
+  const abs = Math.abs(value)
+
+  const parts = shares.map((share) => {
+    const product = abs * share.shareBp
+    return {
+      memberId: share.memberId,
+      floor: Math.floor(product / TOTAL_BP),
+      remainder: product % TOTAL_BP,
+    }
+  })
+
+  let leftover = abs - parts.reduce((sum, p) => sum + p.floor, 0)
+
+  // Award the leftover cents to the largest remainders first; ties break by
+  // original order, which keeps the result deterministic.
+  const byRemainder = [...parts].sort((a, b) => b.remainder - a.remainder)
+  for (let i = 0; i < byRemainder.length && leftover > 0; i++) {
+    byRemainder[i].floor += 1
+    leftover -= 1
+  }
+
+  return new Map(parts.map((p) => [p.memberId, (p.floor * sign) as Cents]))
+}
+
+/**
  * The whole view model. Household is the full value; a member view is that
  * member's share. There is no special-casing of member identity — the p1/p2
  * distinction from the previous implementation does not exist here.
+ *
+ * Member views are guaranteed to sum to the household view.
  */
 export function applyViewFilter(
   value: Cents,
@@ -1096,9 +1164,7 @@ export function applyViewFilter(
   view: View,
 ): Cents {
   if (view.kind === 'household') return value
-  const shareBp = shareBpForMember(shares, view.memberId)
-  if (shareBp === 0) return 0 as Cents
-  return scaleCents(value, shareBp / TOTAL_BP)
+  return allocate(value, shares).get(view.memberId) ?? (0 as Cents)
 }
 
 /**
