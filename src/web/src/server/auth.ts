@@ -1,5 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto'
-import { eq, lt } from 'drizzle-orm'
+import { eq, lte } from 'drizzle-orm'
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { appSettings, sessions } from '@/db/schema'
 
@@ -111,7 +111,12 @@ export function removePassphrase(
   })
 }
 
-function sessionDays(): number {
+/**
+ * Shared by `createSession` here and `sessionCookieOptions` in `./session` —
+ * both need the same `CLEARFOLIO_SESSION_DAYS` parsing with the same
+ * fallback, and a duplicated env-var guard is asking for the two to drift.
+ */
+export function sessionDays(): number {
   const parsed = Number(process.env.CLEARFOLIO_SESSION_DAYS)
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 30
 }
@@ -156,6 +161,8 @@ export function purgeExpiredSessions(
   db: BetterSQLite3Database,
   now = nowSeconds(),
 ): number {
-  const result = db.delete(sessions).where(lt(sessions.expiresAt, now)).run()
+  // `<=`, matching validateSession's expiry reading below — a row expiring
+  // exactly at `now` is already invalid, so purge should sweep it too.
+  const result = db.delete(sessions).where(lte(sessions.expiresAt, now)).run()
   return result.changes
 }

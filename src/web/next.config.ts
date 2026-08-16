@@ -15,9 +15,11 @@ import { PHASE_DEVELOPMENT_SERVER } from 'next/constants'
 //   "eval() is not supported in this environment". Production React never
 //   calls eval(), so 'unsafe-eval' must NOT ship in the production policy.
 // - `next dev` also opens a WebSocket to the dev server for Hot Module
-//   Replacement. Without `ws:` in connect-src, the browser blocks that
-//   connection. Production serves no such websocket, so `ws:` must not
-//   ship in the production policy either.
+//   Replacement. Without a `ws:` allowance in connect-src, the browser blocks
+//   that connection — scoped to localhost/127.0.0.1 rather than any origin,
+//   since the dev server only ever listens locally. Production serves no
+//   such websocket, so this allowance must not ship in the production
+//   policy either.
 //
 // This is keyed off Next's build *phase* (which command is actually
 // running), not `process.env.NODE_ENV`. Next's CLI only defaults
@@ -46,7 +48,7 @@ export default function nextConfig(phase: string): NextConfig {
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data:",
         "font-src 'self'",
-        `connect-src 'self'${isDev ? ' ws:' : ''}`,
+        `connect-src 'self'${isDev ? ' ws://localhost:* ws://127.0.0.1:*' : ''}`,
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

@@ -1,6 +1,6 @@
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import { households } from '@/db/schema'
-import { isPassphraseSet, validateSession } from './auth'
+import { isPassphraseSet, sessionDays, validateSession } from './auth'
 
 export const SESSION_COOKIE = 'clearfolio_session'
 
@@ -43,13 +43,11 @@ export interface SessionCookieOptions {
 }
 
 export function sessionCookieOptions(isHttps: boolean): SessionCookieOptions {
-  const days = Number(process.env.CLEARFOLIO_SESSION_DAYS)
-  const sessionDays = Number.isInteger(days) && days > 0 ? days : 30
   return {
     httpOnly: true,
     secure: isHttps,
     sameSite: 'strict',
     path: '/',
-    maxAge: sessionDays * 24 * 60 * 60,
+    maxAge: sessionDays() * 24 * 60 * 60,
   }
 }
