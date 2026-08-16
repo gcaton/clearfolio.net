@@ -279,6 +279,10 @@ The current model is sound and is kept: a single household passphrase, an opaque
 
 **Hashing: scrypt from `node:crypto`** instead of BCrypt — no native dependency, no extra package, and the clean break means no existing hashes need verifying.
 
+The stored format **records the cost parameters**: `scrypt$<N>$<r>$<p>$<salt>$<hash>`, and verification derives using the values parsed from the stored string rather than the current constants. Without this, raising the cost later would require a permanent dual-path branch in verification to handle hashes written under the old defaults. Recording them costs one line while zero hashes exist in the world; it cannot be added for free afterwards. The cost stays at Node's defaults (N=16384, r=8, p=1) for now — recording the parameters buys the option to raise it, and exercising that option is a separate decision.
+
+**Changing the passphrase revokes all existing sessions**, as removing it does. The realistic trigger for a rotation is suspected compromise, and a user who rotates reasonably believes access is revoked; without this a stolen cookie survives for the full session lifetime. The C# did not do this — it is a deliberate departure, not a port gap. Both the settings write and the session delete run in one transaction, so a partial failure cannot pair a new passphrase with old sessions.
+
 **Sessions: the new table**, described above.
 
 Flow:

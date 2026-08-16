@@ -2487,6 +2487,29 @@ git commit -m "feat: add database client, migration runner and reference seed da
 
 ### Task 9: Authentication — passphrase hashing and sessions
 
+> **Amended during execution — the spec is authoritative.**
+>
+> 1. **`setPassphrase` must revoke all existing sessions** when a passphrase
+>    already exists (not on the bootstrap path). As written below it revokes
+>    none, while `removePassphrase` revokes all — an asymmetry that lets a
+>    stolen cookie survive a rotation for the full session lifetime. The C#
+>    behaves the same way; it is wrong there too. Wrap the settings write and
+>    the session delete in `db.transaction(...)`, and do the same for
+>    `removePassphrase`'s two deletes.
+> 2. **The stored hash format must record the scrypt cost parameters** —
+>    `scrypt$<N>$<r>$<p>$<salt>$<hash>` — with named constants passed
+>    explicitly to `scryptSync`, and **`verifyPassphrase` deriving with the
+>    values parsed from the stored string, not the current constants.** That
+>    last part is the whole point: it is what lets the cost be raised later
+>    without a permanent dual-path branch. Keep the cost at Node's defaults;
+>    recording the parameters buys the option, exercising it is separate.
+>    Every malformed stored value must still return `false` rather than
+>    throw — including a non-numeric or out-of-range N.
+>
+> Note on testing the timing property: swapping `timingSafeEqual` for
+> `.equals()` or a byte loop passes every test in this task. Only the naive
+> `===` fails one. That line is protected by code review, not by the suite.
+
 **Files:**
 - Create: `src/web/src/server/auth.ts`
 - Test: `src/web/src/server/auth.test.ts`
