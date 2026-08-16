@@ -18,14 +18,16 @@ export default function LoginPage() {
             type="password"
             autoFocus
             required
+            aria-invalid={!!state?.error}
+            aria-describedby="login-error"
             className="w-full rounded-md border px-3 py-2 text-sm"
             style={{ borderColor: 'var(--border)', background: 'var(--surface-raised)' }}
           />
         </label>
 
-        {state?.error && (
-          <p className="text-sm value-negative" role="alert">{state.error}</p>
-        )}
+        <p id="login-error" className="text-sm value-negative" role="alert">
+          {state?.error}
+        </p>
 
         <button
           type="submit"
