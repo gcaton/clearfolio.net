@@ -3705,6 +3705,23 @@ git commit -m "feat: add setup wizard with household, members and baseline scena
 
 ### Task 13: Login, logout and the authenticated dashboard route
 
+> **Amended during execution.** The dashboard layout below inlines
+> `resolveAuthState` and its two redirects. **Call `requireSession()` from
+> `@/server/session-guard` instead** — it does exactly this and the spec names
+> it as the enforcement point ("real session validation happens in a
+> `requireSession()` called from the authenticated layout and from each route
+> handler"). Inlining left `requireSession` with no consumer and no coverage;
+> calling it gives it both, via Task 15's Playwright suite.
+>
+> The layout still needs the household name for `AppShell`, so it keeps its
+> own `getDb()` query for that — `requireSession()` replaces the auth branch,
+> not the whole function body.
+>
+> Note also that `requireSession` now lives in `src/server/session-guard.ts`,
+> not `session.ts`: the `next/headers` and `next/navigation` imports it needs
+> would otherwise drag the pure `resolveAuthState` / `sessionCookieOptions`
+> module into the Next request runtime.
+
 **Files:**
 - Create: `src/web/app/login/page.tsx`
 - Create: `src/web/app/login/actions.ts`
