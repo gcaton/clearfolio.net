@@ -1,4 +1,4 @@
-import { scaleCents, type Cents } from './money'
+import type { Cents } from './money'
 
 /** Shares are basis points. All shares for one entity sum to this. */
 export const TOTAL_BP = 10_000
@@ -62,6 +62,44 @@ export function shareBpForMember(shares: OwnershipShare[], memberId: string): nu
 }
 
 /**
+ * Splits `value` across `shares` using largest-remainder allocation so the
+ * per-member slices always sum to exactly `value` — independent per-member
+ * rounding (e.g. `scaleCents(value, shareBp / TOTAL_BP)` for each member)
+ * does not conserve the total whenever `value` isn't evenly divisible across
+ * the shares. Allocation is done on the absolute value and the sign is
+ * reapplied afterwards, so negative values (e.g. negative net worth) split
+ * the same way positive ones do rather than drifting asymmetrically under
+ * `Math.floor`.
+ */
+function allocate(value: Cents, shares: OwnershipShare[]): Map<string, Cents> {
+  const sign = value < 0 ? -1 : 1
+  const abs = Math.abs(value)
+
+  const parts = shares.map((s) => {
+    const product = abs * s.shareBp
+    const floor = Math.floor(product / TOTAL_BP)
+    return { memberId: s.memberId, floor, remainder: product - floor * TOTAL_BP }
+  })
+
+  let remainder = abs - parts.reduce((sum, p) => sum + p.floor, 0)
+
+  const byRemainderDesc = [...parts].sort((a, b) => b.remainder - a.remainder)
+  const result = new Map<string, number>()
+  for (const p of parts) result.set(p.memberId, p.floor)
+
+  for (let i = 0; remainder > 0 && i < byRemainderDesc.length; i++, remainder--) {
+    const memberId = byRemainderDesc[i].memberId
+    result.set(memberId, (result.get(memberId) ?? 0) + 1)
+  }
+
+  const signed = new Map<string, Cents>()
+  for (const [memberId, amount] of result) {
+    signed.set(memberId, (sign * amount) as Cents)
+  }
+  return signed
+}
+
+/**
  * The whole view model. Household is the full value; a member view is that
  * member's share. There is no special-casing of member identity — the p1/p2
  * distinction from the previous implementation does not exist here.
@@ -72,9 +110,7 @@ export function applyViewFilter(
   view: View,
 ): Cents {
   if (view.kind === 'household') return value
-  const shareBp = shareBpForMember(shares, view.memberId)
-  if (shareBp === 0) return 0 as Cents
-  return scaleCents(value, shareBp / TOTAL_BP)
+  return allocate(value, shares).get(view.memberId) ?? (0 as Cents)
 }
 
 /**

@@ -101,16 +101,52 @@ describe('applyViewFilter', () => {
   })
 
   it('member views sum to the household view', () => {
+    // Not evenly divisible across the shares, so this actually exercises the
+    // rounding path — cents(100_000) would divide evenly and pass trivially.
+    const unevenValue = cents(100_001)
     const shares = [
       { memberId: ALICE, shareBp: 3_333 },
       { memberId: BOB, shareBp: 3_333 },
       { memberId: CAROL, shareBp: 3_334 },
     ]
-    const household = applyViewFilter(value, shares, { kind: 'household' })
+    const household = applyViewFilter(unevenValue, shares, { kind: 'household' })
     const sum =
-      applyViewFilter(value, shares, { kind: 'member', memberId: ALICE }) +
-      applyViewFilter(value, shares, { kind: 'member', memberId: BOB }) +
-      applyViewFilter(value, shares, { kind: 'member', memberId: CAROL })
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: ALICE }) +
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: BOB }) +
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: CAROL })
+    expect(sum).toBe(household)
+  })
+
+  it('member views sum to the household view for a negative value', () => {
+    const unevenValue = cents(-100_001)
+    const shares = [
+      { memberId: ALICE, shareBp: 3_333 },
+      { memberId: BOB, shareBp: 3_333 },
+      { memberId: CAROL, shareBp: 3_334 },
+    ]
+    const household = applyViewFilter(unevenValue, shares, { kind: 'household' })
+    const sum =
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: ALICE }) +
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: BOB }) +
+      applyViewFilter(unevenValue, shares, { kind: 'member', memberId: CAROL })
+    expect(sum).toBe(household)
+  })
+
+  it('member views sum to the household view across a wider split with larger remainders', () => {
+    const unevenValue = cents(100_007)
+    const shares = [
+      { memberId: 'm1', shareBp: 2_000 },
+      { memberId: 'm2', shareBp: 2_000 },
+      { memberId: 'm3', shareBp: 2_000 },
+      { memberId: 'm4', shareBp: 2_000 },
+      { memberId: 'm5', shareBp: 2_000 },
+    ]
+    const household = applyViewFilter(unevenValue, shares, { kind: 'household' })
+    const sum = shares.reduce(
+      (total, s) =>
+        total + applyViewFilter(unevenValue, shares, { kind: 'member', memberId: s.memberId }),
+      0,
+    )
     expect(sum).toBe(household)
   })
 })
