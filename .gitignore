@@ -30,3 +30,10 @@ docs/superpowers/
 ## OS
 .DS_Store
 Thumbs.db
+
+## Next.js (src/web)
+src/web/node_modules/
+src/web/.next/
+src/web/next-env.d.ts
+src/web/test-results/
+src/web/playwright-report/
