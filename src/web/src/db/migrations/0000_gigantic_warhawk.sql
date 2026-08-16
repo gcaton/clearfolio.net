@@ -34,7 +34,8 @@ CREATE TABLE `assets` (
 	`expected_return_rate` real,
 	`expected_volatility` real,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`asset_type_id`) REFERENCES `asset_types`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`asset_type_id`) REFERENCES `asset_types`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "chk_assets_contribution_amount_cents_int" CHECK("assets"."contribution_amount_cents" IS NULL OR typeof("assets"."contribution_amount_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE INDEX `idx_assets_household_active` ON `assets` (`household_id`,`is_active`);--> statement-breakpoint
@@ -63,7 +64,8 @@ CREATE TABLE `expenses` (
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`owner_member_id`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE set null,
-	FOREIGN KEY (`expense_category_id`) REFERENCES `expense_categories`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`expense_category_id`) REFERENCES `expense_categories`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "chk_expenses_amount_cents_int" CHECK(typeof("expenses"."amount_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE INDEX `idx_expenses_household_active` ON `expenses` (`household_id`,`is_active`);--> statement-breakpoint
@@ -102,7 +104,8 @@ CREATE TABLE `income_streams` (
 	`created_at` integer NOT NULL,
 	`updated_at` integer NOT NULL,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`owner_member_id`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`owner_member_id`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE cascade,
+	CONSTRAINT "chk_income_streams_amount_cents_int" CHECK(typeof("income_streams"."amount_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE INDEX `idx_income_household_active` ON `income_streams` (`household_id`,`is_active`);--> statement-breakpoint
@@ -120,7 +123,8 @@ CREATE TABLE `liabilities` (
 	`repayment_end_date` text,
 	`interest_rate` real,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`liability_type_id`) REFERENCES `liability_types`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`liability_type_id`) REFERENCES `liability_types`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "chk_liabilities_repayment_amount_cents_int" CHECK("liabilities"."repayment_amount_cents" IS NULL OR typeof("liabilities"."repayment_amount_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE INDEX `idx_liabilities_household_active` ON `liabilities` (`household_id`,`is_active`);--> statement-breakpoint
@@ -140,7 +144,9 @@ CREATE TABLE `ownership` (
 	`entity_type` text NOT NULL,
 	`member_id` text NOT NULL,
 	`share_bp` integer NOT NULL,
-	FOREIGN KEY (`member_id`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE cascade
+	FOREIGN KEY (`member_id`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE cascade,
+	CONSTRAINT "chk_ownership_entity_type" CHECK("ownership"."entity_type" IN ('asset', 'liability')),
+	CONSTRAINT "chk_ownership_share_bp_range" CHECK("ownership"."share_bp" BETWEEN 0 AND 10000)
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `uq_ownership_entity_member` ON `ownership` (`entity_id`,`member_id`);--> statement-breakpoint
@@ -149,12 +155,20 @@ CREATE TABLE `scenario_assumptions` (
 	`id` text PRIMARY KEY NOT NULL,
 	`scenario_id` text NOT NULL,
 	`entity_id` text NOT NULL,
+	`entity_type` text NOT NULL,
 	`return_rate` real,
 	`volatility` real,
 	`contribution_amount_cents` integer,
 	`contribution_frequency` text,
 	`contribution_end_date` text,
-	FOREIGN KEY (`scenario_id`) REFERENCES `scenarios`(`id`) ON UPDATE no action ON DELETE cascade
+	`interest_rate` real,
+	`repayment_amount_cents` integer,
+	`repayment_frequency` text,
+	`repayment_end_date` text,
+	FOREIGN KEY (`scenario_id`) REFERENCES `scenarios`(`id`) ON UPDATE no action ON DELETE cascade,
+	CONSTRAINT "chk_scenario_assumptions_entity_type" CHECK("scenario_assumptions"."entity_type" IN ('asset', 'liability')),
+	CONSTRAINT "chk_scenario_assumptions_contribution_amount_cents_int" CHECK("scenario_assumptions"."contribution_amount_cents" IS NULL OR typeof("scenario_assumptions"."contribution_amount_cents") = 'integer'),
+	CONSTRAINT "chk_scenario_assumptions_repayment_amount_cents_int" CHECK("scenario_assumptions"."repayment_amount_cents" IS NULL OR typeof("scenario_assumptions"."repayment_amount_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `uq_assumption_scenario_entity` ON `scenario_assumptions` (`scenario_id`,`entity_id`);--> statement-breakpoint
@@ -190,7 +204,9 @@ CREATE TABLE `snapshots` (
 	`recorded_by` text NOT NULL,
 	`recorded_at` integer NOT NULL,
 	FOREIGN KEY (`household_id`) REFERENCES `households`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`recorded_by`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE no action
+	FOREIGN KEY (`recorded_by`) REFERENCES `household_members`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "chk_snapshots_entity_type" CHECK("snapshots"."entity_type" IN ('asset', 'liability')),
+	CONSTRAINT "chk_snapshots_value_cents_int" CHECK(typeof("snapshots"."value_cents") = 'integer')
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `uq_snapshots_entity_period` ON `snapshots` (`entity_id`,`period`);--> statement-breakpoint

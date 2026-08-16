@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "84707adc-394c-4cf1-8ea8-2dade7f9d57c",
+  "id": "a3932990-0710-4ae7-b1a6-6ebfe261f397",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "app_settings": {
@@ -272,7 +272,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_assets_contribution_amount_cents_int": {
+          "name": "chk_assets_contribution_amount_cents_int",
+          "value": "\"assets\".\"contribution_amount_cents\" IS NULL OR typeof(\"assets\".\"contribution_amount_cents\") = 'integer'"
+        }
+      }
     },
     "expense_categories": {
       "name": "expense_categories",
@@ -492,7 +497,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_expenses_amount_cents_int": {
+          "name": "chk_expenses_amount_cents_int",
+          "value": "typeof(\"expenses\".\"amount_cents\") = 'integer'"
+        }
+      }
     },
     "household_members": {
       "name": "household_members",
@@ -754,7 +764,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_income_streams_amount_cents_int": {
+          "name": "chk_income_streams_amount_cents_int",
+          "value": "typeof(\"income_streams\".\"amount_cents\") = 'integer'"
+        }
+      }
     },
     "liabilities": {
       "name": "liabilities",
@@ -885,7 +900,12 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_liabilities_repayment_amount_cents_int": {
+          "name": "chk_liabilities_repayment_amount_cents_int",
+          "value": "\"liabilities\".\"repayment_amount_cents\" IS NULL OR typeof(\"liabilities\".\"repayment_amount_cents\") = 'integer'"
+        }
+      }
     },
     "liability_types": {
       "name": "liability_types",
@@ -1022,7 +1042,16 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_ownership_entity_type": {
+          "name": "chk_ownership_entity_type",
+          "value": "\"ownership\".\"entity_type\" IN ('asset', 'liability')"
+        },
+        "chk_ownership_share_bp_range": {
+          "name": "chk_ownership_share_bp_range",
+          "value": "\"ownership\".\"share_bp\" BETWEEN 0 AND 10000"
+        }
+      }
     },
     "scenario_assumptions": {
       "name": "scenario_assumptions",
@@ -1043,6 +1072,13 @@
         },
         "entity_id": {
           "name": "entity_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entity_type": {
+          "name": "entity_type",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -1082,6 +1118,34 @@
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
+        },
+        "interest_rate": {
+          "name": "interest_rate",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "repayment_amount_cents": {
+          "name": "repayment_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "repayment_frequency": {
+          "name": "repayment_frequency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "repayment_end_date": {
+          "name": "repayment_end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -1111,7 +1175,20 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_scenario_assumptions_entity_type": {
+          "name": "chk_scenario_assumptions_entity_type",
+          "value": "\"scenario_assumptions\".\"entity_type\" IN ('asset', 'liability')"
+        },
+        "chk_scenario_assumptions_contribution_amount_cents_int": {
+          "name": "chk_scenario_assumptions_contribution_amount_cents_int",
+          "value": "\"scenario_assumptions\".\"contribution_amount_cents\" IS NULL OR typeof(\"scenario_assumptions\".\"contribution_amount_cents\") = 'integer'"
+        },
+        "chk_scenario_assumptions_repayment_amount_cents_int": {
+          "name": "chk_scenario_assumptions_repayment_amount_cents_int",
+          "value": "\"scenario_assumptions\".\"repayment_amount_cents\" IS NULL OR typeof(\"scenario_assumptions\".\"repayment_amount_cents\") = 'integer'"
+        }
+      }
     },
     "scenarios": {
       "name": "scenarios",
@@ -1365,7 +1442,16 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "chk_snapshots_entity_type": {
+          "name": "chk_snapshots_entity_type",
+          "value": "\"snapshots\".\"entity_type\" IN ('asset', 'liability')"
+        },
+        "chk_snapshots_value_cents_int": {
+          "name": "chk_snapshots_value_cents_int",
+          "value": "typeof(\"snapshots\".\"value_cents\") = 'integer'"
+        }
+      }
     }
   },
   "views": {},

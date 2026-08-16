@@ -1,4 +1,5 @@
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, index, uniqueIndex, check } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
 
 export const households = sqliteTable('households', {
   id: text('id').primaryKey(),
@@ -71,7 +72,10 @@ export const assets = sqliteTable('assets', {
   isPreTaxContribution: integer('is_pre_tax_contribution', { mode: 'boolean' }).notNull().default(false),
   expectedReturnRate: real('expected_return_rate'),
   expectedVolatility: real('expected_volatility'),
-}, (t) => [index('idx_assets_household_active').on(t.householdId, t.isActive)])
+}, (t) => [
+  index('idx_assets_household_active').on(t.householdId, t.isActive),
+  check('chk_assets_contribution_amount_cents_int', sql`${t.contributionAmountCents} IS NULL OR typeof(${t.contributionAmountCents}) = 'integer'`),
+])
 
 export const liabilities = sqliteTable('liabilities', {
   id: text('id').primaryKey(),
@@ -86,12 +90,17 @@ export const liabilities = sqliteTable('liabilities', {
   repaymentFrequency: text('repayment_frequency'),
   repaymentEndDate: text('repayment_end_date'), // ISO YYYY-MM-DD
   interestRate: real('interest_rate'),
-}, (t) => [index('idx_liabilities_household_active').on(t.householdId, t.isActive)])
+}, (t) => [
+  index('idx_liabilities_household_active').on(t.householdId, t.isActive),
+  check('chk_liabilities_repayment_amount_cents_int', sql`${t.repaymentAmountCents} IS NULL OR typeof(${t.repaymentAmountCents}) = 'integer'`),
+])
 
 /**
  * Polymorphic: entityId points at an asset or a liability, discriminated by
  * entityType. No FK is possible on a polymorphic column — integrity is
- * enforced in the service layer.
+ * enforced in the service layer. The cross-row invariant that shareBp sums
+ * to 10000 per entity cannot be expressed as a single-row CHECK and is
+ * enforced in src/domain/ownership.ts.
  */
 export const ownership = sqliteTable('ownership', {
   id: text('id').primaryKey(),
@@ -102,6 +111,8 @@ export const ownership = sqliteTable('ownership', {
 }, (t) => [
   uniqueIndex('uq_ownership_entity_member').on(t.entityId, t.memberId),
   index('idx_ownership_entity').on(t.entityId),
+  check('chk_ownership_entity_type', sql`${t.entityType} IN ('asset', 'liability')`),
+  check('chk_ownership_share_bp_range', sql`${t.shareBp} BETWEEN 0 AND 10000`),
 ])
 
 export const snapshots = sqliteTable('snapshots', {
@@ -119,6 +130,8 @@ export const snapshots = sqliteTable('snapshots', {
 }, (t) => [
   uniqueIndex('uq_snapshots_entity_period').on(t.entityId, t.period),
   index('idx_snapshots_household_period').on(t.householdId, t.period),
+  check('chk_snapshots_entity_type', sql`${t.entityType} IN ('asset', 'liability')`),
+  check('chk_snapshots_value_cents_int', sql`typeof(${t.valueCents}) = 'integer'`),
 ])
 
 export const expenseCategories = sqliteTable('expense_categories', {
@@ -142,7 +155,10 @@ export const incomeStreams = sqliteTable('income_streams', {
   notes: text('notes'),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
-}, (t) => [index('idx_income_household_active').on(t.householdId, t.isActive)])
+}, (t) => [
+  index('idx_income_household_active').on(t.householdId, t.isActive),
+  check('chk_income_streams_amount_cents_int', sql`typeof(${t.amountCents}) = 'integer'`),
+])
 
 export const expenses = sqliteTable('expenses', {
   id: text('id').primaryKey(),
@@ -159,6 +175,7 @@ export const expenses = sqliteTable('expenses', {
 }, (t) => [
   index('idx_expenses_household_active').on(t.householdId, t.isActive),
   index('idx_expenses_category').on(t.expenseCategoryId),
+  check('chk_expenses_amount_cents_int', sql`typeof(${t.amountCents}) = 'integer'`),
 ])
 
 export const scenarios = sqliteTable('scenarios', {
@@ -171,13 +188,29 @@ export const scenarios = sqliteTable('scenarios', {
   createdAt: integer('created_at').notNull(),
 }, (t) => [index('idx_scenarios_household').on(t.householdId)])
 
+/**
+ * Polymorphic like ownership/snapshots: entityId points at an asset or a
+ * liability, discriminated by entityType. Carries both asset-flavoured
+ * overrides (returnRate, volatility, contribution*) and liability-flavoured
+ * overrides (interestRate, repayment*) since a scenario can override either.
+ */
 export const scenarioAssumptions = sqliteTable('scenario_assumptions', {
   id: text('id').primaryKey(),
   scenarioId: text('scenario_id').notNull().references(() => scenarios.id, { onDelete: 'cascade' }),
   entityId: text('entity_id').notNull(),
+  entityType: text('entity_type').notNull(), // 'asset' | 'liability'
   returnRate: real('return_rate'),
   volatility: real('volatility'),
   contributionAmountCents: integer('contribution_amount_cents'),
   contributionFrequency: text('contribution_frequency'),
   contributionEndDate: text('contribution_end_date'),
-}, (t) => [uniqueIndex('uq_assumption_scenario_entity').on(t.scenarioId, t.entityId)])
+  interestRate: real('interest_rate'),
+  repaymentAmountCents: integer('repayment_amount_cents'),
+  repaymentFrequency: text('repayment_frequency'),
+  repaymentEndDate: text('repayment_end_date'), // ISO YYYY-MM-DD
+}, (t) => [
+  uniqueIndex('uq_assumption_scenario_entity').on(t.scenarioId, t.entityId),
+  check('chk_scenario_assumptions_entity_type', sql`${t.entityType} IN ('asset', 'liability')`),
+  check('chk_scenario_assumptions_contribution_amount_cents_int', sql`${t.contributionAmountCents} IS NULL OR typeof(${t.contributionAmountCents}) = 'integer'`),
+  check('chk_scenario_assumptions_repayment_amount_cents_int', sql`${t.repaymentAmountCents} IS NULL OR typeof(${t.repaymentAmountCents}) = 'integer'`),
+])
