@@ -37,3 +37,4 @@ src/web/.next/
 src/web/next-env.d.ts
 src/web/test-results/
 src/web/playwright-report/
+src/web/*.tsbuildinfo
