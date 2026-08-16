@@ -742,6 +742,17 @@ describe('normaliseContribution', () => {
     expect(normaliseContribution(cents(10_000), 'biannually')).toBe(0)
   })
 
+  // `constructor` and `__proto__` are the inherited keys that survive
+  // .toLowerCase() intact, so they are the ones that actually reach the
+  // lookup. Under `in` they resolve to Object.prototype members and
+  // multiply money by a function/object, yielding NaN.
+  it.each(['constructor', '__proto__', 'toString', 'valueOf'])(
+    'returns zero for the inherited key %s',
+    (key) => {
+      expect(normaliseContribution(cents(10_000), key)).toBe(0)
+    },
+  )
+
   it('matches frequency case-insensitively', () => {
     expect(normaliseContribution(cents(10_000), 'Monthly')).toBe(120_000)
   })
@@ -787,7 +798,10 @@ export const FREQUENCY_MULTIPLIERS: Record<Frequency, number> = {
 function multiplierFor(frequency: string | null | undefined): number | null {
   if (!frequency) return null
   const key = frequency.toLowerCase() as Frequency
-  return key in FREQUENCY_MULTIPLIERS ? FREQUENCY_MULTIPLIERS[key] : null
+  // Object.hasOwn, not `in` — `in` walks the prototype chain, so 'toString'
+  // and friends would resolve to a function and poison the arithmetic with
+  // NaN. The C# original uses TryGetValue, which returns 0 for these.
+  return Object.hasOwn(FREQUENCY_MULTIPLIERS, key) ? FREQUENCY_MULTIPLIERS[key] : null
 }
 
 /** Annual equivalent of a recurring amount. Unknown frequency yields zero. */
