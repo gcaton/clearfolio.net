@@ -1,12 +1,13 @@
 'use server'
 
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { appSettings } from '@/db/schema'
 import { createSession, verifyPassphrase } from '@/server/auth'
 import { SESSION_COOKIE, sessionCookieOptions } from '@/server/session'
+import { resolveIsHttps } from '../_lib/is-https'
 
 export async function submitLogin(_prev: unknown, formData: FormData) {
   const passphrase = String(formData.get('passphrase') ?? '')
@@ -22,9 +23,7 @@ export async function submitLogin(_prev: unknown, formData: FormData) {
   }
 
   const token = createSession(db)
-  const headerList = await headers()
-  const isHttps =
-    headerList.get('x-forwarded-proto')?.toLowerCase() === 'https'
+  const isHttps = await resolveIsHttps()
 
   const cookieStore = await cookies()
   cookieStore.set(SESSION_COOKIE, token, sessionCookieOptions(isHttps))
