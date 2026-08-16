@@ -34,6 +34,33 @@ jobs:
         run: npm run typecheck
         working-directory: src/web
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: src/web
+
+      - name: Run e2e tests
+        run: npm run test:e2e
+        working-directory: src/web
+
+      - uses: docker/setup-qemu-action@v3
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build-only gate: proves the image compiles natively on arm64 (the
+      # usual failure point is better-sqlite3, which the Dockerfile installs
+      # python3/make/g++ for). Nothing here is pushed — the buildx matrix in
+      # the `publish` job below is the only step that ever pushes, and only
+      # on main. Without this, the first arm64 build in this branch's life
+      # would be the one that publishes :latest.
+      - name: Build arm64 image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: false
+          cache-from: type=gha,scope=linux-arm64
+          cache-to: type=gha,mode=max,scope=linux-arm64
+
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: test
