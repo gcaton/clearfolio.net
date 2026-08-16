@@ -1,11 +1,52 @@
 container := "clearfolio"
 image := "clearfolio-dev"
 api_dir := "src/api/Clearfolio.Api"
+web_dir := "src/web"
 
 # Show available commands
 [private]
 default:
     @just --list --unsorted --list-heading $'\n  \033[1;36mclearfolio.net\033[0m\n\n'
+
+# --- Next.js rewrite (src/web) -------------------------------------------
+# The rewrite is in progress on branch nextjs-rewrite. These recipes run the
+# new app; the docker/dev recipes below still run the current .NET + Angular
+# stack. Task 16 of the plan replaces the old ones with these.
+
+# Install dependencies for the Next.js app
+[group('web')]
+web-install:
+    cd {{web_dir}} && npm install
+
+# Run the Next.js dev server (http://localhost:3000)
+[group('web')]
+web-dev:
+    cd {{web_dir}} && npm run dev
+
+# Run the domain unit tests (Vitest)
+[group('web')]
+web-test *args='':
+    cd {{web_dir}} && npx vitest run {{args}}
+
+# Run the unit tests in watch mode
+[group('web')]
+web-test-watch:
+    cd {{web_dir}} && npx vitest
+
+# Type-check without emitting
+[group('web')]
+web-typecheck:
+    cd {{web_dir}} && npx tsc --noEmit
+
+# Production build (standalone output)
+[group('web')]
+web-build:
+    cd {{web_dir}} && npm run build
+
+# Everything CI will check, in one go
+[group('web')]
+web-check: web-typecheck web-test
+    @echo "typecheck + tests OK"
 
 # Tear down existing container, rebuild image, and start fresh
 [group('docker')]
