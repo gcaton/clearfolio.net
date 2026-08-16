@@ -1,7 +1,4 @@
 import type { BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { getDb } from '@/db/client'
 import { households } from '@/db/schema'
 import { isPassphraseSet, validateSession } from './auth'
 
@@ -55,19 +52,4 @@ export function sessionCookieOptions(isHttps: boolean): SessionCookieOptions {
     path: '/',
     maxAge: sessionDays * 24 * 60 * 60,
   }
-}
-
-/**
- * Server-only guard for use at the top of a protected route/layout. Resolves
- * the current auth state from the request's session cookie and redirects to
- * the setup wizard or login page as appropriate; returns normally only when
- * the caller is authenticated.
- */
-export async function requireSession(): Promise<void> {
-  const cookieStore = await cookies()
-  const db = getDb()
-  const state = resolveAuthState(db, cookieStore.get(SESSION_COOKIE)?.value ?? null)
-
-  if (state.status === 'no-setup') redirect('/setup')
-  if (state.status === 'unauthenticated') redirect('/login')
 }
