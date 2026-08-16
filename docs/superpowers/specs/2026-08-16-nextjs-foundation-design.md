@@ -169,6 +169,30 @@ index on (household_id, period)
 
 The unique index makes the upsert invariant a database guarantee. Today `(entity_id, period)` is indexed but not unique, and uniqueness is enforced only by a read-then-write in `UpsertSnapshot`.
 
+### CHECK constraints
+
+**SQLite column types are affinities, not types.** An `integer` column happily
+stores `1.5` as a REAL and `'hello'` as TEXT. So the "money is integer cents"
+rule above is not self-enforcing — without explicit CHECKs it is a naming
+convention, nothing more.
+
+Every constraint SQLite *can* express is therefore declared:
+
+- `typeof(<col>) = 'integer'` on every `_cents` column, tolerating NULL where
+  the column is nullable
+- `entity_type IN ('asset','liability')` on `snapshots`, `ownership` and
+  `scenario_assumptions`
+- `share_bp BETWEEN 0 AND 10000` on `ownership`
+
+Only the cross-row ownership sum is left to application code, because SQLite
+genuinely cannot express it.
+
+This matters more than it looks: a nullable column can be added later with one
+`ALTER TABLE ADD COLUMN`, but changing a CHECK makes the migration tool rebuild
+the whole table and copy the data — against live user databases. Under a clean
+break with no migration path, CHECKs are the one class of decision that must be
+right on the first release.
+
 ### Polymorphic entity references
 
 `entity_id` on `snapshots`, `ownership` and `scenario_assumptions` points at either an asset or a liability, discriminated by `entity_type`. **No foreign key is possible on a polymorphic column**, so referential integrity for these three columns is application-enforced, not database-enforced.
@@ -195,17 +219,24 @@ scenarios(
 )
 
 scenario_assumptions(
-  id                       text primary key,
-  scenario_id              text not null references scenarios(id) on delete cascade,
-  entity_id                text not null,
-  return_rate              real,
-  volatility               real,
+  id                        text primary key,
+  scenario_id               text not null references scenarios(id) on delete cascade,
+  entity_id                 text not null,
+  entity_type               text not null,          -- 'asset' | 'liability'
+  return_rate               real,
+  volatility                real,
   contribution_amount_cents integer,
-  contribution_frequency   text,
-  contribution_end_date    text
+  contribution_frequency    text,
+  contribution_end_date     text,
+  interest_rate             real,                   -- liability-side override
+  repayment_amount_cents    integer,
+  repayment_frequency       text,
+  repayment_end_date        text
 )
 unique index on (scenario_id, entity_id)
 ```
+
+The liability-side override columns matter because every `ProjectionEntity` in the domain layer carries an `interestRate`. Without them a scenario could only vary asset assumptions, which would leave debt paydown unmodellable — a hole in exactly the feature scenarios exist for.
 
 Today, projection inputs live on the asset row and `BuildEntityInputs` reads them directly, so **an optimistic-versus-pessimistic comparison requires editing your actual holdings**. For an app whose stated second purpose is projection, that is the central design flaw.
 

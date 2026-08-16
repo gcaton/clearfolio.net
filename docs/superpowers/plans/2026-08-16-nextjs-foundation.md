@@ -1923,6 +1923,31 @@ git commit -m "feat: port projection engine with injected clock and RNG"
 
 ### Task 7: Database schema and migrations
 
+> **Amended during execution — the spec is authoritative on both changes.**
+>
+> 1. **CHECK constraints are required.** SQLite column types are affinities,
+>    not types: without CHECKs, `value_cents = 1.5` persists as a float and
+>    `entity_type = 'banana'` is accepted, so "money is integer cents" has no
+>    database-level enforcement at all. Declare, via Drizzle's `check()`:
+>    `typeof(col) = 'integer'` on every `_cents` column (tolerating NULL where
+>    the column is nullable), `entity_type IN ('asset','liability')` on
+>    `snapshots` / `ownership` / `scenario_assumptions`, and
+>    `share_bp BETWEEN 0 AND 10000` on `ownership`. Only the cross-row
+>    ownership sum stays in application code. This is the one class of schema
+>    decision that must be right on the first release: adding a column later
+>    is one `ALTER TABLE`, but changing a CHECK rebuilds the whole table and
+>    copies the data against live user databases.
+> 2. **`scenario_assumptions` gains `entity_type`** (notNull, same IN check)
+>    **plus liability-side overrides**: `interest_rate` (real),
+>    `repayment_amount_cents` (integer), `repayment_frequency` (text),
+>    `repayment_end_date` (ISO text). Every `ProjectionEntity` in the domain
+>    layer carries an `interestRate`; without these a scenario could vary only
+>    asset assumptions, leaving debt paydown unmodellable.
+>
+> The test file must pin all eight global constraints, not four, and must not
+> infer money columns from their names alone — a column named `amount` typed
+> `real` has to fail.
+
 **Files:**
 - Create: `src/web/src/db/schema.ts`
 - Create: `src/web/drizzle.config.ts`
