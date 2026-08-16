@@ -116,7 +116,7 @@ app/
 - **Money is integer cents.** Column suffix `_cents`, TypeScript branded type `Cents` so a bare `number` cannot be assigned by accident.
 - **Rates and ratios stay REAL** — return rate, volatility, interest rate, inflation are not money.
 - **Ownership shares are integer basis points** summing to 10000.
-- **Timestamps are integer unix seconds**, not ISO-8601 strings.
+- **Timestamps are integer unix seconds**, not ISO-8601 strings. *Calendar dates* — `contribution_end_date`, `repayment_end_date` — remain ISO `YYYY-MM-DD` text, because they denote a day rather than an instant and are compared lexically against period boundaries.
 - **Soft delete is preserved** (`is_active`), because historical trends depend on deleted entities remaining resolvable.
 - IDs are UUID strings, as today.
 
@@ -129,7 +129,7 @@ ownership(
   id            text primary key,
   entity_id     text not null,
   entity_type   text not null,          -- 'asset' | 'liability'
-  member_id     text not null references household_members(id),
+  member_id     text not null references household_members(id) on delete cascade,
   share_bp      integer not null        -- basis points; rows per entity sum to 10000
 )
 unique index on (entity_id, member_id)
@@ -137,6 +137,8 @@ index on (entity_id)
 ```
 
 Sole ownership is one row at `share_bp = 10000`. A 60/40 joint asset is two rows.
+
+**"Sums to 10000" is application-enforced, not a database constraint** — SQLite cannot express a cross-row sum check. It is asserted on every ownership write and covered by unit tests. Deleting a member cascades their ownership rows away, which can leave an entity under-allocated; the write path re-normalises remaining shares rather than leaving an inconsistent total.
 
 This removes the two-person ceiling — the current `ApplyViewFilter` hardcodes the member tags `p1` and `p2` and computes joint ownership as "p1 receives the split, the other member receives the remainder". It also **deletes** that special-casing rather than porting it: the household view sums all shares, a member view sums that member's shares. Less code, not more.
 
@@ -151,7 +153,7 @@ snapshots(
   period                text not null,          -- FY2026-Q1 etc.
   value_cents           integer not null,       -- authoritative
   units                 real,                   -- nullable; fractional allowed
-  price_per_unit_cents  integer,                -- nullable
+  price_per_unit        real,                   -- nullable; NOT cents (see below)
   notes                 text,
   recorded_by           text not null references household_members(id),
   recorded_at           integer not null
@@ -160,7 +162,9 @@ unique index on (entity_id, period)
 index on (household_id, period)
 ```
 
-`value_cents` remains the stored source of truth. When `units` and `price_per_unit_cents` are present they record *how* that figure was derived; they never recompute it. A "refresh from quote" action writes a **new** snapshot rather than mutating an existing one, so history never changes retroactively because a market moved.
+`value_cents` remains the stored source of truth. When `units` and `price_per_unit` are present they record *how* that figure was derived; they never recompute it. A "refresh from quote" action writes a **new** snapshot rather than mutating an existing one, so history never changes retroactively because a market moved.
+
+**`price_per_unit` is REAL and deliberately not cents.** Integer cents cannot represent the prices this feature exists for: sub-dollar ASX stocks quote in tenths of a cent, and crypto prices run to many more decimal places. Yahoo returns `regularMarketPrice` as a float. Precision discipline still holds where it matters — `value_cents` is integer and authoritative, and `units × price_per_unit` is rounded to cents once, at write time, never recomputed on read.
 
 The unique index makes the upsert invariant a database guarantee. Today `(entity_id, period)` is indexed but not unique, and uniqueness is enforced only by a read-then-write in `UpsertSnapshot`.
 
@@ -244,7 +248,9 @@ Flow:
 
 ### Middleware constraint
 
-`middleware.ts` runs on the edge runtime and **cannot load `better-sqlite3`**. It therefore performs a cookie-presence check and redirect only. Real session validation happens in `requireSession()`, called from the authenticated layout and from each route handler. This is a correctness constraint, not a preference — a database call in middleware fails at build time.
+`middleware.ts` performs a cookie-presence check and redirect only. Real session validation happens in `requireSession()`, called from the authenticated layout and from each route handler.
+
+This is a **decision**, not an absolute limit. Middleware defaults to the edge runtime, where `better-sqlite3` cannot load; Next 16 does allow opting middleware into the Node runtime. We keep the database out of middleware anyway, because middleware runs on every matched request including static assets, and a synchronous SQLite read there buys nothing that the layout check does not already provide.
 
 ### Rate limiting
 
