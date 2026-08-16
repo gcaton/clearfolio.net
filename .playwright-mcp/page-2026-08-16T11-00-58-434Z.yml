@@ -1,9 +1,0 @@
-- generic [ref=e1]:
-  - main [ref=e2]:
-    - heading "Clearfolio" [level=1] [ref=e3]
-    - generic [ref=e4]:
-      - generic [ref=e5]:
-        - generic [ref=e6]: Passphrase
-        - textbox "Passphrase" [active] [ref=e7]
-      - button "Sign in" [ref=e8]
-  - alert [ref=e9]
