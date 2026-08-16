@@ -142,7 +142,7 @@ Sole ownership is one row at `share_bp = 10000`. A 60/40 joint asset is two rows
 
 This removes the two-person ceiling — the current `ApplyViewFilter` hardcodes the member tags `p1` and `p2` and computes joint ownership as "p1 receives the split, the other member receives the remainder". It also **deletes** that special-casing rather than porting it: the household view sums all shares, a member view sums that member's shares. Less code, not more.
 
-**`snapshots`** — gains unit-based valuation and real constraints.
+**`snapshots`** — gains unit-based valuation and a real uniqueness constraint.
 
 ```
 snapshots(
@@ -167,6 +167,18 @@ index on (household_id, period)
 **`price_per_unit` is REAL and deliberately not cents.** Integer cents cannot represent the prices this feature exists for: sub-dollar ASX stocks quote in tenths of a cent, and crypto prices run to many more decimal places. Yahoo returns `regularMarketPrice` as a float. Precision discipline still holds where it matters — `value_cents` is integer and authoritative, and `units × price_per_unit` is rounded to cents once, at write time, never recomputed on read.
 
 The unique index makes the upsert invariant a database guarantee. Today `(entity_id, period)` is indexed but not unique, and uniqueness is enforced only by a read-then-write in `UpsertSnapshot`.
+
+### Polymorphic entity references
+
+`entity_id` on `snapshots`, `ownership` and `scenario_assumptions` points at either an asset or a liability, discriminated by `entity_type`. **No foreign key is possible on a polymorphic column**, so referential integrity for these three columns is application-enforced, not database-enforced.
+
+The alternative — splitting each into per-type tables (`asset_snapshots` / `liability_snapshots` and so on) — would buy real FKs at the cost of six tables instead of three and a union in every query that spans both types, which the latest-snapshot lookup and the projection input builder both do on every call. The polymorphic model is retained.
+
+What this obliges:
+
+- Every write path validates that `entity_id` resolves to a live entity of the declared `entity_type`, in the same transaction as the write.
+- Soft delete means entities are never actually removed, so the common orphaning case does not arise. Hard deletes exist only in import/replace, which rebuilds all dependent rows.
+- Service-layer tests cover the orphan cases directly, since the database will not.
 
 **`scenarios` / `scenario_assumptions`** — new.
 
@@ -299,6 +311,17 @@ The ownership rewrite needs tests the C# never had, because the behaviour is new
 **`just dev`** becomes a single `next dev` process rather than a three-pane tmux session coordinating `dotnet watch`, `ng serve` and a health-check wait loop. `just test` runs Vitest. `just migrate` runs Drizzle Kit.
 
 **CI:** `.github/workflows/build.yml` replaces the .NET and Angular build steps with a Node build; GHCR publishing and multiarch matrix are retained.
+
+## Branch Sequencing
+
+Slice 1 rewrites the Dockerfile and CI but delivers only an empty shell, so **merging it to `main` on its own would ship a broken release**. Sequencing:
+
+- Slices 1–3 accumulate on `nextjs-rewrite`. Nothing merges to `main` until feature parity.
+- `src/api` and `src/app` remain on the branch throughout as the porting reference — the projection engine, dashboard aggregations and period logic are all read from the C# while being ported. They are deleted in the final parity commit, not before.
+- The old stack stops being *built* in slice 1 (the Dockerfile and CI target Next only); it merely stops being deleted.
+- One merge to `main`, one major version bump, one breaking-change release note covering the clean break.
+
+This means `nextjs-rewrite` is a long-lived branch. Acceptable here: it is a single-author hobby repo with no concurrent feature work on `main`.
 
 ## Acceptance Criteria
 
