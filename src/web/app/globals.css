@@ -1,0 +1,68 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', monospace;
+}
+
+/* Light is the base definition; dark redefines only what changes.
+   Both are first-class — neither is an override of the other. */
+:root {
+  --surface: oklch(0.99 0 0);
+  --surface-raised: oklch(1 0 0);
+  --surface-sunken: oklch(0.96 0.002 260);
+  --border: oklch(0.90 0.003 260);
+  --text: oklch(0.22 0.006 260);
+  --text-muted: oklch(0.52 0.008 260);
+  --accent: oklch(0.52 0.13 250);
+  --accent-text: oklch(0.99 0 0);
+  --positive: oklch(0.52 0.12 155);
+  --negative: oklch(0.53 0.17 25);
+}
+
+:root[data-theme='dark'] {
+  --surface: oklch(0.18 0.006 260);
+  --surface-raised: oklch(0.22 0.007 260);
+  --surface-sunken: oklch(0.15 0.006 260);
+  --border: oklch(0.30 0.008 260);
+  --text: oklch(0.94 0.003 260);
+  --text-muted: oklch(0.68 0.008 260);
+  --accent: oklch(0.70 0.13 250);
+  --accent-text: oklch(0.18 0.006 260);
+  --positive: oklch(0.72 0.14 155);
+  --negative: oklch(0.70 0.16 25);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --surface: oklch(0.18 0.006 260);
+    --surface-raised: oklch(0.22 0.007 260);
+    --surface-sunken: oklch(0.15 0.006 260);
+    --border: oklch(0.30 0.008 260);
+    --text: oklch(0.94 0.003 260);
+    --text-muted: oklch(0.68 0.008 260);
+    --accent: oklch(0.70 0.13 250);
+    --accent-text: oklch(0.18 0.006 260);
+    --positive: oklch(0.72 0.14 155);
+    --negative: oklch(0.70 0.16 25);
+  }
+}
+
+body {
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  /* Density over whitespace — this is a tool for reading numbers. */
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* Every figure aligns in its column and does not jitter as values change. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Sign and position carry the meaning; colour reinforces but never alone. */
+.value-positive { color: var(--positive); }
+.value-negative { color: var(--negative); }
