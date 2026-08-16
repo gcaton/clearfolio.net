@@ -122,4 +122,39 @@ describe('currentPeriod', () => {
   ])('CY for %s', (today, expected) => {
     expect(currentPeriod('CY', today)).toBe(expected)
   })
+
+  // Boundary coverage: only mid-quarter months were exercised above, so an
+  // off-by-one at the FY year-roll (month >= 7) or any quarter cut-over
+  // would previously have survived unnoticed. Each pair below straddles one
+  // boundary on consecutive calendar days.
+  describe('boundaries — FY', () => {
+    it.each([
+      // [date, expected, boundary description]
+      [new Date(Date.UTC(2025, 5, 30)), 'FY2025-Q4', 'June 30 — day before the FY year roll'],
+      [new Date(Date.UTC(2025, 6, 1)), 'FY2026-Q1', 'July 1 — the FY year roll'],
+      [new Date(Date.UTC(2025, 8, 30)), 'FY2026-Q1', 'Sep 30 — day before Q1→Q2'],
+      [new Date(Date.UTC(2025, 9, 1)), 'FY2026-Q2', 'Oct 1 — Q1→Q2 cut-over'],
+      [new Date(Date.UTC(2025, 11, 31)), 'FY2026-Q2', 'Dec 31 — day before Q2→Q3'],
+      [new Date(Date.UTC(2026, 0, 1)), 'FY2026-Q3', 'Jan 1 — Q2→Q3 cut-over (calendar year rolls, FY does not)'],
+      [new Date(Date.UTC(2026, 2, 31)), 'FY2026-Q3', 'Mar 31 — day before Q3→Q4'],
+      [new Date(Date.UTC(2026, 3, 1)), 'FY2026-Q4', 'Apr 1 — Q3→Q4 cut-over'],
+    ])('%s → %s (%s)', (today, expected) => {
+      expect(currentPeriod('FY', today)).toBe(expected)
+    })
+  })
+
+  describe('boundaries — CY', () => {
+    it.each([
+      [new Date(Date.UTC(2025, 5, 30)), 'CY2025-Q2', 'June 30 — day before Q2→Q3'],
+      [new Date(Date.UTC(2025, 6, 1)), 'CY2025-Q3', 'July 1 — Q2→Q3 cut-over'],
+      [new Date(Date.UTC(2025, 8, 30)), 'CY2025-Q3', 'Sep 30 — day before Q3→Q4'],
+      [new Date(Date.UTC(2025, 9, 1)), 'CY2025-Q4', 'Oct 1 — Q3→Q4 cut-over'],
+      [new Date(Date.UTC(2025, 11, 31)), 'CY2025-Q4', 'Dec 31 — day before the year roll'],
+      [new Date(Date.UTC(2026, 0, 1)), 'CY2026-Q1', 'Jan 1 — the year roll'],
+      [new Date(Date.UTC(2026, 2, 31)), 'CY2026-Q1', 'Mar 31 — day before Q1→Q2'],
+      [new Date(Date.UTC(2026, 3, 1)), 'CY2026-Q2', 'Apr 1 — Q1→Q2 cut-over'],
+    ])('%s → %s (%s)', (today, expected) => {
+      expect(currentPeriod('CY', today)).toBe(expected)
+    })
+  })
 })

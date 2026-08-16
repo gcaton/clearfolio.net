@@ -3,6 +3,22 @@ import {
   cents, fromDollars, toDollars, addCents, subCents,
   scaleCents, roundToCents, formatCents,
 } from './money'
+import type { Cents } from './money'
+
+/**
+ * Type-only guard, checked by `tsc --noEmit` rather than at runtime — vitest
+ * never typechecks. If a future edit weakens `type Cents = number & {
+ * readonly __brand: 'Cents' }` back down to a bare `type Cents = number`,
+ * this `@ts-expect-error` becomes unused and the compiler reports TS2578,
+ * failing `web-typecheck`. Nothing else in the suite would catch that: every
+ * runtime test here still passes against a `number` alias for `Cents`.
+ */
+function assertCentsIsBranded(n: number): void {
+  // @ts-expect-error — a bare number must not be assignable to the branded Cents type
+  const _unused: Cents = n
+  void _unused
+}
+void assertCentsIsBranded
 
 describe('cents', () => {
   it('accepts integers', () => {

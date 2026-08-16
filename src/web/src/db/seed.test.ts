@@ -1,7 +1,42 @@
 import { describe, it, expect } from 'vitest'
 import { createTestDb } from './client'
-import { seedReferenceData } from './seed'
+import { seedReferenceData, SEED_ASSET_TYPES, SEED_LIABILITY_TYPES } from './seed'
 import { assetTypes, liabilityTypes } from './schema'
+
+// Frozen literal arrays, independent of seed.ts's own source. A typo'd GUID
+// in seed.ts (e.g. a duplicated or transposed id) would still pass every
+// other test here — count and flag assertions don't care which row carries
+// which id — but would silently reclassify a user's asset/liability type on
+// the next reseed. This is the guard for that specific failure mode.
+const EXPECTED_ASSET_TYPE_IDS = [
+  'a0000000-0000-0000-0000-000000000001',
+  'a0000000-0000-0000-0000-000000000002',
+  'a0000000-0000-0000-0000-000000000003',
+  'a0000000-0000-0000-0000-000000000004',
+  'a0000000-0000-0000-0000-000000000005',
+  'a0000000-0000-0000-0000-00000000000f',
+  'a0000000-0000-0000-0000-000000000006',
+  'a0000000-0000-0000-0000-000000000007',
+  'a0000000-0000-0000-0000-00000000000e',
+  'a0000000-0000-0000-0000-000000000008',
+  'a0000000-0000-0000-0000-000000000009',
+  'a0000000-0000-0000-0000-00000000000a',
+  'a0000000-0000-0000-0000-00000000000b',
+  'a0000000-0000-0000-0000-00000000000c',
+  'a0000000-0000-0000-0000-00000000000d',
+] as const
+
+const EXPECTED_LIABILITY_TYPE_IDS = [
+  'b0000000-0000-0000-0000-000000000001',
+  'b0000000-0000-0000-0000-000000000002',
+  'b0000000-0000-0000-0000-000000000003',
+  'b0000000-0000-0000-0000-000000000004',
+  'b0000000-0000-0000-0000-000000000005',
+  'b0000000-0000-0000-0000-000000000006',
+  'b0000000-0000-0000-0000-000000000007',
+  'b0000000-0000-0000-0000-000000000008',
+  'b0000000-0000-0000-0000-000000000009',
+] as const
 
 describe('seedReferenceData', () => {
   it('inserts the reference types', () => {
@@ -34,6 +69,14 @@ describe('seedReferenceData', () => {
     expect(hecs).toHaveLength(1)
     expect(hecs[0].name).toContain('HECS')
     sqlite.close()
+  })
+
+  it('assigns the exact, frozen asset-type ids', () => {
+    expect(SEED_ASSET_TYPES.map((t) => t.id)).toEqual([...EXPECTED_ASSET_TYPE_IDS])
+  })
+
+  it('assigns the exact, frozen liability-type ids', () => {
+    expect(SEED_LIABILITY_TYPES.map((t) => t.id)).toEqual([...EXPECTED_LIABILITY_TYPE_IDS])
   })
 
   it('classifies investment bond as long-term liquidity', () => {

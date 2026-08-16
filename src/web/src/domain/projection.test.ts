@@ -253,6 +253,23 @@ describe('runMonteCarlo', () => {
     expect(result.years[2].p10).toBe(result.years[2].p90)
   })
 
+  it('pins an exact p50 for a fixed seed (discriminates the CAGR-to-arithmetic conversion)', () => {
+    // Guards the `+ volatility^2 / 2` geometric-to-arithmetic conversion in
+    // sampleNormal's mean. With volatility 0.15 this term is 0.01125,
+    // comparable in size to the 0.07 base return rate, so deleting it moves
+    // this pinned value. The zero-volatility test above cannot catch that —
+    // the term is multiplied by volatility^2, so it vanishes there by
+    // construction.
+    const asset = makeAsset({
+      currentValue: cents(10_000_000), returnRate: 0.07, volatility: 0.15,
+    })
+    const result = runMonteCarlo([asset], {
+      horizon: 5, simulations: 500, startYear: START_YEAR, random: seededRandom(42),
+    })
+
+    expect(result.years[5].p50).toBe(14_053_535)
+  })
+
   it('is reproducible for a given seed', () => {
     const options = {
       horizon: 3, simulations: 200, startYear: START_YEAR,

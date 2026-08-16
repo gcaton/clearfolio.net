@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createTestDb } from '@/db/client'
 import { sessions } from '@/db/schema'
 import {
@@ -155,6 +156,31 @@ describe('sessions', () => {
     sqlite.close()
   })
 
+  it('is valid one second before expiry and invalid exactly at expiry', () => {
+    // Pins the intended reading — invalid *at* expiresAt (an `<=` check in
+    // validateSession) — so a future `<=` → `<` flip is caught. The existing
+    // expired-token test above jumps a full year past expiry and would not
+    // notice that flip.
+    const { db, sqlite } = createTestDb()
+    const token = createSession(db, NOW)
+    const created = db.select().from(sessions).where(eq(sessions.token, token)).get()
+    if (!created) throw new Error('session row not found')
+    const expiresAt = created.expiresAt
+
+    expect(validateSession(db, token, expiresAt - 1)).toBe(true)
+    sqlite.close()
+  })
+
+  it('is invalid exactly at expiresAt', () => {
+    const { db, sqlite } = createTestDb()
+    const token = createSession(db, NOW)
+    const created = db.select().from(sessions).where(eq(sessions.token, token)).get()
+    if (!created) throw new Error('session row not found')
+
+    expect(validateSession(db, token, created.expiresAt)).toBe(false)
+    sqlite.close()
+  })
+
   it('destroys a session', () => {
     const { db, sqlite } = createTestDb()
     const token = createSession(db, NOW)
@@ -175,6 +201,25 @@ describe('sessions', () => {
     expect(validateSession(db, live, NOW)).toBe(true)
     expect(db.select().from(sessions).all()).toHaveLength(1)
     expect(stale).not.toBe(live)
+    sqlite.close()
+  })
+
+  it('purges a session expiring exactly now (lte, not lt)', () => {
+    // A session created with a 0-day effective expiry sits exactly at `now`.
+    // purgeExpiredSessions must sweep it — validateSession already treats
+    // expiresAt <= now as expired, and a purge that only matches `<` would
+    // leave that row live for a second longer than validation does.
+    const { db, sqlite } = createTestDb()
+    db.insert(sessions).values({
+      token: 'exactly-now-token',
+      createdAt: NOW - 1,
+      expiresAt: NOW,
+    }).run()
+
+    const purged = purgeExpiredSessions(db, NOW)
+
+    expect(purged).toBe(1)
+    expect(db.select().from(sessions).all()).toHaveLength(0)
     sqlite.close()
   })
 

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 import { createTestDb } from '@/db/client'
 import { households } from '@/db/schema'
 import { setPassphrase, createSession } from './auth'
@@ -90,5 +90,14 @@ describe('sessionCookieOptions', () => {
 
   it('uses the documented cookie name', () => {
     expect(SESSION_COOKIE).toBe('clearfolio_session')
+  })
+
+  it('defaults maxAge to 30 days when CLEARFOLIO_SESSION_DAYS is unset', () => {
+    vi.stubEnv('CLEARFOLIO_SESSION_DAYS', '')
+    expect(sessionCookieOptions(false).maxAge).toBe(30 * 24 * 60 * 60)
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 })

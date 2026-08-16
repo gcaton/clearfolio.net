@@ -35,7 +35,9 @@ describe('generated migration', () => {
     'ownership', 'snapshots', 'expense_categories', 'income_streams',
     'expenses', 'scenarios', 'scenario_assumptions',
   ])('creates %s', (table) => {
-    expect(migrationSql()).toContain(`\`${table}\``)
+    // Explicit CREATE TABLE match — a bare `toContain` on the backtick-quoted
+    // name would also pass for a table appearing only in a REFERENCES clause.
+    expect(migrationSql()).toContain(`CREATE TABLE \`${table}\``)
   })
 
   it('enforces one snapshot per entity per period', () => {
