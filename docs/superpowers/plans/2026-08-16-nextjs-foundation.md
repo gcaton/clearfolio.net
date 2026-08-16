@@ -4155,6 +4155,31 @@ git commit -m "test: add Playwright coverage for setup and app shell"
 
 ### Task 16: Container, CI, Justfile and README
 
+> **Amended during execution — read before touching the Justfile or Dockerfile.**
+>
+> 1. **The Justfile already has a `web` group.** It was added mid-run at the
+>    user's request so the app could be run before this task. It currently
+>    provides: `web-install`, `web-dev` (depends on `web-migrate`),
+>    `web-migrate`, `web-test`, `web-test-watch`, `web-typecheck`,
+>    `web-build`, `web-check`. **Edit these in place — do not add a second
+>    set**, or `just` fails on duplicate recipe names.
+> 2. **`init` and `docker-init` are already split.** `init` bootstraps the
+>    Next app (install → check → migrate); the old container recipe was
+>    renamed `docker-init` and labelled LEGACY. This task repoints the docker
+>    recipes at the new image and removes the legacy label.
+> 3. **`MIGRATIONS_FOLDER` resolves against `process.cwd()`** (`src/db/client.ts`).
+>    The container `WORKDIR` must therefore be set deliberately, and the
+>    migrations must be copied to a path that matches it, or the container
+>    starts and every request 500s with `no such table: households`. **Verify
+>    this explicitly by running the built image**, not by reading the
+>    Dockerfile — this exact failure already hit the user once in dev.
+> 4. **`src/api` and `src/app` stay in the tree.** This task stops *building*
+>    them; it does not delete them. They remain as porting reference until
+>    the branch reaches parity at the end of slice 3.
+> 5. The `lint` script in `src/web/package.json` is dead (`next lint` was
+>    removed in Next 16). CI must not call it. Either delete the script or
+>    replace it with a working ESLint invocation.
+
 **Files:**
 - Modify: `Dockerfile`
 - Delete: `docker-entrypoint.sh`
