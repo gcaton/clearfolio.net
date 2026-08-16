@@ -48,9 +48,19 @@ web-build:
 web-check: web-typecheck web-test
     @echo "typecheck + tests OK"
 
-# Tear down existing container, rebuild image, and start fresh
-[group('docker')]
+# Set up the Next.js app from a clean checkout, then verify it
+[group('web')]
 init:
+    cd {{web_dir}} && npm install
+    just web-check
+    @echo ""
+    @echo "  Ready. Next:  just web-dev   →  http://localhost:3000"
+    @echo ""
+
+# Tear down existing container, rebuild image, and start fresh (LEGACY:
+# builds the .NET + Angular stack — the Next.js container arrives in Task 16)
+[group('docker')]
+docker-init:
     -docker stop {{container}}
     -docker rm {{container}}
     docker build -t {{image}} .
